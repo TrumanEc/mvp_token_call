@@ -13,6 +13,8 @@ function MarketplacePage() {
   const [loadingListings, setLoadingListings] = useState(true)
   const [sideFilter, setSideFilter] = useState<'ALL' | 'YES' | 'NO'>('ALL')
 
+  const [viewMode, setViewMode] = useState<'active' | 'history'>('active')
+
   useEffect(() => {
     if (!loading && !user) {
       router.push('/')
@@ -20,8 +22,21 @@ function MarketplacePage() {
   }, [user, loading, router])
 
   const fetchListings = () => {
-    const params = sideFilter !== 'ALL' ? `?side=${sideFilter}` : ''
-    fetch(`/api/marketplace${params}`)
+    let url = '/api/marketplace'
+    const params = new URLSearchParams()
+    
+    if (viewMode === 'history') {
+      params.append('history', 'true')
+    } else if (sideFilter !== 'ALL') {
+      params.append('side', sideFilter)
+    }
+
+    if (params.toString()) {
+      url += `?${params.toString()}`
+    }
+
+    setLoadingListings(true)
+    fetch(url)
       .then((r) => r.json())
       .then(setListings)
       .catch(() => {})
@@ -30,7 +45,7 @@ function MarketplacePage() {
 
   useEffect(() => {
     fetchListings()
-  }, [sideFilter])
+  }, [sideFilter, viewMode])
 
   const handleBuy = () => {
     fetchListings()
@@ -47,29 +62,53 @@ function MarketplacePage() {
 
   return (
     <Shell>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Marketplace</h1>
           <p className="text-sm text-gray-500">Compra y vende posiciones de otros usuarios</p>
         </div>
-        <div className="flex gap-2">
-          {(['ALL', 'YES', 'NO'] as const).map((filter) => (
+        
+        <div className="flex items-center gap-4">
+          <div className="flex bg-gray-100 p-1 rounded-lg">
             <button
-              key={filter}
-              onClick={() => setSideFilter(filter)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                sideFilter === filter
-                  ? filter === 'YES'
-                    ? 'bg-green-600 text-white'
-                    : filter === 'NO'
-                    ? 'bg-red-600 text-white'
-                    : 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              onClick={() => setViewMode('active')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                viewMode === 'active' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              {filter === 'ALL' ? 'Todos' : filter}
+              Activos
             </button>
-          ))}
+            <button
+              onClick={() => setViewMode('history')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                viewMode === 'history' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Historial
+            </button>
+          </div>
+
+          {viewMode === 'active' && (
+            <div className="flex gap-2">
+              {(['ALL', 'YES', 'NO'] as const).map((filter) => (
+                <button
+                  key={filter}
+                  onClick={() => setSideFilter(filter)}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                    sideFilter === filter
+                      ? filter === 'YES'
+                        ? 'bg-green-600 text-white'
+                        : filter === 'NO'
+                        ? 'bg-red-600 text-white'
+                        : 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {filter === 'ALL' ? 'Todos' : filter}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -79,8 +118,8 @@ function MarketplacePage() {
         </div>
       ) : listings.length === 0 ? (
         <div className="text-center py-12 text-gray-500">
-          <p>No hay listings activos</p>
-          <p className="text-sm mt-2">Ve a tus posiciones para listar una venta</p>
+          <p>{viewMode === 'active' ? 'No hay listings activos' : 'No hay historial de ventas'}</p>
+          {viewMode === 'active' && <p className="text-sm mt-2">Ve a tus posiciones para listar una venta</p>}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

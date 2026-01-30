@@ -41,6 +41,8 @@ export function ListingCard({ listing, userId, userBalance, onBuy }: ListingCard
 
   const isSeller = listing.seller.id === userId
   const canAfford = userBalance >= listing.askPrice
+  // @ts-ignore - status exists on listing but might be missing from interface definition in this file
+  const status = listing.status || 'ACTIVE'
 
   const handleBuy = async () => {
     setError('')
@@ -68,6 +70,10 @@ export function ListingCard({ listing, userId, userBalance, onBuy }: ListingCard
     }
   }
 
+  const roiDisplay = listing.roi !== undefined ? listing.roi.toFixed(1) : '0.0'
+  const potReturnDisplay = listing.potentialReturn !== undefined ? listing.potentialReturn.toFixed(2) : '0.00'
+  const potProfitDisplay = listing.potentialProfit !== undefined ? listing.potentialProfit.toFixed(2) : '0.00'
+
   return (
     <>
       <Card className="hover:shadow-lg transition-shadow">
@@ -77,9 +83,21 @@ export function ListingCard({ listing, userId, userBalance, onBuy }: ListingCard
               <span className="text-sm text-gray-500">{listing.position.market.playerName}</span>
               <h4 className="font-medium text-gray-900 line-clamp-2">{listing.position.market.question}</h4>
             </div>
-            <span className={`px-2 py-1 text-xs font-medium rounded-full ${listing.position.side === 'YES' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-              {listing.position.side}
-            </span>
+            <div className="flex flex-col items-end gap-1">
+              <span className={`px-2 py-1 text-xs font-medium rounded-full ${listing.position.side === 'YES' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                {listing.position.side}
+              </span>
+              {status === 'SOLD' && (
+                <span className="px-2 py-1 text-xs font-bold rounded-full bg-blue-100 text-blue-800">
+                  VENDIDO
+                </span>
+              )}
+              {status === 'CANCELLED' && (
+                <span className="px-2 py-1 text-xs font-bold rounded-full bg-gray-200 text-gray-600">
+                  CANCELADO
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4 my-4">
@@ -87,32 +105,48 @@ export function ListingCard({ listing, userId, userBalance, onBuy }: ListingCard
               <div className="text-xl font-bold text-gray-900">${listing.askPrice.toFixed(2)}</div>
               <div className="text-xs text-gray-500">Precio</div>
             </div>
-            <div className="text-center p-2 bg-gray-50 rounded">
-              <div className={`text-xl font-bold ${listing.roi >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {listing.roi >= 0 ? '+' : ''}{listing.roi.toFixed(1)}%
+            {status === 'ACTIVE' && (
+              <div className="text-center p-2 bg-gray-50 rounded">
+                <div className={`text-xl font-bold ${listing.roi && listing.roi >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {listing.roi && listing.roi >= 0 ? '+' : ''}{roiDisplay}%
+                </div>
+                <div className="text-xs text-gray-500">ROI si gana</div>
               </div>
-              <div className="text-xs text-gray-500">ROI si gana</div>
-            </div>
+            )}
+            {status === 'SOLD' && (
+              <div className="text-center p-2 bg-gray-50 rounded">
+                 <div className="text-sm font-medium text-gray-600 mt-2">Comprador:</div>
+                 {/* @ts-ignore - buyer might be on listing object from history endpoint */}
+                 <div className="font-bold text-gray-900 truncate">{listing.buyer?.username || 'Artemis'}</div>
+              </div>
+            )}
+            {status === 'CANCELLED' && (
+              <div className="text-center p-2 bg-gray-50 rounded flex items-center justify-center">
+                 <span className="text-xs text-gray-400">Cancelado por vendedor</span>
+              </div>
+            )}
           </div>
 
           <div className="text-xs text-gray-500 space-y-1">
             <div className="flex justify-between">
               <span>Retorno potencial:</span>
-              <span className="font-medium">${listing.potentialReturn.toFixed(2)}</span>
+              <span className="font-medium">${potReturnDisplay}</span>
             </div>
-            <div className="flex justify-between">
-              <span>Ganancia potencial:</span>
-              <span className={`font-medium ${listing.potentialProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                ${listing.potentialProfit.toFixed(2)}
-              </span>
-            </div>
+            {status === 'ACTIVE' && (
+              <div className="flex justify-between">
+                <span>Ganancia potencial:</span>
+                <span className={`font-medium ${(listing.potentialProfit || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  ${potProfitDisplay}
+                </span>
+              </div>
+            )}
             <div className="flex justify-between">
               <span>Vendedor:</span>
               <span className="font-medium">{listing.seller.username}</span>
             </div>
           </div>
 
-          {!isSeller && (
+          {status === 'ACTIVE' && !isSeller && (
             <Button
               variant="primary"
               size="sm"
@@ -124,7 +158,7 @@ export function ListingCard({ listing, userId, userBalance, onBuy }: ListingCard
             </Button>
           )}
 
-          {isSeller && (
+          {status === 'ACTIVE' && isSeller && (
             <div className="mt-4 text-center text-sm text-blue-600 bg-blue-50 py-2 rounded">
               Tu listing
             </div>
@@ -145,7 +179,7 @@ export function ListingCard({ listing, userId, userBalance, onBuy }: ListingCard
             </div>
             <div className="flex justify-between">
               <span>Retorno potencial:</span>
-              <span className="font-medium text-green-600">${listing.potentialReturn.toFixed(2)}</span>
+              <span className="font-medium text-green-600">${(listing.potentialReturn || 0).toFixed(2)}</span>
             </div>
             <div className="flex justify-between">
               <span>Tu saldo después:</span>

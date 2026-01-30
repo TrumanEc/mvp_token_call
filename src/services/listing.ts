@@ -22,18 +22,22 @@ export class ListingService {
       )
 
       const askPrice = new Decimal(data.askPrice)
-      if (askPrice.greaterThan(fairValue.times(1.2))) {
-        throw new Error('Ask price too high (max 120% of fair value)')
-      }
-
-      const listing = await tx.marketplaceListing.create({
-        data: {
+      const listing = await tx.marketplaceListing.upsert({
+        where: { positionId: data.positionId },
+        create: {
           positionId: data.positionId,
           marketId: position.marketId,
           sellerId: data.userId,
           askPrice,
           suggestedPrice: fairValue,
           status: 'ACTIVE',
+        },
+        update: {
+          askPrice,
+          suggestedPrice: fairValue,
+          status: 'ACTIVE',
+          cancelledAt: null,
+          listedAt: new Date(), 
         },
         include: {
           position: { include: { market: true } },
@@ -135,7 +139,7 @@ export class ListingService {
         ...listing,
         askPrice: listing.askPrice.toNumber(),
         suggestedPrice: listing.suggestedPrice.toNumber(),
-        currentPayout: payout.toNumber(),
+        currentPayout: payout,
         potentialReturn: potentialReturn.toNumber(),
         potentialProfit: potentialProfit.toNumber(),
         roi,
@@ -171,6 +175,49 @@ export class ListingService {
       })
 
       return listing
+    })
+  }
+
+  static async getHistory(marketId?: string) {
+    const listings = await prisma.marketplaceListing.findMany({
+      where: {
+        status: { in: ['SOLD', 'CANCELLED'] },
+        ...(marketId && { marketId }),
+      },
+      include: {
+        position: { include: { market: true } },
+        seller: { select: { id: true, username: true } },
+        buyer: { select: { id: true, username: true } },
+      },
+      orderBy: { listedAt: 'desc' },
+    })
+
+    return listings.map((listing) => {
+      // For history, we can't always calculate current odds/payouts meaningfully if market changed,
+      // but showing snapshot data or current market data is acceptable.
+      // We'll stick to current market data for now.
+      const odds = OddsCalculator.calculateOdds(
+        listing.position.market.yesPool,
+        listing.position.market.noPool
+      )
+      const payout = listing.position.side === 'YES' ? odds.yesPayout : odds.noPayout
+
+      return {
+        ...listing,
+        askPrice: listing.askPrice.toNumber(),
+        suggestedPrice: listing.suggestedPrice.toNumber(),
+        // For history, current payout might differ from sold time, but useful context
+        currentPayout: payout, 
+        position: {
+          ...listing.position,
+          amount: listing.position.amount.toNumber(),
+          market: {
+            ...listing.position.market,
+            yesPool: listing.position.market.yesPool.toNumber(),
+            noPool: listing.position.market.noPool.toNumber(),
+          },
+        },
+      }
     })
   }
 

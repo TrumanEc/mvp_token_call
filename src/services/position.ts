@@ -22,6 +22,9 @@ export class PositionService {
 
       await BalanceService.deduct(tx, user.id, amount, 'BET_PLACED', `Bet ${data.amount} on ${data.side}`)
 
+      const currentOdds = OddsCalculator.calculateOdds(market.yesPool, market.noPool)
+      const initialProbability = data.side === 'YES' ? currentOdds.yesOdds : currentOdds.noOdds
+
       const position = await tx.position.create({
         data: {
           marketId: data.marketId,
@@ -30,6 +33,7 @@ export class PositionService {
           side: data.side,
           amount,
           status: 'ACTIVE',
+          initialProbability: new Decimal(initialProbability),
         },
         include: { market: true, currentOwner: true },
       })
@@ -70,7 +74,7 @@ export class PositionService {
         amount: p.amount.toNumber(),
         payout: p.payout?.toNumber(),
         fairValue: fairValue.toNumber(),
-        currentPayout: payout.toNumber(),
+        currentPayout: payout,
         potentialReturn: new Decimal(p.amount).times(payout).toNumber(),
         market: {
           ...p.market,
@@ -101,7 +105,7 @@ export class PositionService {
       amount: position.amount.toNumber(),
       payout: position.payout?.toNumber(),
       fairValue: fairValue.toNumber(),
-      currentPayout: payout.toNumber(),
+      currentPayout: payout,
       potentialReturn: new Decimal(position.amount).times(payout).toNumber(),
     }
   }

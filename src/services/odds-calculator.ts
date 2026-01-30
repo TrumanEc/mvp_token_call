@@ -10,8 +10,8 @@ export class OddsCalculator {
       return {
         yesOdds: 50,
         noOdds: 50,
-        yesPayout: new Decimal(2),
-        noPayout: new Decimal(2),
+        yesPayout: 2,
+        noPayout: 2,
       }
     }
 
@@ -21,8 +21,8 @@ export class OddsCalculator {
     return {
       yesOdds: yesOdds.toNumber(),
       noOdds: noOdds.toNumber(),
-      yesPayout: this.calculatePayout(yes, total, 0.1),
-      noPayout: this.calculatePayout(no, total, 0.1),
+      yesPayout: this.calculatePayout(yes, total, 0.1).toNumber(),
+      noPayout: this.calculatePayout(no, total, 0.1).toNumber(),
     }
   }
 

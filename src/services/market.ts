@@ -42,6 +42,7 @@ export class MarketService {
         ...p,
         amount: p.amount.toNumber(),
         payout: p.payout?.toNumber(),
+        initialProbability: p.initialProbability.toNumber(),
       })),
     }
   }

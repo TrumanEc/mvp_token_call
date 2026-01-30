@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -11,8 +11,8 @@ model User {
   id        String   @id @default(cuid())
   username  String   @unique
   email     String?  @unique
-  role      Role     @default(USER)
-  balance   Decimal  @default(1000.00) @db.Decimal(10, 2)
+  role      String   @default("USER") // Changed from Role enum
+  balance   Decimal  @default(1000.00)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -27,21 +27,16 @@ model User {
   @@index([username])
 }
 
-enum Role {
-  USER
-  ADMIN
-}
-
 model Market {
   id             String       @id @default(cuid())
   playerName     String
   question       String
   description    String?
-  status         MarketStatus @default(DRAFT)
-  outcome        Outcome?
-  yesPool        Decimal      @default(0) @db.Decimal(12, 2)
-  noPool         Decimal      @default(0) @db.Decimal(12, 2)
-  platformFee    Decimal      @default(0.10) @db.Decimal(3, 2)
+  status         String       @default("DRAFT") // Changed from MarketStatus enum
+  outcome        String?      // Changed from Outcome enum
+  yesPool        Decimal      @default(0)
+  noPool         Decimal      @default(0)
+  platformFee    Decimal      @default(0.10)
   resolutionDate DateTime
   resolvedAt     DateTime?
   createdAt      DateTime     @default(now())
@@ -54,31 +49,19 @@ model Market {
   @@index([resolutionDate])
 }
 
-enum MarketStatus {
-  DRAFT
-  ACTIVE
-  CLOSED
-  RESOLVED
-  VOIDED
-}
-
-enum Outcome {
-  YES
-  NO
-}
-
 model Position {
   id                String         @id @default(cuid())
   marketId          String
   originalOwnerId   String
   currentOwnerId    String
-  side              Side
-  amount            Decimal        @db.Decimal(10, 2)
-  status            PositionStatus @default(ACTIVE)
-  payout            Decimal?       @db.Decimal(10, 2)
+  side              String         // Changed from Side enum
+  amount            Decimal
+  status            String         @default("ACTIVE") // Changed from PositionStatus enum
+  payout            Decimal?
   isForSale         Boolean        @default(false)
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
+  initialProbability Decimal       @default(0)
   lastTransferredAt DateTime?
 
   market        Market              @relation(fields: [marketId], references: [id], onDelete: Cascade)
@@ -93,28 +76,16 @@ model Position {
   @@index([isForSale])
 }
 
-enum Side {
-  YES
-  NO
-}
-
-enum PositionStatus {
-  ACTIVE
-  WON
-  LOST
-  REFUNDED
-}
-
 model MarketplaceListing {
   id             String        @id @default(cuid())
   positionId     String        @unique
   marketId       String
   sellerId       String
   buyerId        String?
-  askPrice       Decimal       @db.Decimal(10, 2)
-  suggestedPrice Decimal       @db.Decimal(10, 2)
-  platformFee    Decimal       @default(0.025) @db.Decimal(4, 3)
-  status         ListingStatus @default(ACTIVE)
+  askPrice       Decimal
+  suggestedPrice Decimal
+  platformFee    Decimal       @default(0.025)
+  status         String        @default("ACTIVE") // Changed from ListingStatus enum
   listedAt       DateTime      @default(now())
   soldAt         DateTime?
   cancelledAt    DateTime?
@@ -129,18 +100,12 @@ model MarketplaceListing {
   @@index([sellerId])
 }
 
-enum ListingStatus {
-  ACTIVE
-  SOLD
-  CANCELLED
-}
-
 model PositionTransfer {
   id            String   @id @default(cuid())
   positionId    String
   fromUserId    String
   toUserId      String
-  price         Decimal  @db.Decimal(10, 2)
+  price         Decimal
   listingId     String?
   transferredAt DateTime @default(now())
 
@@ -156,10 +121,10 @@ model PositionTransfer {
 model Transaction {
   id            String          @id @default(cuid())
   userId        String
-  type          TransactionType
-  amount        Decimal         @db.Decimal(10, 2)
-  balanceBefore Decimal         @db.Decimal(10, 2)
-  balanceAfter  Decimal         @db.Decimal(10, 2)
+  type          String          // Changed from TransactionType enum
+  amount        Decimal
+  balanceBefore Decimal
+  balanceAfter  Decimal
   reference     String?
   description   String
   createdAt     DateTime        @default(now())
@@ -169,14 +134,4 @@ model Transaction {
   @@index([userId])
   @@index([type])
   @@index([createdAt])
-}
-
-enum TransactionType {
-  INITIAL_BALANCE
-  BET_PLACED
-  BET_REFUNDED
-  POSITION_SOLD
-  POSITION_PURCHASED
-  PAYOUT_RECEIVED
-  ADMIN_ADJUSTMENT
 }

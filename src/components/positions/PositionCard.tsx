@@ -129,7 +129,7 @@ export function PositionCard({ position, userId, onSell }: PositionCardProps) {
         <div className="space-y-4">
           <div className="text-sm text-gray-600">
             <p>Valor sugerido: <strong>${position.fairValue.toFixed(2)}</strong></p>
-            <p className="text-xs mt-1">Máximo permitido: ${(position.fairValue * 1.2).toFixed(2)} (120%)</p>
+            <p className="text-xs mt-1">Precio sugerido basado en la probabilidad actual.</p>
           </div>
 
           <Input
@@ -139,6 +139,22 @@ export function PositionCard({ position, userId, onSell }: PositionCardProps) {
             onChange={(e) => setAskPrice(e.target.value)}
             step="0.01"
           />
+
+          <div className="bg-gray-50 p-3 rounded-lg text-sm">
+            <div className="flex justify-between mb-1">
+              <span className="text-gray-600">Inversión original:</span>
+              <span className="font-medium">${position.amount.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Ganancia/Pérdida proyectada:</span>
+              <span className={`font-bold ${parseFloat(askPrice || '0') - position.amount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {parseFloat(askPrice || '0') - position.amount >= 0 ? '+' : ''}
+                ${(parseFloat(askPrice || '0') - position.amount).toFixed(2)}
+                {' '}
+                ({((parseFloat(askPrice || '0') - position.amount) / position.amount * 100).toFixed(1)}%)
+              </span>
+            </div>
+          </div>
 
           {error && <p className="text-red-500 text-sm">{error}</p>}
 

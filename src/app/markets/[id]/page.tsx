@@ -6,12 +6,14 @@ import { UserProvider, useUser } from '@/contexts/UserContext'
 import { Shell } from '@/components/layout/Shell'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { PlaceBetForm } from '@/components/markets/PlaceBetForm'
+import { ListingCard } from '@/components/marketplace/ListingCard'
 
 function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const router = useRouter()
   const { user, loading, refreshBalance } = useUser()
   const [market, setMarket] = useState<any>(null)
+  const [activeListings, setActiveListings] = useState<any[]>([])
   const [loadingMarket, setLoadingMarket] = useState(true)
 
   useEffect(() => {
@@ -28,12 +30,21 @@ function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
       .finally(() => setLoadingMarket(false))
   }
 
+  const fetchListings = () => {
+    fetch(`/api/marketplace?marketId=${id}`)
+      .then((r) => r.json())
+      .then(setActiveListings)
+      .catch(() => {})
+  }
+
   useEffect(() => {
     fetchMarket()
+    fetchListings()
   }, [id])
 
-  const handleBetSuccess = () => {
+  const handleTransactionSuccess = () => {
     fetchMarket()
+    fetchListings()
     refreshBalance()
   }
 
@@ -88,21 +99,38 @@ function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-6">
-                  <div className="text-center p-6 bg-green-50 rounded-xl">
-                    <div className="text-4xl font-bold text-green-600">{market.odds.yesOdds.toFixed(1)}%</div>
-                    <div className="text-lg text-green-700 font-medium mt-1">YES</div>
-                    <div className="text-sm text-gray-500 mt-2">Pool: ${market.yesPool.toFixed(2)}</div>
-                    <div className="text-sm text-gray-500">Payout: {market.odds.yesPayout.toFixed(2)}x</div>
+                  <div className="text-center p-6 bg-green-50/80 border border-green-100 rounded-xl">
+                    <div className="text-4xl font-bold text-green-700">{market.odds.yesOdds.toFixed(1)}%</div>
+                    <div className="text-lg text-green-800 font-bold mt-1">YES</div>
+                    <div className="text-sm text-green-900/80 mt-2 font-medium">Pool: ${market.yesPool.toFixed(2)}</div>
+                    <div className="text-sm text-green-900/80 font-medium">Payout: {market.odds.yesPayout.toFixed(2)}x</div>
                   </div>
-                  <div className="text-center p-6 bg-red-50 rounded-xl">
-                    <div className="text-4xl font-bold text-red-600">{market.odds.noOdds.toFixed(1)}%</div>
-                    <div className="text-lg text-red-700 font-medium mt-1">NO</div>
-                    <div className="text-sm text-gray-500 mt-2">Pool: ${market.noPool.toFixed(2)}</div>
-                    <div className="text-sm text-gray-500">Payout: {market.odds.noPayout.toFixed(2)}x</div>
+                  <div className="text-center p-6 bg-red-50/80 border border-red-100 rounded-xl">
+                    <div className="text-4xl font-bold text-red-700">{market.odds.noOdds.toFixed(1)}%</div>
+                    <div className="text-lg text-red-800 font-bold mt-1">NO</div>
+                    <div className="text-sm text-red-900/80 mt-2 font-medium">Pool: ${market.noPool.toFixed(2)}</div>
+                    <div className="text-sm text-red-900/80 font-medium">Payout: {market.odds.noPayout.toFixed(2)}x</div>
                   </div>
                 </div>
               </CardContent>
             </Card>
+
+            {activeListings.length > 0 && (
+              <div className="space-y-4">
+                <h2 className="text-lg font-semibold">Mercado Secundario (Ofertas)</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {activeListings.map((listing) => (
+                    <ListingCard
+                      key={listing.id}
+                      listing={listing}
+                      userId={user.id}
+                      userBalance={user.balance}
+                      onBuy={handleTransactionSuccess}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
 
             {market.positions.length > 0 && (
               <Card>
@@ -112,14 +140,19 @@ function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
                 <CardContent>
                   <div className="space-y-3">
                     {market.positions.map((pos: any) => (
-                      <div key={pos.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div key={pos.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
                         <div className="flex items-center gap-3">
-                          <span className={`px-2 py-1 text-xs font-medium rounded ${pos.side === 'YES' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                          <span className={`px-2 py-1 text-xs font-bold rounded ${pos.side === 'YES' ? 'bg-green-100 text-green-800 border border-green-200' : 'bg-red-100 text-red-800 border border-red-200'}`}>
                             {pos.side}
                           </span>
                           <span className="text-sm text-gray-600">{pos.currentOwner.username}</span>
                         </div>
-                        <span className="font-medium">${pos.amount.toFixed(2)}</span>
+                        <div className="text-right">
+                          <div className="font-medium">${pos.amount.toFixed(2)}</div>
+                          {pos.initialProbability > 0 && (
+                            <div className="text-xs text-gray-500">(@ {pos.initialProbability.toFixed(1)}%)</div>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -145,7 +178,7 @@ function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
                       yesPayout: market.odds.yesPayout,
                       noPayout: market.odds.noPayout,
                     }}
-                    onSuccess={handleBetSuccess}
+                    onSuccess={handleTransactionSuccess}
                   />
                 </CardContent>
               </Card>
