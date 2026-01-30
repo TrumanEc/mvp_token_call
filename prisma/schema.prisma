@@ -1,0 +1,182 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  email     String?  @unique
+  role      Role     @default(USER)
+  balance   Decimal  @default(1000.00) @db.Decimal(10, 2)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  originalPositions  Position[] @relation("OriginalOwner")
+  currentPositions   Position[] @relation("CurrentOwner")
+  sellListings       MarketplaceListing[] @relation("SellerListings")
+  purchases          MarketplaceListing[] @relation("BuyerListings")
+  transfersFrom      PositionTransfer[]   @relation("TransfersFrom")
+  transfersTo        PositionTransfer[]   @relation("TransfersTo")
+  transactions       Transaction[]
+
+  @@index([username])
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model Market {
+  id             String       @id @default(cuid())
+  playerName     String
+  question       String
+  description    String?
+  status         MarketStatus @default(DRAFT)
+  outcome        Outcome?
+  yesPool        Decimal      @default(0) @db.Decimal(12, 2)
+  noPool         Decimal      @default(0) @db.Decimal(12, 2)
+  platformFee    Decimal      @default(0.10) @db.Decimal(3, 2)
+  resolutionDate DateTime
+  resolvedAt     DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  positions Position[]
+  listings  MarketplaceListing[]
+
+  @@index([status])
+  @@index([resolutionDate])
+}
+
+enum MarketStatus {
+  DRAFT
+  ACTIVE
+  CLOSED
+  RESOLVED
+  VOIDED
+}
+
+enum Outcome {
+  YES
+  NO
+}
+
+model Position {
+  id                String         @id @default(cuid())
+  marketId          String
+  originalOwnerId   String
+  currentOwnerId    String
+  side              Side
+  amount            Decimal        @db.Decimal(10, 2)
+  status            PositionStatus @default(ACTIVE)
+  payout            Decimal?       @db.Decimal(10, 2)
+  isForSale         Boolean        @default(false)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  lastTransferredAt DateTime?
+
+  market        Market              @relation(fields: [marketId], references: [id], onDelete: Cascade)
+  originalOwner User                @relation("OriginalOwner", fields: [originalOwnerId], references: [id])
+  currentOwner  User                @relation("CurrentOwner", fields: [currentOwnerId], references: [id])
+  listing       MarketplaceListing?
+  transfers     PositionTransfer[]
+
+  @@index([marketId])
+  @@index([currentOwnerId])
+  @@index([status])
+  @@index([isForSale])
+}
+
+enum Side {
+  YES
+  NO
+}
+
+enum PositionStatus {
+  ACTIVE
+  WON
+  LOST
+  REFUNDED
+}
+
+model MarketplaceListing {
+  id             String        @id @default(cuid())
+  positionId     String        @unique
+  marketId       String
+  sellerId       String
+  buyerId        String?
+  askPrice       Decimal       @db.Decimal(10, 2)
+  suggestedPrice Decimal       @db.Decimal(10, 2)
+  platformFee    Decimal       @default(0.025) @db.Decimal(4, 3)
+  status         ListingStatus @default(ACTIVE)
+  listedAt       DateTime      @default(now())
+  soldAt         DateTime?
+  cancelledAt    DateTime?
+
+  position Position @relation(fields: [positionId], references: [id], onDelete: Cascade)
+  market   Market   @relation(fields: [marketId], references: [id], onDelete: Cascade)
+  seller   User     @relation("SellerListings", fields: [sellerId], references: [id])
+  buyer    User?    @relation("BuyerListings", fields: [buyerId], references: [id])
+
+  @@index([marketId])
+  @@index([status])
+  @@index([sellerId])
+}
+
+enum ListingStatus {
+  ACTIVE
+  SOLD
+  CANCELLED
+}
+
+model PositionTransfer {
+  id            String   @id @default(cuid())
+  positionId    String
+  fromUserId    String
+  toUserId      String
+  price         Decimal  @db.Decimal(10, 2)
+  listingId     String?
+  transferredAt DateTime @default(now())
+
+  position Position @relation(fields: [positionId], references: [id], onDelete: Cascade)
+  fromUser User     @relation("TransfersFrom", fields: [fromUserId], references: [id])
+  toUser   User     @relation("TransfersTo", fields: [toUserId], references: [id])
+
+  @@index([positionId])
+  @@index([fromUserId])
+  @@index([toUserId])
+}
+
+model Transaction {
+  id            String          @id @default(cuid())
+  userId        String
+  type          TransactionType
+  amount        Decimal         @db.Decimal(10, 2)
+  balanceBefore Decimal         @db.Decimal(10, 2)
+  balanceAfter  Decimal         @db.Decimal(10, 2)
+  reference     String?
+  description   String
+  createdAt     DateTime        @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt])
+}
+
+enum TransactionType {
+  INITIAL_BALANCE
+  BET_PLACED
+  BET_REFUNDED
+  POSITION_SOLD
+  POSITION_PURCHASED
+  PAYOUT_RECEIVED
+  ADMIN_ADJUSTMENT
+}
