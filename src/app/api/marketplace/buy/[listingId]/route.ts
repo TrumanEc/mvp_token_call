@@ -3,14 +3,14 @@ import { ListingService } from '@/services/listing'
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ listingId: string }> }) {
   const { listingId } = await params
-  const { buyerId } = await request.json()
+  const { buyerId, amount } = await request.json()
 
   if (!buyerId) {
     return NextResponse.json({ error: 'buyerId required' }, { status: 400 })
   }
 
   try {
-    const listing = await ListingService.buy({ listingId, buyerId })
+    const listing = await ListingService.buy({ listingId, buyerId, amount })
     return NextResponse.json(listing)
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Purchase failed'

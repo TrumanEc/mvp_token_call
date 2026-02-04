@@ -38,6 +38,7 @@ export function ListingCard({ listing, userId, userBalance, onBuy }: ListingCard
   const [showBuyModal, setShowBuyModal] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [buyAmount, setBuyAmount] = useState<string>(listing.askPrice.toString())
 
   const isSeller = listing.seller.id === userId
   const canAfford = userBalance >= listing.askPrice
@@ -49,10 +50,18 @@ export function ListingCard({ listing, userId, userBalance, onBuy }: ListingCard
     setLoading(true)
 
     try {
+      const amountNum = parseFloat(buyAmount)
+      if (isNaN(amountNum) || amountNum <= 0) {
+        throw new Error('Monto inválido')
+      }
+      if (amountNum > listing.askPrice) {
+        throw new Error('No puedes comprar más del precio listado')
+      }
+
       const res = await fetch(`/api/marketplace/buy/${listing.id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ buyerId: userId }),
+        body: JSON.stringify({ buyerId: userId, amount: amountNum }),
       })
 
       const data = await res.json()
@@ -152,9 +161,12 @@ export function ListingCard({ listing, userId, userBalance, onBuy }: ListingCard
               size="sm"
               className="w-full mt-4"
               onClick={() => setShowBuyModal(true)}
-              disabled={!canAfford}
+              // Note: canAfford is checked against the full askPrice. 
+              // Even if they can't afford the full price, they might afford a partial amount.
+              // So I should probably allow clicking the button if they have ANY balance.
+              disabled={userBalance <= 0}
             >
-              {canAfford ? `Comprar por $${listing.askPrice.toFixed(2)}` : 'Saldo insuficiente'}
+              {userBalance > 0 ? `Comprar (Total o Parcial)` : 'Saldo insuficiente'}
             </Button>
           )}
 
@@ -168,22 +180,48 @@ export function ListingCard({ listing, userId, userBalance, onBuy }: ListingCard
 
       <Modal isOpen={showBuyModal} onClose={() => setShowBuyModal(false)} title="Confirmar Compra">
         <div className="space-y-4">
-          <div className="bg-gray-50 p-4 rounded-lg space-y-2 text-sm">
-            <div className="flex justify-between">
+          <div className="bg-gray-50 p-4 rounded-lg space-y-3 text-sm">
+            <div className="flex justify-between items-center">
               <span>Posición:</span>
-              <span className="font-medium">{listing.position.side}</span>
+              <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${listing.position.side === 'YES' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                {listing.position.side}
+              </span>
             </div>
-            <div className="flex justify-between">
-              <span>Precio:</span>
-              <span className="font-medium">${listing.askPrice.toFixed(2)}</span>
+            
+            <div className="space-y-1">
+              <label className="text-xs text-gray-500">¿Cuánto quieres comprar? (Max: ${listing.askPrice.toFixed(2)})</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">$</span>
+                <input
+                  type="number"
+                  value={buyAmount}
+                  onChange={(e) => setBuyAmount(e.target.value)}
+                  className="w-full pl-7 pr-4 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none"
+                  placeholder="0.00"
+                  step="0.01"
+                  min="0.01"
+                  max={listing.askPrice}
+                />
+              </div>
             </div>
-            <div className="flex justify-between">
-              <span>Retorno potencial:</span>
-              <span className="font-medium text-green-600">${(listing.potentialReturn || 0).toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Tu saldo después:</span>
-              <span className="font-medium">${(userBalance - listing.askPrice).toFixed(2)}</span>
+
+            <div className="pt-2 border-t border-gray-100 space-y-2">
+              <div className="flex justify-between">
+                <span>Precio a pagar:</span>
+                <span className="font-bold text-gray-900">${parseFloat(buyAmount || '0').toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Retorno proporcional:</span>
+                <span className="font-medium text-green-600">
+                  ${((listing.potentialReturn * (parseFloat(buyAmount || '0') / listing.askPrice)) || 0).toFixed(2)}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>Tu saldo después:</span>
+                <span className="font-medium text-gray-600">
+                  ${(userBalance - (parseFloat(buyAmount || '0'))).toFixed(2)}
+                </span>
+              </div>
             </div>
           </div>
 

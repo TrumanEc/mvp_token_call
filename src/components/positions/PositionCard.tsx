@@ -29,6 +29,7 @@ interface PositionCardProps {
 
 export function PositionCard({ position, userId, onSell }: PositionCardProps) {
   const [showSellModal, setShowSellModal] = useState(false)
+  const [sellAmount, setSellAmount] = useState(position.amount.toFixed(2))
   const [askPrice, setAskPrice] = useState(position.fairValue.toFixed(2))
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -36,15 +37,30 @@ export function PositionCard({ position, userId, onSell }: PositionCardProps) {
   const profit = position.potentialReturn - position.amount
   const profitPct = ((profit / position.amount) * 100).toFixed(1)
 
+  // Calculate proportional fair value based on sell amount
+  const sellAmountNum = parseFloat(sellAmount) || 0
+  const proportionalFairValue = (sellAmountNum / position.amount) * position.fairValue
+
   const handleSell = async () => {
     setError('')
     setLoading(true)
 
     try {
+      const amountToSell = parseFloat(sellAmount)
+      const priceToAsk = parseFloat(askPrice)
+
+      if (amountToSell <= 0 || amountToSell > position.amount) {
+        throw new Error('Cantidad inválida')
+      }
+
       const res = await fetch(`/api/positions/${position.id}/list`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, askPrice: parseFloat(askPrice) }),
+        body: JSON.stringify({ 
+          userId, 
+          askPrice: priceToAsk,
+          amount: amountToSell < position.amount ? amountToSell : undefined 
+        }),
       })
 
       const data = await res.json()
@@ -60,6 +76,14 @@ export function PositionCard({ position, userId, onSell }: PositionCardProps) {
     } finally {
       setLoading(false)
     }
+  }
+
+  // Update ask price when sell amount changes
+  const handleSellAmountChange = (value: string) => {
+    setSellAmount(value)
+    const newAmount = parseFloat(value) || 0
+    const newFairValue = (newAmount / position.amount) * position.fairValue
+    setAskPrice(newFairValue.toFixed(2))
   }
 
   const statusColors = {
@@ -128,13 +152,59 @@ export function PositionCard({ position, userId, onSell }: PositionCardProps) {
       <Modal isOpen={showSellModal} onClose={() => setShowSellModal(false)} title="Vender Posición">
         <div className="space-y-4">
           <div className="text-sm text-gray-600">
-            <p>Valor sugerido: <strong>${position.fairValue.toFixed(2)}</strong></p>
+            <p>Posición total disponible: <strong>${position.amount.toFixed(2)}</strong></p>
+            <p className="text-xs mt-1">Puedes vender toda o una parte de tu posición.</p>
+          </div>
+
+          <Input
+            type="number"
+            label="Cantidad a vender ($)"
+            value={sellAmount}
+            onChange={(e) => handleSellAmountChange(e.target.value)}
+            step="0.01"
+            min="0.01"
+            max={position.amount.toString()}
+          />
+
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => handleSellAmountChange((position.amount * 0.25).toFixed(2))}
+            >
+              25%
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => handleSellAmountChange((position.amount * 0.5).toFixed(2))}
+            >
+              50%
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => handleSellAmountChange((position.amount * 0.75).toFixed(2))}
+            >
+              75%
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => handleSellAmountChange(position.amount.toFixed(2))}
+            >
+              100%
+            </Button>
+          </div>
+
+          <div className="text-sm text-gray-600">
+            <p>Valor sugerido: <strong>${proportionalFairValue.toFixed(2)}</strong></p>
             <p className="text-xs mt-1">Precio sugerido basado en la probabilidad actual.</p>
           </div>
 
           <Input
             type="number"
-            label="Precio de venta"
+            label="Precio de venta ($)"
             value={askPrice}
             onChange={(e) => setAskPrice(e.target.value)}
             step="0.01"
@@ -142,16 +212,20 @@ export function PositionCard({ position, userId, onSell }: PositionCardProps) {
 
           <div className="bg-gray-50 p-3 rounded-lg text-sm">
             <div className="flex justify-between mb-1">
-              <span className="text-gray-600">Inversión original:</span>
-              <span className="font-medium">${position.amount.toFixed(2)}</span>
+              <span className="text-gray-600">Cantidad a vender:</span>
+              <span className="font-medium">${sellAmountNum.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between mb-1">
+              <span className="text-gray-600">Inversión proporcional:</span>
+              <span className="font-medium">${sellAmountNum.toFixed(2)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Ganancia/Pérdida proyectada:</span>
-              <span className={`font-bold ${parseFloat(askPrice || '0') - position.amount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {parseFloat(askPrice || '0') - position.amount >= 0 ? '+' : ''}
-                ${(parseFloat(askPrice || '0') - position.amount).toFixed(2)}
+              <span className={`font-bold ${parseFloat(askPrice || '0') - sellAmountNum >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {parseFloat(askPrice || '0') - sellAmountNum >= 0 ? '+' : ''}
+                ${(parseFloat(askPrice || '0') - sellAmountNum).toFixed(2)}
                 {' '}
-                ({((parseFloat(askPrice || '0') - position.amount) / position.amount * 100).toFixed(1)}%)
+                ({sellAmountNum > 0 ? ((parseFloat(askPrice || '0') - sellAmountNum) / sellAmountNum * 100).toFixed(1) : 0}%)
               </span>
             </div>
           </div>

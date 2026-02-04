@@ -36,6 +36,7 @@ model Market {
   outcome        String?      // Changed from Outcome enum
   yesPool        Decimal      @default(0)
   noPool         Decimal      @default(0)
+  maxPool        Decimal      @default(20000)
   platformFee    Decimal      @default(0.10)
   resolutionDate DateTime
   resolvedAt     DateTime?

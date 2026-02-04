@@ -24,6 +24,7 @@ function AdminPage() {
     question: '',
     description: '',
     resolutionDate: '',
+    maxPool: '20000',
   })
 
   useEffect(() => {
@@ -50,11 +51,14 @@ function AdminPage() {
       const res = await fetch('/api/markets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newMarket),
+        body: JSON.stringify({
+          ...newMarket,
+          maxPool: parseFloat(newMarket.maxPool) || 20000,
+        }),
       })
       if (res.ok) {
         setShowCreateModal(false)
-        setNewMarket({ playerName: '', question: '', description: '', resolutionDate: '' })
+        setNewMarket({ playerName: '', question: '', description: '', resolutionDate: '', maxPool: '20000' })
         fetchMarkets()
       }
     } finally {
@@ -170,6 +174,14 @@ function AdminPage() {
             value={newMarket.resolutionDate}
             onChange={(e) => setNewMarket({ ...newMarket, resolutionDate: e.target.value })}
           />
+          <Input
+            type="number"
+            label="Límite de Pool ($)"
+            value={newMarket.maxPool}
+            onChange={(e) => setNewMarket({ ...newMarket, maxPool: e.target.value })}
+            placeholder="20000"
+          />
+          <p className="text-xs text-gray-500">Cuando el pool total alcance este límite, solo se podrá comprar en el mercado secundario.</p>
           <div className="flex gap-3">
             <Button variant="outline" onClick={() => setShowCreateModal(false)} className="flex-1">
               Cancelar

@@ -1,7 +1,8 @@
 import { prisma } from '@/lib/prisma'
 import { Decimal } from '@prisma/client/runtime/library'
 import { BalanceService } from './balance'
-import { Outcome } from '@prisma/client'
+
+export type Outcome = 'YES' | 'NO'
 
 export class SettlementService {
   static async resolve(marketId: string, outcome: Outcome | 'VOID') {

@@ -1,6 +1,8 @@
 import { prisma } from '@/lib/prisma'
+import { Decimal } from '@prisma/client/runtime/library'
 import { OddsCalculator } from './odds-calculator'
-import { MarketStatus } from '@prisma/client'
+
+export type MarketStatus = 'DRAFT' | 'ACTIVE' | 'CLOSED' | 'RESOLVED' | 'VOIDED'
 
 export class MarketService {
   static async getAll(status?: MarketStatus) {
@@ -37,6 +39,7 @@ export class MarketService {
       ...market,
       yesPool: market.yesPool.toNumber(),
       noPool: market.noPool.toNumber(),
+      maxPool: market.maxPool.toNumber(),
       odds,
       positions: market.positions.map((p) => ({
         ...p,
@@ -52,10 +55,12 @@ export class MarketService {
     question: string
     description?: string
     resolutionDate: Date
+    maxPool?: number
   }) {
     return prisma.market.create({
       data: {
         ...data,
+        maxPool: data.maxPool ? new Decimal(data.maxPool) : undefined,
         status: 'DRAFT',
       },
     })

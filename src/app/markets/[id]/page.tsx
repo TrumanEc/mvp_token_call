@@ -112,6 +112,35 @@ function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
                     <div className="text-sm text-red-900/80 font-medium">Payout: {market.odds.noPayout.toFixed(2)}x</div>
                   </div>
                 </div>
+
+                {/* Pool Limit Progress */}
+                {market.maxPool && (
+                  <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                    <div className="flex justify-between text-sm text-gray-600 mb-2">
+                      <span>Pool Total</span>
+                      <span className="font-medium">
+                        ${(market.yesPool + market.noPool).toFixed(2)} / ${market.maxPool.toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-3">
+                      <div 
+                        className={`h-3 rounded-full transition-all ${
+                          (market.yesPool + market.noPool) >= market.maxPool 
+                            ? 'bg-red-500' 
+                            : 'bg-blue-500'
+                        }`}
+                        style={{ 
+                          width: `${Math.min(100, ((market.yesPool + market.noPool) / market.maxPool) * 100)}%` 
+                        }}
+                      />
+                    </div>
+                    {(market.yesPool + market.noPool) >= market.maxPool && (
+                      <p className="text-sm text-red-600 mt-2 font-medium">
+                        🔒 Límite alcanzado - Solo disponible en mercado secundario
+                      </p>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
 

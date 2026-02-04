@@ -2,7 +2,8 @@ import { prisma } from '@/lib/prisma'
 import { Decimal } from '@prisma/client/runtime/library'
 import { OddsCalculator } from './odds-calculator'
 import { BalanceService } from './balance'
-import { Side } from '@prisma/client'
+
+export type Side = 'YES' | 'NO'
 
 export class PositionService {
   static async create(data: { marketId: string; userId: string; side: Side; amount: number }) {
@@ -18,6 +19,11 @@ export class PositionService {
       const amount = new Decimal(data.amount)
       if (new Decimal(user.balance).lessThan(amount)) {
         throw new Error('Insufficient balance')
+      }
+
+      const totalPool = market.yesPool.plus(market.noPool)
+      if (totalPool.plus(amount).greaterThan(market.maxPool)) {
+        throw new Error('Market cap reached. Please buy from the secondary market.')
       }
 
       await BalanceService.deduct(tx, user.id, amount, 'BET_PLACED', `Bet ${data.amount} on ${data.side}`)
@@ -65,7 +71,7 @@ export class PositionService {
       const odds = OddsCalculator.calculateOdds(p.market.yesPool, p.market.noPool)
       const payout = p.side === 'YES' ? odds.yesPayout : odds.noPayout
       const fairValue = OddsCalculator.calculateFairValue(
-        { amount: p.amount, side: p.side },
+        { amount: p.amount, side: p.side as Side },
         { yesPool: p.market.yesPool, noPool: p.market.noPool }
       )
 
@@ -96,7 +102,7 @@ export class PositionService {
     const odds = OddsCalculator.calculateOdds(position.market.yesPool, position.market.noPool)
     const payout = position.side === 'YES' ? odds.yesPayout : odds.noPayout
     const fairValue = OddsCalculator.calculateFairValue(
-      { amount: position.amount, side: position.side },
+      { amount: position.amount, side: position.side as Side },
       { yesPool: position.market.yesPool, noPool: position.market.noPool }
     )
 
@@ -108,5 +114,61 @@ export class PositionService {
       currentPayout: payout,
       potentialReturn: new Decimal(position.amount).times(payout).toNumber(),
     }
+  }
+
+  /**
+   * Split a position into two parts for fractional selling.
+   * @param tx - Prisma transaction client
+   * @param positionId - The position to split
+   * @param userId - The current owner (for validation)
+   * @param splitAmount - The amount to split off (for listing)
+   * @returns The new position created from the split
+   */
+  static async split(
+    tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
+    positionId: string,
+    userId: string,
+    splitAmount: number
+  ) {
+    const position = await tx.position.findUnique({
+      where: { id: positionId },
+      include: { market: true },
+    })
+
+    if (!position) throw new Error('Position not found')
+    if (position.currentOwnerId !== userId) throw new Error('Not position owner')
+    if (position.isForSale) throw new Error('Position already listed')
+    if (position.market.status !== 'ACTIVE') throw new Error('Market not active')
+
+    const splitDecimal = new Decimal(splitAmount)
+    if (splitDecimal.lessThanOrEqualTo(0)) {
+      throw new Error('Split amount must be positive')
+    }
+    if (splitDecimal.greaterThanOrEqualTo(position.amount)) {
+      throw new Error('Split amount must be less than position amount')
+    }
+
+    // Reduce the original position amount
+    await tx.position.update({
+      where: { id: positionId },
+      data: { amount: position.amount.minus(splitDecimal) },
+    })
+
+    // Create a new position with the split amount
+    const newPosition = await tx.position.create({
+      data: {
+        marketId: position.marketId,
+        originalOwnerId: position.originalOwnerId,
+        currentOwnerId: position.currentOwnerId,
+        side: position.side,
+        amount: splitDecimal,
+        status: 'ACTIVE',
+        initialProbability: position.initialProbability,
+        isForSale: true, // Mark for sale immediately
+      },
+      include: { market: true },
+    })
+
+    return newPosition
   }
 }
