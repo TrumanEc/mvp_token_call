@@ -5,12 +5,26 @@ import { useRouter } from 'next/navigation'
 import { UserProvider, useUser } from '@/contexts/UserContext'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent } from '@/components/ui/Card'
+import { Modal } from '@/components/ui/Modal'
+import { Input } from '@/components/ui/Input'
 
 function LoginPage() {
   const router = useRouter()
   const { user, login, loading } = useUser()
   const [users, setUsers] = useState<{ id: string; username: string; balance: number; role: string }[]>([])
   const [loadingUsers, setLoadingUsers] = useState(true)
+  const [showRegisterModal, setShowRegisterModal] = useState(false)
+  const [newUserInfo, setNewUserInfo] = useState({ username: '', email: '' })
+  const [registering, setRegistering] = useState(false)
+
+  const fetchUsers = () => {
+    setLoadingUsers(true)
+    fetch('/api/users')
+      .then((r) => r.json())
+      .then(setUsers)
+      .catch(() => {})
+      .finally(() => setLoadingUsers(false))
+  }
 
   useEffect(() => {
     if (user && !loading) {
@@ -19,16 +33,37 @@ function LoginPage() {
   }, [user, loading, router])
 
   useEffect(() => {
-    fetch('/api/users')
-      .then((r) => r.json())
-      .then(setUsers)
-      .catch(() => {})
-      .finally(() => setLoadingUsers(false))
+    fetchUsers()
   }, [])
 
   const handleLogin = async (username: string) => {
     await login(username)
     router.push('/markets')
+  }
+
+  const handleRegister = async () => {
+    if (!newUserInfo.username) return
+    setRegistering(true)
+    try {
+      const res = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newUserInfo),
+      })
+      if (res.ok) {
+        const user = await res.json()
+        setShowRegisterModal(false)
+        setNewUserInfo({ username: '', email: '' })
+        fetchUsers()
+        // Optionally auto-login
+        handleLogin(user.username)
+      } else {
+        const error = await res.json()
+        alert(error.error || 'Error al crear usuario')
+      }
+    } finally {
+      setRegistering(false)
+    }
   }
 
   if (loading) {
@@ -81,8 +116,54 @@ function LoginPage() {
               ))}
             </div>
           )}
+          <div className="mt-6 pt-6 border-t border-gray-100">
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => setShowRegisterModal(true)}
+            >
+              Crear Nuevo Usuario
+            </Button>
+          </div>
         </CardContent>
       </Card>
+
+      <Modal
+        isOpen={showRegisterModal}
+        onClose={() => setShowRegisterModal(false)}
+        title="Crear Nuevo Usuario"
+      >
+        <div className="space-y-4">
+          <Input
+            label="Username"
+            value={newUserInfo.username}
+            onChange={(e) => setNewUserInfo({ ...newUserInfo, username: e.target.value })}
+            placeholder="Ej: messi10"
+          />
+          <Input
+            label="Email (opcional)"
+            value={newUserInfo.email}
+            onChange={(e) => setNewUserInfo({ ...newUserInfo, email: e.target.value })}
+            placeholder="messi@example.com"
+          />
+          <div className="flex gap-3 mt-6">
+            <Button
+              variant="outline"
+              onClick={() => setShowRegisterModal(false)}
+              className="flex-1"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleRegister}
+              loading={registering}
+              className="flex-1"
+            >
+              Crear y Entrar
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       <p className="mt-6 text-sm text-gray-500">
         MVP v1.0 — Predicciones de Transferencias

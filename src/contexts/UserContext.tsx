@@ -13,6 +13,7 @@ interface UserContextType {
   user: User | null
   setUser: (user: User | null) => void
   login: (username: string) => Promise<void>
+  createUser: (username: string, email?: string) => Promise<boolean>
   refreshBalance: () => Promise<void>
   loading: boolean
 }
@@ -30,6 +31,24 @@ export function UserProvider({ children }: { children: ReactNode }) {
       login(parsed.username).catch(() => setLoading(false))
     } else {
       setLoading(false)
+    }
+  }, [])
+
+  const createUser = useCallback(async (username: string, email?: string) => {
+    try {
+      const res = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, email }),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Failed to create user')
+      }
+      return true
+    } catch (error) {
+      console.error('Error creating user:', error)
+      return false
     }
   }, [])
 
@@ -60,7 +79,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   }, [user])
 
   return (
-    <UserContext.Provider value={{ user, setUser, login, refreshBalance, loading }}>
+    <UserContext.Provider value={{ user, setUser, login, createUser, refreshBalance, loading }}>
       {children}
     </UserContext.Provider>
   )

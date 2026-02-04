@@ -18,6 +18,11 @@ function AdminPage() {
   const [showResolveModal, setShowResolveModal] = useState<any>(null)
   const [creating, setCreating] = useState(false)
   const [resolving, setResolving] = useState(false)
+  const [activeTab, setActiveTab] = useState<'markets' | 'users'>('markets')
+  const [users, setUsers] = useState<any[]>([])
+  const [loadingUsers, setLoadingUsers] = useState(false)
+  const [showCreateUserModal, setShowCreateUserModal] = useState(false)
+  const [newUser, setNewUser] = useState({ username: '', email: '' })
 
   const [newMarket, setNewMarket] = useState({
     playerName: '',
@@ -41,8 +46,20 @@ function AdminPage() {
       .finally(() => setLoadingMarkets(false))
   }
 
+  const fetchUsers = async () => {
+    setLoadingUsers(true)
+    try {
+      const res = await fetch('/api/users')
+      const data = await res.json()
+      setUsers(data)
+    } finally {
+      setLoadingUsers(false)
+    }
+  }
+
   useEffect(() => {
     fetchMarkets()
+    fetchUsers()
   }, [])
 
   const handleCreate = async () => {
@@ -90,6 +107,24 @@ function AdminPage() {
     }
   }
 
+  const handleCreateUser = async () => {
+    setCreating(true)
+    try {
+      const res = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newUser),
+      })
+      if (res.ok) {
+        setShowCreateUserModal(false)
+        setNewUser({ username: '', email: '' })
+        fetchUsers()
+      }
+    } finally {
+      setCreating(false)
+    }
+  }
+
   if (loading || !user || user.role !== 'ADMIN') {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -102,51 +137,100 @@ function AdminPage() {
     <Shell>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Admin Panel</h1>
-        <Button onClick={() => setShowCreateModal(true)}>+ Crear Mercado</Button>
+        <div className="flex gap-2">
+          <Button variant={activeTab === 'markets' ? 'primary' : 'outline'} onClick={() => setActiveTab('markets')}>
+            Mercados
+          </Button>
+          <Button variant={activeTab === 'users' ? 'primary' : 'outline'} onClick={() => setActiveTab('users')}>
+            Usuarios
+          </Button>
+        </div>
       </div>
 
-      {loadingMarkets ? (
-        <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto" />
-        </div>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-semibold text-gray-800">
+          {activeTab === 'markets' ? 'Mercados' : 'Usuarios'}
+        </h2>
+        {activeTab === 'markets' ? (
+          <Button onClick={() => setShowCreateModal(true)}>+ Crear Mercado</Button>
+        ) : (
+          <Button onClick={() => setShowCreateUserModal(true)}>+ Crear Usuario</Button>
+        )}
+      </div>
+
+      {activeTab === 'markets' ? (
+        loadingMarkets ? (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto" />
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {markets.map((market) => (
+              <Card key={market.id}>
+                <CardContent className="flex items-center justify-between py-4">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{market.playerName}</span>
+                      <span className={`px-2 py-0.5 text-xs rounded-full ${
+                        market.status === 'ACTIVE' ? 'bg-green-100 text-green-800' :
+                        market.status === 'DRAFT' ? 'bg-gray-100 text-gray-800' :
+                        market.status === 'RESOLVED' ? 'bg-blue-100 text-blue-800' :
+                        'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {market.status}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-600">{market.question}</p>
+                    <div className="text-xs text-gray-400 mt-1">
+                      Pool: ${(market.yesPool + market.noPool).toFixed(2)} | Res: {new Date(market.resolutionDate).toLocaleDateString()}
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    {market.status === 'DRAFT' && (
+                      <Button size="sm" variant="success" onClick={() => handleActivate(market.id)}>
+                        Activar
+                      </Button>
+                    )}
+                    {(market.status === 'ACTIVE' || market.status === 'CLOSED') && (
+                      <Button size="sm" variant="primary" onClick={() => setShowResolveModal(market)}>
+                        Resolver
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )
       ) : (
-        <div className="space-y-4">
-          {markets.map((market) => (
-            <Card key={market.id}>
-              <CardContent className="flex items-center justify-between py-4">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">{market.playerName}</span>
-                    <span className={`px-2 py-0.5 text-xs rounded-full ${
-                      market.status === 'ACTIVE' ? 'bg-green-100 text-green-800' :
-                      market.status === 'DRAFT' ? 'bg-gray-100 text-gray-800' :
-                      market.status === 'RESOLVED' ? 'bg-blue-100 text-blue-800' :
-                      'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {market.status}
-                    </span>
+        loadingUsers ? (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto" />
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {users.map((u) => (
+              <Card key={u.id}>
+                <CardContent className="flex items-center justify-between py-4">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{u.username}</span>
+                      <span className={`px-2 py-0.5 text-xs rounded-full ${
+                        u.role === 'ADMIN' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {u.role}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-600">{u.email || 'Sin email'}</p>
                   </div>
-                  <p className="text-sm text-gray-600">{market.question}</p>
-                  <div className="text-xs text-gray-400 mt-1">
-                    Pool: ${(market.yesPool + market.noPool).toFixed(2)} | Res: {new Date(market.resolutionDate).toLocaleDateString()}
+                  <div className="text-right font-semibold text-green-600">
+                    ${u.balance.toFixed(2)}
                   </div>
-                </div>
-                <div className="flex gap-2">
-                  {market.status === 'DRAFT' && (
-                    <Button size="sm" variant="success" onClick={() => handleActivate(market.id)}>
-                      Activar
-                    </Button>
-                  )}
-                  {(market.status === 'ACTIVE' || market.status === 'CLOSED') && (
-                    <Button size="sm" variant="primary" onClick={() => setShowResolveModal(market)}>
-                      Resolver
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )
       )}
 
       <Modal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} title="Crear Mercado">
@@ -187,6 +271,31 @@ function AdminPage() {
               Cancelar
             </Button>
             <Button onClick={handleCreate} loading={creating} className="flex-1">
+              Crear
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal isOpen={showCreateUserModal} onClose={() => setShowCreateUserModal(false)} title="Crear Usuario">
+        <div className="space-y-4">
+          <Input
+            label="Username"
+            value={newUser.username}
+            onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
+            placeholder="Ej: messi10"
+          />
+          <Input
+            label="Email (opcional)"
+            value={newUser.email}
+            onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+            placeholder="messi@example.com"
+          />
+          <div className="flex gap-3">
+            <Button variant="outline" onClick={() => setShowCreateUserModal(false)} className="flex-1">
+              Cancelar
+            </Button>
+            <Button onClick={handleCreateUser} loading={creating} className="flex-1">
               Crear
             </Button>
           </div>
