@@ -10,6 +10,9 @@ interface PositionCardProps {
     side: 'YES' | 'NO'
     amount: number
     status: string
+    shares: number
+    purchasePrice: number
+    currentPrice: number
     fairValue: number
     currentPayout: number
     potentialReturn: number
@@ -34,8 +37,8 @@ export function PositionCard({ position, userId, onSell }: PositionCardProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const profit = position.potentialReturn - position.amount
-  const profitPct = ((profit / position.amount) * 100).toFixed(1)
+  const profit = position.fairValue - position.amount
+  const profitPct = position.amount > 0 ? (((position.currentPrice - position.purchasePrice) / position.purchasePrice) * 100).toFixed(1) : '0.0'
 
   const sellAmountNum = parseFloat(sellAmount) || 0
   const proportionalFairValue = (sellAmountNum / position.amount) * position.fairValue
@@ -115,19 +118,25 @@ export function PositionCard({ position, userId, onSell }: PositionCardProps) {
           <div className="space-y-1">
             <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Invertido</div>
             <div className="text-xl font-extrabold text-white">$ {position.amount.toFixed(0)}</div>
+            <div className="text-[9px] font-bold text-gray-500 uppercase">@{position.purchasePrice.toFixed(2)} entry</div>
           </div>
           <div className="space-y-1">
             <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Fair Value</div>
             <div className="text-xl font-extrabold text-white">$ {position.fairValue.toFixed(0)}</div>
+            <div className="text-[9px] font-bold text-[#64c883] uppercase">@{position.currentPrice.toFixed(2)} ahora</div>
           </div>
           <div className="space-y-1">
-            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Retorno</div>
-            <div className="text-xl font-extrabold text-white">$ {position.potentialReturn.toFixed(0)}</div>
+            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Acciones</div>
+            <div className="text-xl font-extrabold text-white">{position.shares.toFixed(1)}</div>
+            <div className="text-[9px] font-bold text-gray-500 uppercase">Unidades</div>
           </div>
           <div className="space-y-1 text-right lg:text-left">
             <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">P&L</div>
             <div className={`text-xl font-extrabold ${parseFloat(profitPct) >= 0 ? 'text-[#64c883]' : 'text-[#e16464]'}`}>
               {parseFloat(profitPct) >= 0 ? '+' : ''}{profitPct}%
+            </div>
+            <div className={`text-[9px] font-bold uppercase ${parseFloat(profitPct) >= 0 ? 'text-[#64c883]/60' : 'text-[#e16464]/60'}`}>
+              $ {profit.toFixed(2)}
             </div>
           </div>
         </div>

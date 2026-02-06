@@ -51,6 +51,8 @@ export class MarketService {
         amount: p.amount.toNumber(),
         payout: p.payout?.toNumber(),
         initialProbability: p.initialProbability.toNumber(),
+        shares: p.shares?.toNumber() || 0,
+        purchasePrice: p.purchasePrice?.toNumber() || 0,
       })),
       history: (market as any).history.map((h: any) => ({
         id: h.id,

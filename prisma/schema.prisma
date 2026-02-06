@@ -64,6 +64,8 @@ model Position {
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
   initialProbability Decimal       @default(0)
+  shares            Decimal        @default(0)
+  purchasePrice     Decimal        @default(0)
   lastTransferredAt DateTime?
 
   market        Market              @relation(fields: [marketId], references: [id], onDelete: Cascade)

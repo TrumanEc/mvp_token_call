@@ -30,6 +30,9 @@ export class PositionService {
 
       const currentOdds = OddsCalculator.calculateOdds(market.yesPool, market.noPool)
       const initialProbability = data.side === 'YES' ? currentOdds.yesOdds : currentOdds.noOdds
+      
+      const purchasePrice = new Decimal(initialProbability).dividedBy(100)
+      const shares = amount.dividedBy(purchasePrice)
 
       const position = await tx.position.create({
         data: {
@@ -40,6 +43,8 @@ export class PositionService {
           amount,
           status: 'ACTIVE',
           initialProbability: new Decimal(initialProbability),
+          shares,
+          purchasePrice,
         },
         include: { market: true, currentOwner: true },
       })
@@ -84,27 +89,52 @@ export class PositionService {
       orderBy: { createdAt: 'desc' },
     })
 
-    return positions.map((p) => {
+    return positions.map((p: any) => {
       const odds = OddsCalculator.calculateOdds(p.market.yesPool, p.market.noPool)
-      const payout = p.side === 'YES' ? odds.yesPayout : odds.noPayout
-      const fairValue = OddsCalculator.calculateFairValue(
-        { amount: p.amount, side: p.side as Side },
-        { yesPool: p.market.yesPool, noPool: p.market.noPool }
-      )
+      const currentPrice = new Decimal(p.side === 'YES' ? odds.yesOdds : odds.noOdds).dividedBy(100)
+      
+      // Fallback for legacy positions: derive shares from initialProbability
+      const initialProb = p.initialProbability?.toNumber() || 50
+      const legacyPrice = new Decimal(initialProb).dividedBy(100)
+      
+      const purchasePrice = p.purchasePrice && !p.purchasePrice.isZero() 
+        ? new Decimal(p.purchasePrice) 
+        : legacyPrice
+      
+      const shares = p.shares && !p.shares.isZero() 
+        ? new Decimal(p.shares) 
+        : p.amount.dividedBy(legacyPrice)
+
+      // Total current value if sold (shares * currentPrice)
+      const fairValue = shares.times(currentPrice)
+      
+      // Total potential return if wins (shares * $1)
+      const potentialReturn = shares.toNumber()
 
       return {
         ...p,
         amount: p.amount.toNumber(),
         payout: p.payout?.toNumber(),
-        initialProbability: p.initialProbability.toNumber(),
+        initialProbability: initialProb,
+        shares: shares.toNumber(),
+        purchasePrice: purchasePrice.toNumber(),
+        currentPrice: currentPrice.toNumber(),
         fairValue: fairValue.toNumber(),
-        currentPayout: payout,
-        potentialReturn: new Decimal(p.amount).times(payout).toNumber(),
+        currentPayout: p.side === 'YES' ? odds.yesPayout : odds.noPayout,
+        potentialReturn,
         market: {
           ...p.market,
           yesPool: p.market.yesPool.toNumber(),
           noPool: p.market.noPool.toNumber(),
+          maxPool: p.market.maxPool?.toNumber(),
+          platformFee: p.market.platformFee?.toNumber(),
         },
+        listing: p.listing ? {
+          ...p.listing,
+          askPrice: p.listing.askPrice.toNumber(),
+          suggestedPrice: p.listing.suggestedPrice.toNumber(),
+          platformFee: p.listing.platformFee.toNumber(),
+        } : null,
       }
     })
   }
@@ -118,20 +148,40 @@ export class PositionService {
     if (!position) return null
 
     const odds = OddsCalculator.calculateOdds(position.market.yesPool, position.market.noPool)
-    const payout = position.side === 'YES' ? odds.yesPayout : odds.noPayout
-    const fairValue = OddsCalculator.calculateFairValue(
-      { amount: position.amount, side: position.side as Side },
-      { yesPool: position.market.yesPool, noPool: position.market.noPool }
-    )
+    const currentPrice = new Decimal(position.side === 'YES' ? odds.yesOdds : odds.noOdds).dividedBy(100)
+    
+    // Fallback for legacy
+    const initialProb = position.initialProbability?.toNumber() || 50
+    const legacyPrice = new Decimal(initialProb).dividedBy(100)
+    
+    const shares = (position as any).shares && !(position as any).shares.isZero()
+      ? new Decimal((position as any).shares)
+      : position.amount.dividedBy(legacyPrice)
+    
+    const purchasePrice = (position as any).purchasePrice && !(position as any).purchasePrice.isZero()
+      ? new Decimal((position as any).purchasePrice)
+      : legacyPrice
+
+    const fairValue = shares.times(currentPrice)
 
     return {
       ...position,
       amount: position.amount.toNumber(),
       payout: position.payout?.toNumber(),
       initialProbability: position.initialProbability.toNumber(),
+      shares: shares.toNumber(),
+      purchasePrice: position.purchasePrice.toNumber(),
+      currentPrice: currentPrice.toNumber(),
       fairValue: fairValue.toNumber(),
-      currentPayout: payout,
-      potentialReturn: new Decimal(position.amount).times(payout).toNumber(),
+      currentPayout: position.side === 'YES' ? odds.yesPayout : odds.noPayout,
+      potentialReturn: shares.toNumber(),
+      market: {
+        ...position.market,
+        yesPool: position.market.yesPool.toNumber(),
+        noPool: position.market.noPool.toNumber(),
+        maxPool: position.market.maxPool?.toNumber(),
+        platformFee: position.market.platformFee?.toNumber(),
+      }
     }
   }
 
@@ -182,7 +232,8 @@ export class PositionService {
         side: position.side,
         amount: splitDecimal,
         status: 'ACTIVE',
-        initialProbability: position.initialProbability,
+        shares: (position as any).shares.times(splitDecimal.dividedBy(position.amount)),
+        purchasePrice: (position as any).purchasePrice,
         isForSale: true, // Mark for sale immediately
       },
       include: { market: true },

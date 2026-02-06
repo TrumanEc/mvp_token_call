@@ -26,8 +26,9 @@ export function PredictionCard({ market, userId, userBalance, onSuccess }: Predi
   }
 
   const amountNum = parseFloat(amount) || 0
-  const payout = side === 'YES' ? market.odds.yesPayout : market.odds.noPayout
-  const potentialReturn = amountNum * payout
+  const currentPrice = (side === 'YES' ? market.odds.yesOdds : market.odds.noOdds) / 100
+  const estimatedShares = amountNum / currentPrice
+  const potentialReturn = estimatedShares // Each share pays $1
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -125,23 +126,25 @@ export function PredictionCard({ market, userId, userBalance, onSuccess }: Predi
       <div className="grid grid-cols-2 gap-4">
         <button
           onClick={() => setSide('YES')}
-          className={`h-16 rounded-2xl flex items-center justify-center transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] ${
+          className={`h-16 rounded-2xl flex flex-col items-center justify-center transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] ${
             side === 'YES' 
               ? 'bg-[#64c883] text-[#0a0a0a] shadow-lg shadow-[#64c883]/20' 
               : 'bg-[#1a2e21]/40 text-[#64c883]/60 border border-[#64c883]/10'
           }`}
         >
           <span className="text-xl font-bold">Yes</span>
+          <span className="text-[10px] font-bold opacity-70 mt-0.5">${(market.odds.yesOdds / 100).toFixed(2)}</span>
         </button>
         <button
           onClick={() => setSide('NO')}
-          className={`h-16 rounded-2xl flex items-center justify-center transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] ${
+          className={`h-16 rounded-2xl flex flex-col items-center justify-center transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] ${
             side === 'NO' 
               ? 'bg-[#e16464] text-[#0a0a0a] shadow-lg shadow-[#e16464]/20' 
               : 'bg-[#2e1a1a]/40 text-[#e16464]/60 border border-[#e16464]/10'
           }`}
         >
           <span className="text-xl font-bold">No</span>
+          <span className="text-[10px] font-bold opacity-70 mt-0.5">${(market.odds.noOdds / 100).toFixed(2)}</span>
         </button>
       </div>
 
@@ -164,10 +167,16 @@ export function PredictionCard({ market, userId, userBalance, onSuccess }: Predi
           </div>
         </div>
 
-        {potentialReturn > 0 && (
-          <div className="flex justify-between items-center px-4 py-3 bg-[#0d0d0d]/50 rounded-xl border border-white/5">
-             <span className="text-xs text-gray-400">Retorno Potencial ({payout.toFixed(2)}x)</span>
-             <span className="text-sm font-bold text-[#64c883]">${potentialReturn.toFixed(2)}</span>
+        {amountNum > 0 && (
+          <div className="space-y-2">
+            <div className="flex justify-between items-center px-4 py-3 bg-[#0d0d0d]/50 rounded-xl border border-white/5">
+               <span className="text-xs text-gray-400">Acciones Proyectadas</span>
+               <span className="text-sm font-bold text-white">{estimatedShares.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between items-center px-4 py-4 bg-[#64c883]/5 rounded-xl border border-[#64c883]/10">
+               <span className="text-xs text-[#64c883]">Retorno si Gana</span>
+               <span className="text-base font-extrabold text-[#64c883]">${potentialReturn.toFixed(2)}</span>
+            </div>
           </div>
         )}
 

@@ -40,10 +40,9 @@ export class ListingService {
         })
       }
 
-      const fairValue = OddsCalculator.calculateFairValue(
-        { amount: positionToList.amount, side: positionToList.side as 'YES' | 'NO' },
-        { yesPool: positionToList.market.yesPool, noPool: positionToList.market.noPool }
-      )
+      const odds = OddsCalculator.calculateOdds(positionToList.market.yesPool, positionToList.market.noPool)
+      const currentPrice = new Decimal(positionToList.side === 'YES' ? odds.yesOdds : odds.noOdds).dividedBy(100)
+      const fairValue = new Decimal(positionToList.shares).times(currentPrice)
 
       const askPrice = new Decimal(data.askPrice)
       const listing = await tx.marketplaceListing.upsert({
@@ -109,11 +108,14 @@ export class ListingService {
 
       if (!isPartial) {
         // Full buy logic
+        const buyerPurchasePrice = buyAmount.dividedBy(listing.position.shares)
+        
         await tx.position.update({
           where: { id: listing.positionId },
           data: {
             currentOwnerId: data.buyerId,
             isForSale: false,
+            purchasePrice: buyerPurchasePrice,
             lastTransferredAt: new Date(),
           },
         })
@@ -144,10 +146,16 @@ export class ListingService {
         // 1. Reduce original position (tied to listing)
         await tx.position.update({
           where: { id: listing.positionId },
-          data: { amount: { decrement: tokensToBuy } },
+          data: { 
+            amount: { decrement: tokensToBuy },
+            shares: { decrement: new Decimal(listing.position.shares).times(ratio) }
+          },
         })
 
         // 2. Create new position for buyer
+        const buyerShares = new Decimal(listing.position.shares).times(ratio)
+        const buyerPurchasePrice = buyAmount.dividedBy(buyerShares)
+
         const buyerPosition = await tx.position.create({
           data: {
             marketId: listing.marketId,
@@ -155,6 +163,8 @@ export class ListingService {
             currentOwnerId: data.buyerId,
             side: listing.position.side,
             amount: tokensToBuy,
+            shares: buyerShares,
+            purchasePrice: buyerPurchasePrice,
             status: 'ACTIVE',
             initialProbability: listing.position.initialProbability,
             isForSale: false,
@@ -205,8 +215,10 @@ export class ListingService {
         listing.position.market.yesPool,
         listing.position.market.noPool
       )
-      const payout = listing.position.side === 'YES' ? odds.yesPayout : odds.noPayout
-      const potentialReturn = new Decimal(listing.position.amount).times(payout)
+      const currentPrice = new Decimal(listing.position.side === 'YES' ? odds.yesOdds : odds.noOdds).dividedBy(100)
+      const shares = new Decimal(listing.position.shares)
+      
+      const potentialReturn = shares // $1 per share
       const potentialProfit = potentialReturn.minus(listing.askPrice)
       const roi = new Decimal(listing.askPrice).isZero()
         ? 0
@@ -216,13 +228,15 @@ export class ListingService {
         ...listing,
         askPrice: listing.askPrice.toNumber(),
         suggestedPrice: listing.suggestedPrice.toNumber(),
-        currentPayout: payout,
+        currentPrice: currentPrice.toNumber(),
         potentialReturn: potentialReturn.toNumber(),
         potentialProfit: potentialProfit.toNumber(),
         roi,
         position: {
           ...listing.position,
           amount: listing.position.amount.toNumber(),
+          shares: listing.position.shares.toNumber(),
+          purchasePrice: listing.position.purchasePrice.toNumber(),
           market: {
             ...listing.position.market,
             yesPool: listing.position.market.yesPool.toNumber(),

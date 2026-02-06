@@ -18,6 +18,8 @@ interface ListingCardProps {
       id: string
       side: 'YES' | 'NO'
       amount: number
+      shares: number
+      purchasePrice: number
       market: {
         id: string
         playerName: string
@@ -138,8 +140,12 @@ export function ListingCard({ listing, userId, userBalance, onBuy }: ListingCard
 
           <div className="text-xs text-gray-500 space-y-1">
             <div className="flex justify-between">
+              <span>Acciones en venta:</span>
+              <span className="font-medium">{listing.position.shares.toFixed(1)} Unidades</span>
+            </div>
+            <div className="flex justify-between">
               <span>Retorno potencial:</span>
-              <span className="font-medium">${potReturnDisplay}</span>
+              <span className="font-medium text-green-600">${potReturnDisplay}</span>
             </div>
             {status === 'ACTIVE' && (
               <div className="flex justify-between">
@@ -211,9 +217,9 @@ export function ListingCard({ listing, userId, userBalance, onBuy }: ListingCard
                 <span className="font-bold text-gray-900">${parseFloat(buyAmount || '0').toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
-                <span>Retorno proporcional:</span>
+                <span>Retorno proyectado:</span>
                 <span className="font-medium text-green-600">
-                  ${((listing.potentialReturn * (parseFloat(buyAmount || '0') / listing.askPrice)) || 0).toFixed(2)}
+                  ${(listing.position.shares * (parseFloat(buyAmount || '0') / listing.askPrice) || 0).toFixed(2)}
                 </span>
               </div>
               <div className="flex justify-between">
