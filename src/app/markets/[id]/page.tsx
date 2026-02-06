@@ -4,23 +4,15 @@ import { useState, useEffect, use } from 'react'
 import { useRouter } from 'next/navigation'
 import { UserProvider, useUser } from '@/contexts/UserContext'
 import { Shell } from '@/components/layout/Shell'
-import { Card, CardContent, CardHeader } from '@/components/ui/Card'
-import { PlaceBetForm } from '@/components/markets/PlaceBetForm'
-import { ListingCard } from '@/components/marketplace/ListingCard'
+import { PriceChart } from '@/components/markets/PriceChart'
+import { PredictionCard } from '@/components/markets/PredictionCard'
 
 function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const router = useRouter()
   const { user, loading, refreshBalance } = useUser()
   const [market, setMarket] = useState<any>(null)
-  const [activeListings, setActiveListings] = useState<any[]>([])
   const [loadingMarket, setLoadingMarket] = useState(true)
-
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push('/')
-    }
-  }, [user, loading, router])
 
   const fetchMarket = () => {
     fetch(`/api/markets/${id}`)
@@ -30,28 +22,25 @@ function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
       .finally(() => setLoadingMarket(false))
   }
 
-  const fetchListings = () => {
-    fetch(`/api/marketplace?marketId=${id}`)
-      .then((r) => r.json())
-      .then(setActiveListings)
-      .catch(() => {})
-  }
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/')
+    }
+  }, [user, loading, router])
 
   useEffect(() => {
     fetchMarket()
-    fetchListings()
   }, [id])
 
   const handleTransactionSuccess = () => {
     fetchMarket()
-    fetchListings()
     refreshBalance()
   }
 
   if (loading || !user || loadingMarket) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#64c883]" />
       </div>
     )
   }
@@ -64,173 +53,112 @@ function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
     )
   }
 
-  const statusColors = {
-    ACTIVE: 'bg-green-100 text-green-800',
-    DRAFT: 'bg-gray-100 text-gray-800',
-    CLOSED: 'bg-yellow-100 text-yellow-800',
-    RESOLVED: 'bg-blue-100 text-blue-800',
-    VOIDED: 'bg-red-100 text-red-800',
-  }
+  const totalVolume = market.yesPool + market.noPool
 
   return (
     <Shell>
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-6">
-          <button onClick={() => router.back()} className="text-blue-600 hover:text-blue-800 text-sm mb-2">
-            ← Volver a Mercados
+      <div className="max-w-[1200px] mx-auto pt-4 px-4">
+        {/* Top Header: Question */}
+        <div className="mb-12">
+          <button 
+            onClick={() => router.back()} 
+            className="text-gray-400 hover:text-white text-xs font-bold uppercase tracking-wider mb-6 block transition-colors"
+          >
+            ← Volver
           </button>
-          <div className="flex items-start justify-between">
-            <div>
-              <span className="text-sm font-medium text-blue-600">{market.playerName}</span>
-              <h1 className="text-2xl font-bold text-gray-900 mt-1">{market.question}</h1>
-              {market.description && <p className="text-gray-600 mt-2">{market.description}</p>}
-            </div>
-            <span className={`px-3 py-1 text-sm font-medium rounded-full ${statusColors[market.status as keyof typeof statusColors]}`}>
-              {market.status}
-            </span>
-          </div>
+          <h1 className="text-[32px] md:text-[40px] font-bold text-white leading-tight lg:max-w-3xl">
+            {market.question}
+          </h1>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            <Card>
-              <CardHeader>
-                <h2 className="text-lg font-semibold">Odds Actuales</h2>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="text-center p-6 bg-green-50/80 border border-green-100 rounded-xl">
-                    <div className="text-4xl font-bold text-green-700">{market.odds.yesOdds.toFixed(1)}%</div>
-                    <div className="text-lg text-green-800 font-bold mt-1">YES</div>
-                    <div className="text-sm text-green-900/80 mt-2 font-medium">Pool: ${market.yesPool.toFixed(2)}</div>
-                    <div className="text-sm text-green-900/80 font-medium">Payout: {market.odds.yesPayout.toFixed(2)}x</div>
-                  </div>
-                  <div className="text-center p-6 bg-red-50/80 border border-red-100 rounded-xl">
-                    <div className="text-4xl font-bold text-red-700">{market.odds.noOdds.toFixed(1)}%</div>
-                    <div className="text-lg text-red-800 font-bold mt-1">NO</div>
-                    <div className="text-sm text-red-900/80 mt-2 font-medium">Pool: ${market.noPool.toFixed(2)}</div>
-                    <div className="text-sm text-red-900/80 font-medium">Payout: {market.odds.noPayout.toFixed(2)}x</div>
-                  </div>
-                </div>
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-12 items-start">
+          {/* Left Column: Chart and Odds */}
+          <div className="space-y-16">
+            {/* Probability Large Display */}
+            <div className="flex items-baseline gap-4">
+              <span className="text-[64px] font-extrabold text-white leading-none tracking-tighter">
+                {market.odds.yesOdds.toFixed(0)}%
+              </span>
+              <span className="text-sm font-bold text-gray-400 uppercase tracking-[0.1em]">Chance</span>
+            </div>
 
-                {/* Pool Limit Progress */}
-                {market.maxPool && (
-                  <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                    <div className="flex justify-between text-sm text-gray-600 mb-2">
-                      <span>Pool Total</span>
-                      <span className="font-medium">
-                        ${(market.yesPool + market.noPool).toFixed(2)} / ${market.maxPool.toFixed(2)}
-                      </span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-3">
-                      <div 
-                        className={`h-3 rounded-full transition-all ${
-                          (market.yesPool + market.noPool) >= market.maxPool 
-                            ? 'bg-red-500' 
-                            : 'bg-blue-500'
-                        }`}
-                        style={{ 
-                          width: `${Math.min(100, ((market.yesPool + market.noPool) / market.maxPool) * 100)}%` 
-                        }}
-                      />
-                    </div>
-                    {(market.yesPool + market.noPool) >= market.maxPool && (
-                      <p className="text-sm text-red-600 mt-2 font-medium">
-                        🔒 Límite alcanzado - Solo disponible en mercado secundario
-                      </p>
-                    )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            {/* Price Chart */}
+            <div className="relative pb-8">
+              <PriceChart 
+                history={market.history} 
+                height={350} 
+                showNo={false} 
+              />
+              {/* Bottom Volume Info */}
+              <div className="absolute bottom-[-4px] left-0 flex items-center gap-2">
+                <span className="text-sm font-bold text-gray-400 capitalize">Vol.:</span>
+                <span className="text-xl font-extrabold text-white leading-none">
+                  $ {totalVolume.toLocaleString()}
+                </span>
+              </div>
+            </div>
 
-            {activeListings.length > 0 && (
-              <div className="space-y-4">
-                <h2 className="text-lg font-semibold">Mercado Secundario (Ofertas)</h2>
+            {/* Active Positions */}
+            {market.positions.length > 0 && (
+              <div className="space-y-6 pt-8 border-t border-white/5">
+                <h2 className="text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400">
+                  Posiciones Activas ({market.positions.length})
+                </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {activeListings.map((listing) => (
-                    <ListingCard
-                      key={listing.id}
-                      listing={listing}
-                      userId={user.id}
-                      userBalance={user.balance}
-                      onBuy={handleTransactionSuccess}
-                    />
+                  {market.positions.map((pos: any) => (
+                    <div 
+                      key={pos.id} 
+                      className="bg-[#121212] border border-white/5 rounded-2xl p-4 flex items-center justify-between group hover:border-white/10 transition-all"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs ${
+                          pos.side === 'YES' ? 'bg-[#64c883]/10 text-[#64c883]' : 'bg-[#e16464]/10 text-[#e16464]'
+                        }`}>
+                          {pos.side}
+                        </div>
+                        <div>
+                          <div className="text-sm font-bold text-white group-hover:text-[#64c883] transition-colors">
+                            @{pos.currentOwner.username}
+                          </div>
+                          <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mt-0.5">
+                            {new Date(pos.createdAt).toLocaleDateString()}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-base font-bold text-white">$ {pos.amount.toLocaleString()}</div>
+                        {pos.initialProbability && (
+                          <div className="text-[9px] font-bold text-gray-400 uppercase mt-0.5">
+                            @ {pos.initialProbability.toFixed(1)}%
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>
             )}
-
-            {market.positions.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <h2 className="text-lg font-semibold">Posiciones ({market.positions.length})</h2>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {market.positions.map((pos: any) => (
-                      <div key={pos.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
-                        <div className="flex items-center gap-3">
-                          <span className={`px-2 py-1 text-xs font-bold rounded ${pos.side === 'YES' ? 'bg-green-100 text-green-800 border border-green-200' : 'bg-red-100 text-red-800 border border-red-200'}`}>
-                            {pos.side}
-                          </span>
-                          <span className="text-sm text-gray-600">{pos.currentOwner.username}</span>
-                        </div>
-                        <div className="text-right">
-                          <div className="font-medium">${pos.amount.toFixed(2)}</div>
-                          {pos.initialProbability > 0 && (
-                            <div className="text-xs text-gray-500">(@ {pos.initialProbability.toFixed(1)}%)</div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
           </div>
 
-          <div>
-            {market.status === 'ACTIVE' ? (
-              <Card>
-                <CardHeader>
-                  <h2 className="text-lg font-semibold">Crear Posición</h2>
-                </CardHeader>
-                <CardContent>
-                  <PlaceBetForm
-                    marketId={market.id}
-                    userId={user.id}
-                    userBalance={user.balance}
-                    odds={{
-                      yesOdds: market.odds.yesOdds,
-                      noOdds: market.odds.noOdds,
-                      yesPayout: market.odds.yesPayout,
-                      noPayout: market.odds.noPayout,
-                    }}
-                    onSuccess={handleTransactionSuccess}
-                  />
-                </CardContent>
-              </Card>
-            ) : (
-              <Card>
-                <CardContent className="py-8 text-center text-gray-500">
-                  {market.status === 'RESOLVED' && (
-                    <div>
-                      <div className="text-2xl mb-2">🏆</div>
-                      <div className="font-medium">Resultado: {market.outcome}</div>
-                    </div>
-                  )}
-                  {market.status === 'CLOSED' && <div>Mercado cerrado para apuestas</div>}
-                  {market.status === 'DRAFT' && <div>Mercado aún no activo</div>}
-                  {market.status === 'VOIDED' && <div>Mercado anulado</div>}
-                </CardContent>
-              </Card>
-            )}
-
-            <div className="mt-4 text-sm text-gray-500">
-              <div>Resolución: {new Date(market.resolutionDate).toLocaleDateString()}</div>
-              <div>Fee plataforma: {(market.platformFee * 100).toFixed(0)}%</div>
-            </div>
+          {/* Right Column: Prediction Interaction (Yes/No Buttons + Form) */}
+          <div className="sticky top-24">
+             <PredictionCard
+                market={market}
+                userId={user.id}
+                userBalance={user.balance}
+                onSuccess={handleTransactionSuccess}
+              />
+              
+              <div className="mt-8 space-y-4">
+                <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-wider text-gray-400 border-t border-white/5 pt-6">
+                  <span>Resolución</span>
+                  <span className="text-gray-300">{new Date(market.resolutionDate).toLocaleDateString()}</span>
+                </div>
+                <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                  <span>Plataforma</span>
+                  <span className="text-gray-300">WIN</span>
+                </div>
+              </div>
           </div>
         </div>
       </div>

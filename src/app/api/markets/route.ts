@@ -10,8 +10,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const body = await request.json()
   const { playerName, question, description, resolutionDate, maxPool } = body
-
-  if (!playerName || !question || !resolutionDate) {
+  
+  if (!question || !resolutionDate) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
   }
 

@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import { Card, CardContent } from '@/components/ui/Card'
 
 interface MarketCardProps {
   market: {
@@ -20,45 +19,85 @@ interface MarketCardProps {
 }
 
 export function MarketCard({ market }: MarketCardProps) {
-  const statusColors = {
-    ACTIVE: 'bg-green-100 text-green-800',
-    DRAFT: 'bg-gray-100 text-gray-800',
-    CLOSED: 'bg-yellow-100 text-yellow-800',
-    RESOLVED: 'bg-blue-100 text-blue-800',
-    VOIDED: 'bg-red-100 text-red-800',
+  const yesOdds = market.odds.yesOdds
+  const totalVolume = market.yesPool + market.noPool
+  
+  const formatVolume = (val: number) => {
+    if (val >= 1000) return `$${(val / 1000).toFixed(1)}k`
+    return `$${val.toFixed(0)}`
   }
 
+  // Gauge constants
+  const radius = 45
+  const stroke = 8
+  const normalizedRadius = radius - stroke
+  const circumference = normalizedRadius * 2 * Math.PI
+  const semiCircumference = circumference / 2
+  const strokeDashoffset = semiCircumference - (yesOdds / 100) * semiCircumference
+
   return (
-    <Link href={`/markets/${market.id}`}>
-      <Card className="hover:shadow-xl transition-shadow cursor-pointer">
-        <CardContent>
-          <div className="flex items-start justify-between mb-3">
-            <span className="text-sm font-medium text-blue-600">{market.playerName}</span>
-            <span className={`px-2 py-1 text-xs font-medium rounded-full ${statusColors[market.status as keyof typeof statusColors]}`}>
-              {market.status}
-            </span>
-          </div>
-
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">{market.question}</h3>
-
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <div className="text-center p-3 bg-green-50 rounded-lg">
-              <div className="text-2xl font-bold text-green-600">{market.odds.yesOdds.toFixed(1)}%</div>
-              <div className="text-sm text-green-700">YES</div>
-              <div className="text-xs text-gray-500">${market.yesPool.toFixed(0)}</div>
+    <Link href={`/markets/${market.id}`} className="block group">
+      <div className="bg-[#171717] rounded-[32px] p-6 border border-white/5 transition-all duration-300 group-hover:bg-[#1c1c1c] group-hover:border-white/10 group-hover:shadow-[0_20px_40px_rgba(0,0,0,0.4)]">
+        {/* Top: Question & Gauge */}
+        <div className="flex justify-between items-center gap-4 mb-6">
+          <h3 className="text-lg font-bold text-white leading-tight">
+            {market.question}
+          </h3>
+          
+          <div className="relative flex flex-col items-center flex-shrink-0 w-[90px]">
+            <svg height={radius + stroke} width={radius * 2} className="absolute block overflow-visible">
+              <circle
+                stroke="#2a2a2a"
+                fill="transparent"
+                strokeWidth={stroke}
+                strokeDasharray={`${semiCircumference} ${circumference}`}
+                style={{ strokeDashoffset: 0 }}
+                r={normalizedRadius}
+                cx={radius}
+                cy={radius}
+                strokeLinecap="round"
+                className="transform -rotate-180 origin-center"
+              />
+              <circle
+                stroke="#64c883"
+                fill="transparent"
+                strokeWidth={stroke}
+                strokeDasharray={`${semiCircumference} ${circumference}`}
+                style={{ strokeDashoffset, transition: 'stroke-dashoffset 0.8s ease-out' }}
+                r={normalizedRadius}
+                cx={radius}
+                cy={radius}
+                strokeLinecap="round"
+                className="transform -rotate-180 origin-center"
+              />
+            </svg>
+            <div className="absolute top-[-10px] inset-x-0 text-center">
+              <span className="block font-extrabold text-white leading-none tracking-tighter">{yesOdds.toFixed(0)}%</span>
+              <span className="text-[9px] font-bold text-gray-400 uppercase tracking-[0.1em] mt-1 block">Chance</span>
             </div>
-            <div className="text-center p-3 bg-red-50 rounded-lg">
-              <div className="text-2xl font-bold text-red-600">{market.odds.noOdds.toFixed(1)}%</div>
-              <div className="text-sm text-red-700">NO</div>
-              <div className="text-xs text-gray-500">${market.noPool.toFixed(0)}</div>
-            </div>
           </div>
+        </div>
 
-          <div className="text-xs text-gray-500 text-right">
-            Resuelve: {new Date(market.resolutionDate).toLocaleDateString()}
+        {/* Middle: Selection Buttons (Visual) */}
+        <div className="grid grid-cols-2 gap-3 mb-6">
+          <div className="bg-[#1a2e21]/40 border border-[#64c883]/20 py-3 rounded-2xl flex items-center justify-center transition-all group-hover:bg-[#1a2e21]/60">
+            <span className="text-base font-bold text-[#64c883]/80">Yes</span>
           </div>
-        </CardContent>
-      </Card>
+          <div className="bg-[#2e1a1a]/40 border border-[#e16464]/20 py-3 rounded-2xl flex items-center justify-center transition-all group-hover:bg-[#2e1a1a]/60">
+            <span className="text-base font-bold text-[#e16464]/80">No</span>
+          </div>
+        </div>
+
+        {/* Bottom: Volume and Status */}
+        <div className="flex justify-between items-center text-[11px] font-bold uppercase tracking-[0.1em]">
+          <span className="text-gray-400">{formatVolume(totalVolume)} Vol.</span>
+          <span className={`px-2 py-0.5 rounded ${
+            market.status === 'ACTIVE' ? 'text-[#64c883] bg-[#64c883]/10' : 'text-gray-400 bg-gray-400/10'
+          }`}>
+            {market.status}
+          </span>
+        </div>
+      </div>
     </Link>
   )
 }

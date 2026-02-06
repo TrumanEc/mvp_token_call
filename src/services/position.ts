@@ -26,7 +26,7 @@ export class PositionService {
         throw new Error('Market cap reached. Please buy from the secondary market.')
       }
 
-      await BalanceService.deduct(tx, user.id, amount, 'BET_PLACED', `Bet ${data.amount} on ${data.side}`)
+      await BalanceService.deduct(tx, user.id, amount, 'BET_PLACED', `Bet ${data.amount} on ${data.side}`, data.marketId)
 
       const currentOdds = OddsCalculator.calculateOdds(market.yesPool, market.noPool)
       const initialProbability = data.side === 'YES' ? currentOdds.yesOdds : currentOdds.noOdds
@@ -48,9 +48,26 @@ export class PositionService {
         ? { yesPool: { increment: amount } } 
         : { noPool: { increment: amount } }
 
-      await tx.market.update({ where: { id: data.marketId }, data: poolUpdate })
+      const updatedMarket = await tx.market.update({ where: { id: data.marketId }, data: poolUpdate })
 
-      return position
+      // Create price history snapshot
+      const marketHistory = (tx as any).marketHistory;
+      if (marketHistory) {
+        await marketHistory.create({
+          data: {
+            marketId: data.marketId,
+            yesOdds: new Decimal(updatedMarket.yesPool.toNumber() / (updatedMarket.yesPool.toNumber() + updatedMarket.noPool.toNumber()) * 100),
+            noOdds: new Decimal(updatedMarket.noPool.toNumber() / (updatedMarket.yesPool.toNumber() + updatedMarket.noPool.toNumber()) * 100),
+            totalPool: updatedMarket.yesPool.plus(updatedMarket.noPool),
+          }
+        })
+      }
+
+      return {
+        ...position,
+        amount: position.amount.toNumber(),
+        initialProbability: position.initialProbability.toNumber(),
+      }
     })
   }
 
@@ -79,6 +96,7 @@ export class PositionService {
         ...p,
         amount: p.amount.toNumber(),
         payout: p.payout?.toNumber(),
+        initialProbability: p.initialProbability.toNumber(),
         fairValue: fairValue.toNumber(),
         currentPayout: payout,
         potentialReturn: new Decimal(p.amount).times(payout).toNumber(),
@@ -110,6 +128,7 @@ export class PositionService {
       ...position,
       amount: position.amount.toNumber(),
       payout: position.payout?.toNumber(),
+      initialProbability: position.initialProbability.toNumber(),
       fairValue: fairValue.toNumber(),
       currentPayout: payout,
       potentialReturn: new Decimal(position.amount).times(payout).toNumber(),

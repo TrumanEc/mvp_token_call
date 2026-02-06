@@ -104,8 +104,8 @@ export class ListingService {
       const platformFee = buyAmount.times(listing.platformFee)
       const sellerReceives = buyAmount.minus(platformFee)
 
-      await BalanceService.deduct(tx, buyer.id, buyAmount, 'POSITION_PURCHASED', `Bought ${isPartial ? 'portion of ' : ''}position #${listing.positionId}`)
-      await BalanceService.credit(tx, listing.sellerId, sellerReceives, 'POSITION_SOLD', `Sold ${isPartial ? 'portion of ' : ''}position #${listing.positionId}`)
+      await BalanceService.deduct(tx, buyer.id, buyAmount, 'POSITION_PURCHASED', `Bought ${isPartial ? 'portion of ' : ''}position #${listing.positionId}`, listing.marketId)
+      await BalanceService.credit(tx, listing.sellerId, sellerReceives, 'POSITION_SOLD', `Sold ${isPartial ? 'portion of ' : ''}position #${listing.positionId}`, listing.marketId)
 
       if (!isPartial) {
         // Full buy logic

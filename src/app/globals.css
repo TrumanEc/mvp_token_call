@@ -1,21 +1,143 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f9fafb;
-  --foreground: #171717;
+  /* Core Palette */
+  --background: #0a0a0a;
+  /* Main background */
+  --foreground: #ffffff;
+
+  --gray-bg: #171717;
+  /* Card/Box background */
+  --gray-0: #0a0a0a;
+  --gray-1: #171717;
+  --gray-2: #272727;
+  --gray-3: #3f4753;
+  --gray-4: #6f757e;
+  --gray-5: #9fa3a9;
+  --gray-6: #cfd1d4;
+  --gray-7: #e7e8e9;
+  --gray-8: #f3f3f4;
+  --gray-9: #ffffff;
+
+  /* Primary Palette (Green) */
+  --primary: #64c883;
+  --primary-glow: rgba(100, 200, 131, 0.2);
+
+  /* Secondary Palette (Gold) */
+  --secondary: #c9a555;
+
+  /* Alert Palette */
+  --red-main: #e16464;
+
+  /* Specifics */
+  --soft-black: #303030;
+  --dark-gray: #141414;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+
+  /* Map Blue to Primary Green (to catch existing classes) */
+  --color-blue-50: #f1fbf4;
+  --color-blue-100: #e3f7e9;
+  --color-blue-200: #c7f0d3;
+  --color-blue-300: #abe9be;
+  --color-blue-400: #8fe2a8;
+  --color-blue-500: #74db93;
+  --color-blue-600: var(--primary);
+  --color-blue-700: #5caf75;
+
+  /* Map Green to Primary Green */
+  --color-green-600: var(--primary);
+
+  /* Map Red to the new Red */
+  --color-red-500: var(--red-main);
+  --color-red-600: var(--red-main);
+
+  /* Map Gray shades */
+  --color-gray-50: #f3f3f4;
+  --color-gray-100: #e7e8e9;
+  --color-gray-200: #cfd1d4;
+  --color-gray-800: #171717;
+  --color-gray-900: #0a0a0a;
 }
-
-
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  min-height: 100vh;
+}
+
+/* Global Component Overrides for Dark Mode */
+.bg-white {
+  background-color: var(--gray-bg) !important;
+}
+
+.text-gray-900,
+.text-gray-800,
+.text-gray-700 {
+  color: #ffffff !important;
+}
+
+.text-gray-600,
+.text-gray-500,
+.text-gray-400 {
+  color: #9fa3a9 !important;
+}
+
+.border,
+.border-gray-100,
+.border-gray-200,
+.border-gray-300 {
+  border-color: #272727 !important;
+}
+
+.bg-gray-50,
+.bg-gray-100 {
+  background-color: var(--gray-0) !important;
+}
+
+/* Input Overrides */
+input,
+select,
+textarea {
+  background-color: #0d0d0d !important;
+  color: #ffffff !important;
+  border: 1px solid #272727 !important;
+  border-radius: 8px !important;
+}
+
+input:focus {
+  border-color: var(--primary) !important;
+  outline: none;
+  box-shadow: 0 0 0 2px var(--primary-glow);
+}
+
+/* Shadow adjustments */
+.shadow-sm,
+.shadow,
+.shadow-md,
+.shadow-lg,
+.shadow-xl {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0a0a0a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #272727;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3f4753;
 }

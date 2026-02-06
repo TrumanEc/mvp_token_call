@@ -28,6 +28,11 @@ export class MarketService {
             currentOwner: { select: { id: true, username: true } },
           },
         },
+        listings: true,
+        history: {
+          orderBy: { createdAt: 'desc' },
+          take: 50
+        },
       },
     })
 
@@ -41,17 +46,24 @@ export class MarketService {
       noPool: market.noPool.toNumber(),
       maxPool: market.maxPool.toNumber(),
       odds,
-      positions: market.positions.map((p) => ({
+      positions: (market as any).positions.map((p: any) => ({
         ...p,
         amount: p.amount.toNumber(),
         payout: p.payout?.toNumber(),
         initialProbability: p.initialProbability.toNumber(),
       })),
+      history: (market as any).history.map((h: any) => ({
+        id: h.id,
+        yesOdds: h.yesOdds.toNumber(),
+        noOdds: h.noOdds.toNumber(),
+        totalPool: h.totalPool.toNumber(),
+        createdAt: h.createdAt
+      }))
     }
   }
 
   static async create(data: {
-    playerName: string
+    playerName?: string
     question: string
     description?: string
     resolutionDate: Date
@@ -62,6 +74,13 @@ export class MarketService {
         ...data,
         maxPool: data.maxPool ? new Decimal(data.maxPool) : undefined,
         status: 'DRAFT',
+        history: {
+          create: {
+            yesOdds: new Decimal(50),
+            noOdds: new Decimal(50),
+            totalPool: new Decimal(0)
+          }
+        }
       },
     })
   }

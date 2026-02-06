@@ -36,7 +36,7 @@ export class SettlementService {
       if (outcome === 'VOID') {
         for (const position of market.positions) {
           if (position.status === 'ACTIVE') {
-            await BalanceService.credit(tx, position.currentOwnerId, position.amount, 'BET_REFUNDED', 'Refund for voided market')
+            await BalanceService.credit(tx, position.currentOwnerId, position.amount, 'BET_REFUNDED', 'Refund for voided market', marketId)
             await tx.position.update({
               where: { id: position.id },
               data: { status: 'REFUNDED', payout: position.amount },
@@ -70,7 +70,7 @@ export class SettlementService {
 
         if (isWinner) {
           const payout = new Decimal(position.amount).times(payoutMultiplier)
-          await BalanceService.credit(tx, position.currentOwnerId, payout, 'PAYOUT_RECEIVED', 'Winnings from market resolution')
+          await BalanceService.credit(tx, position.currentOwnerId, payout, 'PAYOUT_RECEIVED', 'Winnings from market resolution', marketId)
           await tx.position.update({
             where: { id: position.id },
             data: { status: 'WON', payout },

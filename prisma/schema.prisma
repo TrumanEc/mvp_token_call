@@ -11,7 +11,7 @@ model User {
   id        String   @id @default(cuid())
   username  String   @unique
   email     String?  @unique
-  role      String   @default("USER") // Changed from Role enum
+  role      String   @default("USER")
   balance   Decimal  @default(1000.00)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -29,11 +29,11 @@ model User {
 
 model Market {
   id             String       @id @default(cuid())
-  playerName     String
+  playerName     String?
   question       String
   description    String?
-  status         String       @default("DRAFT") // Changed from MarketStatus enum
-  outcome        String?      // Changed from Outcome enum
+  status         String       @default("DRAFT")
+  outcome        String?
   yesPool        Decimal      @default(0)
   noPool         Decimal      @default(0)
   maxPool        Decimal      @default(20000)
@@ -43,8 +43,9 @@ model Market {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
-  positions Position[]
-  listings  MarketplaceListing[]
+  positions    Position[]
+  listings     MarketplaceListing[]
+  history      MarketHistory[]
 
   @@index([status])
   @@index([resolutionDate])
@@ -55,9 +56,9 @@ model Position {
   marketId          String
   originalOwnerId   String
   currentOwnerId    String
-  side              String         // Changed from Side enum
+  side              String
   amount            Decimal
-  status            String         @default("ACTIVE") // Changed from PositionStatus enum
+  status            String         @default("ACTIVE")
   payout            Decimal?
   isForSale         Boolean        @default(false)
   createdAt         DateTime       @default(now())
@@ -86,7 +87,7 @@ model MarketplaceListing {
   askPrice       Decimal
   suggestedPrice Decimal
   platformFee    Decimal       @default(0.025)
-  status         String        @default("ACTIVE") // Changed from ListingStatus enum
+  status         String        @default("ACTIVE")
   listedAt       DateTime      @default(now())
   soldAt         DateTime?
   cancelledAt    DateTime?
@@ -122,7 +123,7 @@ model PositionTransfer {
 model Transaction {
   id            String          @id @default(cuid())
   userId        String
-  type          String          // Changed from TransactionType enum
+  type          String
   amount        Decimal
   balanceBefore Decimal
   balanceAfter  Decimal
@@ -134,5 +135,19 @@ model Transaction {
 
   @@index([userId])
   @@index([type])
+  @@index([createdAt])
+}
+
+model MarketHistory {
+  id        String   @id @default(cuid())
+  marketId  String
+  yesOdds   Decimal
+  noOdds    Decimal
+  totalPool Decimal
+  createdAt DateTime @default(now())
+
+  market Market @relation(fields: [marketId], references: [id], onDelete: Cascade)
+
+  @@index([marketId])
   @@index([createdAt])
 }
