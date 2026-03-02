@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'userId required' }, { status: 400 })
   }
 
-  const positions = await PositionService.getUserPositions(userId, marketId || undefined)
+  const positions = await PositionService.getUserConsolidatedPositions(userId, marketId || undefined)
   return NextResponse.json(positions)
 }
 
