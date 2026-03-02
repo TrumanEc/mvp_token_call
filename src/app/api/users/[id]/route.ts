@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { UserService } from '@/services/user'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const user = await UserService.getById(id)
