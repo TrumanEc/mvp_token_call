@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { UserProvider, useUser } from '@/contexts/UserContext'
 import { Shell } from '@/components/layout/Shell'
-import { Card, CardContent } from '@/components/ui/Card'
-import { PriceChart } from '@/components/markets/PriceChart'
 import { Modal } from '@/components/ui/Modal'
+import { PriceChart } from '@/components/markets/PriceChart'
+import { UserProvider, useUser } from '@/contexts/UserContext'
+import { LmsrCalculator } from './lmsr-calculator'
 
 function AdminPage() {
   const router = useRouter()
@@ -30,7 +30,9 @@ function AdminPage() {
   
   const [selectedUserStats, setSelectedUserStats] = useState<any>(null)
   const [selectedMarketStats, setSelectedMarketStats] = useState<any>(null)
+  const [lmsrLogs, setLmsrLogs] = useState<any[]>([])
   const [loadingDetails, setLoadingDetails] = useState(false)
+  const [loadingLogs, setLoadingLogs] = useState(false)
 
   const [newMarket, setNewMarket] = useState({
     playerName: '',
@@ -38,6 +40,9 @@ function AdminPage() {
     description: '',
     resolutionDate: '',
     maxPool: '20000',
+    b: '100',
+    maxBetAmount: '',
+    maxPriceImpact: '',
   })
 
   useEffect(() => {
@@ -103,12 +108,21 @@ function AdminPage() {
 
   const fetchMarketDetails = async (marketId: string) => {
     setLoadingDetails(true)
+    setLoadingLogs(true)
     try {
-      const res = await fetch(`/api/admin/markets/${marketId}/stats`)
-      const data = await res.json()
-      setSelectedMarketStats(data)
+      const [statsRes, logsRes] = await Promise.all([
+        fetch(`/api/admin/markets/${marketId}/stats`),
+        fetch(`/api/admin/markets/${marketId}/lmsr-logs`)
+      ])
+      
+      const statsData = await statsRes.json()
+      const logsData = await logsRes.json()
+      
+      setSelectedMarketStats(statsData)
+      setLmsrLogs(logsData)
     } finally {
       setLoadingDetails(false)
+      setLoadingLogs(false)
     }
   }
 
@@ -131,11 +145,14 @@ function AdminPage() {
         body: JSON.stringify({
           ...newMarket,
           maxPool: parseFloat(newMarket.maxPool) || 20000,
+          b: parseFloat(newMarket.b) || 100,
+          maxBetAmount: newMarket.maxBetAmount ? parseFloat(newMarket.maxBetAmount) : undefined,
+          maxPriceImpact: newMarket.maxPriceImpact ? parseFloat(newMarket.maxPriceImpact) : undefined,
         }),
       })
       if (res.ok) {
         setShowCreateModal(false)
-        setNewMarket({ playerName: '', question: '', description: '', resolutionDate: '', maxPool: '20000' })
+        setNewMarket({ playerName: '', question: '', description: '', resolutionDate: '', maxPool: '20000', b: '100', maxBetAmount: '', maxPriceImpact: '' })
         fetchMarkets()
       }
     } finally {
@@ -165,6 +182,23 @@ function AdminPage() {
       if (activeTab === 'payments') fetchTransactions(selectedMarketId)
     } finally {
       setResolving(false)
+    }
+  }
+
+  const handleToggleRole = async (userId: string, currentRole: string) => {
+    const newRole = currentRole === 'ADMIN' ? 'USER' : 'ADMIN'
+    try {
+      const res = await fetch(`/api/admin/users/${userId}/role`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: newRole }),
+      })
+      if (res.ok) {
+        fetchUsers()
+      }
+    } catch (error) {
+      console.error('Error toggling role:', error)
+      alert('Error técnico al cambiar el rol. Revisa la consola del servidor.')
     }
   }
 
@@ -272,6 +306,11 @@ function AdminPage() {
 
         {/* Content Area */}
         <div className="space-y-6">
+          {/* LMSR Calculator Widget */}
+          <div className="col-span-1 md:col-span-3 lg:col-span-1">
+             <LmsrCalculator />
+          </div>
+
           {activeTab === 'markets' && (
             loadingMarkets ? (
               <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#64c883]" /></div>
@@ -329,10 +368,12 @@ function AdminPage() {
                   <div key={u.id} className="bg-[#121212] border border-white/5 rounded-3xl p-6 hover:border-white/10 transition-all group cursor-pointer" onClick={() => fetchUserDetails(u.id)}>
                     <div className="flex items-center gap-4 mb-4">
                       <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center font-bold text-gray-400 uppercase text-xs border border-white/5">
-                        {u.username[0]}
+                        {(u.username || u.email || '?')[0]}
                       </div>
                       <div>
-                        <div className="text-base font-bold text-white group-hover:text-[#64c883] transition-colors">@{u.username}</div>
+                        <div className="text-base font-bold text-white group-hover:text-[#64c883] transition-colors truncate max-w-[150px]">
+                          @{u.username || u.email.split('@')[0]}
+                        </div>
                         <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider ${
                           u.role === 'ADMIN' ? 'bg-white/10 text-white' : 'bg-gray-800 text-gray-400'
                         }`}>
@@ -340,10 +381,20 @@ function AdminPage() {
                         </span>
                       </div>
                     </div>
-                    <div className="bg-[#0a0a0a] p-3 rounded-xl border border-white/5 flex justify-between items-center">
+                    <div className="bg-[#0a0a0a] p-3 rounded-xl border border-white/5 flex justify-between items-center mb-4">
                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Balance</span>
                        <span className="text-base font-extrabold text-[#64c883]">$ {Number(u.balance || 0).toFixed(2)}</span>
                     </div>
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); handleToggleRole(u.id, u.role); }}
+                      className={`w-full py-2 rounded-xl text-[9px] font-bold uppercase tracking-wider transition-all ${
+                        u.role === 'ADMIN' 
+                          ? 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700' 
+                          : 'bg-white/10 text-white hover:bg-white/20'
+                      }`}
+                    >
+                      {u.role === 'ADMIN' ? 'Revocar Admin' : 'Hacer Admin'}
+                    </button>
                   </div>
                 ))}
               </div>
@@ -416,7 +467,7 @@ function AdminPage() {
       </div>
 
       {/* Drill-down Modals (Dark Mode Update) */}
-      <Modal isOpen={!!selectedUserStats} onClose={() => setSelectedUserStats(null)} title={`Perfil de Trading: @${selectedUserStats?.username}`} size="4xl">
+      <Modal isOpen={!!selectedUserStats} onClose={() => setSelectedUserStats(null)} title={`Perfil de Trading: @${selectedUserStats?.username || selectedUserStats?.email?.split('@')[0]}`} size="4xl">
         {loadingDetails ? (
            <div className="py-20 flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#64c883]" /></div>
         ) : selectedUserStats && (
@@ -464,7 +515,7 @@ function AdminPage() {
           <div className="space-y-8 pt-4">
              <div className="bg-[#0a0a0a] p-6 rounded-2xl border border-white/5">
                 <div className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.1em] mb-4">Evolución de Probabilidad</div>
-                <PriceChart history={selectedMarketStats.priceHistory} height={180} />
+                <PriceChart data={selectedMarketStats.priceHistory} height={180} />
              </div>
 
              <div className="grid grid-cols-2 gap-8">
@@ -539,10 +590,11 @@ function AdminPage() {
                         ))}
                      </tbody>
                    </table>
-                </div>
-             </div>
-          </div>
-        )}
+                 </div>
+              </div>
+
+           </div>
+         )}
       </Modal>
 
       {/* Form Modals (Simplified Dark Overhaul) */}
@@ -577,6 +629,40 @@ function AdminPage() {
                   onChange={(e) => setNewMarket({...newMarket, maxPool: e.target.value})}
                 />
               </div>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+               <div>
+                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-1">Liquidez (b)</label>
+                 <input 
+                   type="number"
+                   className="w-full h-14 bg-[#121212] border border-white/5 rounded-2xl px-4 text-white font-bold outline-none focus:border-[#64c883] transition-all"
+                   value={newMarket.b}
+                   onChange={(e) => setNewMarket({...newMarket, b: e.target.value})}
+                   placeholder="100"
+                 />
+                 <p className="text-[9px] text-gray-500 px-1 mt-1">Mayor b = Menos volatilidad</p>
+               </div>
+               <div>
+                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-1">CAP Transacción ($)</label>
+                 <input 
+                   type="number"
+                   className="w-full h-14 bg-[#121212] border border-white/5 rounded-2xl px-4 text-white font-bold outline-none focus:border-[#64c883] transition-all"
+                   value={newMarket.maxBetAmount}
+                   onChange={(e) => setNewMarket({...newMarket, maxBetAmount: e.target.value})}
+                   placeholder="Global"
+                 />
+               </div>
+               <div>
+                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-1">CAP Variación p (%)</label>
+                 <input 
+                   type="number"
+                   className="w-full h-14 bg-[#121212] border border-white/5 rounded-2xl px-4 text-white font-bold outline-none focus:border-[#64c883] transition-all"
+                   value={newMarket.maxPriceImpact}
+                   onChange={(e) => setNewMarket({...newMarket, maxPriceImpact: e.target.value})}
+                   placeholder="Global"
+                   step="0.1"
+                 />
+               </div>
             </div>
           </div>
           <button 

@@ -2,29 +2,32 @@
 
 import React, { useMemo, useState, useRef } from 'react'
 
-interface HistoryItem {
-  id: string
-  yesOdds: number
-  noOdds: number
-  totalPool: number
-  createdAt: string | Date
+export interface ChartDataPoint {
+  timestamp: string | Date
+  price: number // 0 to 1
+  volume?: number
 }
 
 interface PriceChartProps {
-  history: HistoryItem[]
+  data: ChartDataPoint[]
   height?: number
   showNo?: boolean
 }
 
-export function PriceChart({ history, height = 300, showNo = false }: PriceChartProps) {
+export function PriceChart({ data: rawData, height = 300, showNo = false }: PriceChartProps) {
   const [hoverIdx, setHoverIdx] = useState<number | null>(null)
   const [timeRange, setTimeRange] = useState('MAX')
   const svgRef = useRef<SVGSVGElement>(null)
 
   const data = useMemo(() => {
-    if (!history || history.length === 0) return []
-    return [...history].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-  }, [history])
+    if (!rawData || rawData.length === 0) return []
+    return [...rawData]
+      .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+      .map(d => ({
+        ...d,
+        percent: d.price * 100 // Convert 0-1 to 0-100 for display
+      }))
+  }, [rawData])
 
   if (data.length < 2) {
     return (
@@ -42,6 +45,7 @@ export function PriceChart({ history, height = 300, showNo = false }: PriceChart
   }
 
   const getY = (value: number) => {
+    // Value is percentage 0-100
     return height - padding.bottom - (value / 100) * (height - padding.top - padding.bottom)
   }
 
@@ -57,7 +61,13 @@ export function PriceChart({ history, height = 300, showNo = false }: PriceChart
   const generatePath = (values: number[]) => {
     const points = values.map((val, i) => ({ x: getX(i), y: getY(val) }))
     let path = `M ${points[0].x},${points[0].y}`
-    for (let i = 0; i < points.length - 1; i++) {
+    // Use simple lines for small datasets, smooth curves for larger ones
+    if (points.length <= 3) {
+      for (let i = 1; i < points.length; i++) {
+        path += ` L ${points[i].x},${points[i].y}`
+      }
+    } else {
+      for (let i = 0; i < points.length - 1; i++) {
         const curr = points[i]
         const next = points[i + 1]
         const cp1x = curr.x + (next.x - curr.x) / 2
@@ -65,11 +75,12 @@ export function PriceChart({ history, height = 300, showNo = false }: PriceChart
         const cp2x = curr.x + (next.x - curr.x) / 2
         const cp2y = next.y
         path += ` C ${cp1x},${cp1y} ${cp2x},${cp2y} ${next.x},${next.y}`
+      }
     }
     return path
   }
 
-  const yesPath = generatePath(data.map(d => d.yesOdds))
+  const yesPath = generatePath(data.map(d => d.percent))
 
   return (
     <div className="relative w-full group">
@@ -91,8 +102,9 @@ export function PriceChart({ history, height = 300, showNo = false }: PriceChart
       <svg
         ref={svgRef}
         viewBox={`0 0 ${width} ${height}`}
-        className="w-full h-auto cursor-crosshair overflow-visible"
-        preserveAspectRatio="none"
+        className="w-full h-auto cursor-crosshair"
+        style={{ overflow: 'hidden' }}
+        preserveAspectRatio="xMidYMid meet"
         onMouseMove={handleMouseMove}
         onMouseLeave={() => setHoverIdx(null)}
       >
@@ -101,6 +113,9 @@ export function PriceChart({ history, height = 300, showNo = false }: PriceChart
             <stop offset="0%" stopColor="#64c883" stopOpacity="0.1" />
             <stop offset="100%" stopColor="#64c883" stopOpacity="0" />
           </linearGradient>
+          <clipPath id="chart-clip">
+            <rect x={padding.left} y={0} width={width - padding.left - padding.right} height={height} />
+          </clipPath>
         </defs>
 
         {/* Dash Grid Lines */}
@@ -123,7 +138,9 @@ export function PriceChart({ history, height = 300, showNo = false }: PriceChart
         ))}
 
         {/* Lines */}
-        <path d={yesPath} fill="none" stroke="#64c883" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+        <g clipPath="url(#chart-clip)">
+          <path d={yesPath} fill="none" stroke="#64c883" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+        </g>
 
         {/* Hover Interaction Vertical Line */}
         {hoverIdx !== null && (
@@ -139,22 +156,9 @@ export function PriceChart({ history, height = 300, showNo = false }: PriceChart
           />
         )}
 
-        {/* Month Labels */}
+        {/* Month Labels (Simplified) */}
         <g>
-          {['Apr', 'May', 'Jun', 'Jul', 'Aug'].map((month, i) => (
-            <text
-              key={month}
-              x={padding.left + (i * (width - padding.left - padding.right) / 4)}
-              y={height - 10}
-              fontSize="12"
-              fill="white"
-              fillOpacity="0.2"
-              className="select-none font-bold"
-              textAnchor="middle"
-            >
-              {month}
-            </text>
-          ))}
+          {/* TODO: Generate dynamic labels based on time range */}
         </g>
       </svg>
 
@@ -169,10 +173,11 @@ export function PriceChart({ history, height = 300, showNo = false }: PriceChart
         >
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-[#64c883]" />
-            <span className="text-sm font-extrabold text-white">{data[hoverIdx].yesOdds.toFixed(1)}%</span>
+            <span className="text-sm font-extrabold text-white">{data[hoverIdx].percent.toFixed(1)}%</span>
+            <span className="text-xs text-gray-500">Price: ${data[hoverIdx].price.toFixed(2)}</span>
           </div>
           <p className="text-[10px] font-bold text-gray-400 mt-1">
-            {new Date(data[hoverIdx].createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit' })}
+            {new Date(data[hoverIdx].timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
           </p>
         </div>
       )}

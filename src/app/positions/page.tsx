@@ -48,7 +48,10 @@ function PositionsPage() {
   const filteredPositions = filter === 'ALL' ? positions : positions.filter((p) => p.status === 'ACTIVE')
 
   const totalInvested = positions.reduce((sum, p) => sum + (p.status === 'ACTIVE' ? p.amount : 0), 0)
+  const totalFairValue = positions.reduce((sum, p) => sum + (p.status === 'ACTIVE' ? p.fairValue : 0), 0)
   const totalPotential = positions.reduce((sum, p) => sum + (p.status === 'ACTIVE' ? p.potentialReturn : 0), 0)
+  const totalProfit = totalFairValue - totalInvested
+  const totalProfitPct = totalInvested > 0 ? (totalProfit / totalInvested) * 100 : 0
 
   return (
     <Shell>
@@ -58,13 +61,24 @@ function PositionsPage() {
              <h1 className="text-[32px] md:text-[40px] font-bold text-white leading-tight mb-2">
               Mis Posiciones
             </h1>
-            <div className="flex items-center gap-6 text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400">
-               <div>
-                  Invertido: <span className="text-white ml-1 font-extrabold">$ {totalInvested.toLocaleString()}</span>
+            <div className="flex flex-wrap items-center gap-6 mt-4">
+               <div className="bg-[#121212] border border-white/5 p-4 rounded-2xl flex flex-col min-w-[140px]">
+                  <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1">Total Invertido</span>
+                  <span className="text-lg font-extrabold text-white">$ {totalInvested.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                </div>
-               <div className="w-[1px] h-3 bg-white/10" />
-               <div>
-                  Retorno potencial: <span className="text-[#64c883] ml-1 font-extrabold">$ {totalPotential.toLocaleString()}</span>
+               <div className="bg-[#121212] border border-white/5 p-4 rounded-2xl flex flex-col min-w-[140px]">
+                  <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1">Valor de Mercado</span>
+                  <span className="text-lg font-extrabold text-[#64c883]">$ {totalFairValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+               </div>
+               <div className="bg-[#121212] border border-white/5 p-4 rounded-2xl flex flex-col min-w-[140px]">
+                  <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1">P&L Total</span>
+                  <span className={`text-lg font-extrabold ${totalProfit >= 0 ? 'text-[#64c883]' : 'text-[#e16464]'}`}>
+                    {totalProfit >= 0 ? '+' : ''}{totalProfitPct.toFixed(1)}%
+                  </span>
+               </div>
+               <div className="bg-[#121212] border border-white/5 p-4 rounded-2xl flex flex-col min-w-[140px]">
+                  <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1">Retorno Máximo</span>
+                  <span className="text-lg font-extrabold text-white/40">$ {totalPotential.toLocaleString()}</span>
                </div>
             </div>
           </div>

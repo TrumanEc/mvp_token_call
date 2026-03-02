@@ -1,75 +1,98 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { Decimal } from "@prisma/client/runtime/library";
+import { NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+import { LmsrService } from '@/services/lmsr.service'
 
 export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
+  
   try {
-    const { id: marketId } = await params;
-
     const market = await prisma.market.findUnique({
-      where: { id: marketId },
+      where: { id },
       include: {
         positions: {
           include: {
             currentOwner: { select: { id: true, username: true } },
           },
+          orderBy: { createdAt: 'desc' }
         },
-        history: {
-          orderBy: { createdAt: "desc" },
-          take: 50,
-        },
-      },
-    });
+        lmsrSnapshots: {
+          orderBy: { createdAt: 'asc' } // Oldest first for chart
+        }
+      }
+    })
 
-    if (!market)
-      return NextResponse.json({ error: "Market not found" }, { status: 404 });
+    if (!market) {
+      return NextResponse.json({ error: 'Market not found' }, { status: 404 })
+    }
 
-    const yes = new Decimal(market.yesPool);
-    const no = new Decimal(market.noPool);
-    const total = yes.plus(no);
-    const fee = new Decimal(0.1);
-    const netPool = total.times(new Decimal(1).minus(fee));
+    const lmsrService = new LmsrService()
+    const prices = lmsrService.getPrice(market.qYes, market.qNo, market.b)
 
-    return NextResponse.json({
+    // Stats Logic
+    const purchases = market.positions.map(p => ({
+      id: p.id,
+      username: p.currentOwner.username,
+      side: p.side,
+      amount: p.amount,
+      initialProbability: p.initialProbability,
+      createdAt: p.createdAt
+    }))
+
+    const priceHistory = market.lmsrSnapshots.map(s => ({
+      timestamp: s.createdAt,
+      price: s.pYesAfter, // PriceChart expects 0-1 price
+      yesOdds: s.pYesAfter * 100,
+      noOdds: (1 - s.pYesAfter) * 100,
+      totalPool: s.cost
+    }))
+
+    // Simulation
+    // Payout per dollar invested NOW at current odds:
+    // If I buy YES at 0.60, payout is $1. So multiplier is 1 / 0.60 = 1.66x
+    const payoutYes = prices.pYes > 0 ? (1 / prices.pYes) : 0
+    const payoutNo  = prices.pNo  > 0 ? (1 / prices.pNo)  : 0
+
+    const stats = {
+      // Basic Info
       id: market.id,
-      playerName: market.playerName,
+      question: market.question,
       status: market.status,
-      yesPool: yes.toNumber(),
-      noPool: no.toNumber(),
-      totalPool: total.toNumber(),
+      
+      // Pools (Legacy + LMSR)
+      yesPool: market.yesPool,
+      noPool: market.noPool,
+      totalPool: market.yesPool.toNumber() + market.noPool.toNumber(), // Legacy total
+      
+      // LMSR Specifics
+      b: market.b,
+      qYes: market.qYes,
+      qNo: market.qNo,
+      seedCost: market.seedCost,
+      currentPrices: prices,
+
+      // Lists
+      purchases,
+      priceHistory,
+
+      // Simulation
       simulation: {
+        platformCommission: 0, // Fee is taken on entry, not settlement in this LMSR implementation
         ifYesWins: {
-          payoutPerDollar: yes.isZero() ? 0 : netPool.dividedBy(yes).toNumber(),
+          payoutPerDollar: payoutYes
         },
         ifNoWins: {
-          payoutPerDollar: no.isZero() ? 0 : netPool.dividedBy(no).toNumber(),
-        },
-        platformCommission: total.times(fee).toNumber(),
-      },
-      priceHistory:
-        (market as any).history?.map((h: any) => ({
-          id: h.id,
-          yesOdds: h.yesOdds.toNumber(),
-          noOdds: h.noOdds.toNumber(),
-          totalPool: h.totalPool.toNumber(),
-          createdAt: h.createdAt,
-        })) || [],
-      purchases:
-        (market as any).positions?.map((p: any) => ({
-          id: p.id,
-          username: p.currentOwner.username,
-          side: p.side,
-          amount: p.amount.toNumber(),
-          initialProbability: p.initialProbability.toNumber(),
-          createdAt: p.createdAt,
-        })) || [],
-    });
-  } catch (error: any) {
-    console.error("Market stats error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+          payoutPerDollar: payoutNo
+        }
+      }
+    }
+
+    return NextResponse.json(stats)
+
+  } catch (error) {
+    console.error('Error fetching admin market stats:', error)
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
 }

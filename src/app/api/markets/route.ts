@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const body = await request.json()
-  const { playerName, question, description, resolutionDate, maxPool } = body
+  const { playerName, question, description, resolutionDate, maxPool, maxBetAmount, maxPriceImpact } = body
   
   if (!question || !resolutionDate) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -21,6 +21,8 @@ export async function POST(request: NextRequest) {
     description,
     resolutionDate: new Date(resolutionDate),
     maxPool,
+    maxBetAmount,
+    maxPriceImpact,
   })
 
   return NextResponse.json(market, { status: 201 })

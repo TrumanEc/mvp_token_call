@@ -1,8 +1,7 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
 
 interface PredictionCardProps {
   market: any
@@ -15,7 +14,18 @@ export function PredictionCard({ market, userId, userBalance, onSuccess }: Predi
   const [side, setSide] = useState<'YES' | 'NO'>('YES')
   const [amount, setAmount] = useState('')
   const [loading, setLoading] = useState(false)
+  const [quoteLoading, setQuoteLoading] = useState(false)
   const [error, setError] = useState('')
+
+  const [quote, setQuote] = useState<{
+    shares: number
+    avgPrice: number
+    totalCost: number
+    newProbabilities: { yes: number; no: number }
+    maxAllowedAmount?: number
+    capReason?: string | null
+    wouldExceedCap?: boolean
+  } | null>(null)
 
   const yesOdds = market.odds.yesOdds
   const totalVolume = market.yesPool + market.noPool
@@ -26,9 +36,44 @@ export function PredictionCard({ market, userId, userBalance, onSuccess }: Predi
   }
 
   const amountNum = parseFloat(amount) || 0
+
+  // Debounce fetching quote
+  useEffect(() => {
+    const fetchQuote = async () => {
+      if (amountNum <= 0) {
+        setQuote(null)
+        return
+      }
+
+      setQuoteLoading(true)
+      try {
+        const res = await fetch(`/api/markets/${market.id}/price-quote?side=${side}&amount=${amountNum}`)
+        const data = await res.json()
+        if (res.ok) {
+          setQuote(data)
+        } else {
+          console.error('Error fetching quote:', data.error, data.details)
+          setError(data.details || data.error || 'Error al obtener cotización')
+        }
+      } catch (err) {
+        console.error('Failed to fetch quote', err)
+      } finally {
+        setQuoteLoading(false)
+      }
+    }
+
+    const timer = setTimeout(fetchQuote, 500)
+    return () => clearTimeout(timer)
+  }, [amountNum, side, market.id])
+
+  
+  // Use quoted values or fallback to current market price for estimation
   const currentPrice = (side === 'YES' ? market.odds.yesOdds : market.odds.noOdds) / 100
-  const estimatedShares = amountNum / currentPrice
-  const potentialReturn = estimatedShares // Each share pays $1
+  const estimatedShares = quote ? quote.shares : (amountNum / currentPrice)
+  // In LMSR, return is $1 per share. So potential return value = shares.
+  const potentialReturnValue = estimatedShares
+  const potentialProfit = potentialReturnValue - amountNum
+  const roi = amountNum > 0 ? (potentialProfit / amountNum) * 100 : 0
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -62,6 +107,7 @@ export function PredictionCard({ market, userId, userBalance, onSuccess }: Predi
       if (!res.ok) throw new Error(data.error || 'Error al crear posición')
 
       setAmount('')
+      setQuote(null)
       onSuccess()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error desconocido')
@@ -125,6 +171,7 @@ export function PredictionCard({ market, userId, userBalance, onSuccess }: Predi
       {/* Selection Buttons */}
       <div className="grid grid-cols-2 gap-4">
         <button
+          type="button"
           onClick={() => setSide('YES')}
           className={`h-16 rounded-2xl flex flex-col items-center justify-center transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] ${
             side === 'YES' 
@@ -133,9 +180,17 @@ export function PredictionCard({ market, userId, userBalance, onSuccess }: Predi
           }`}
         >
           <span className="text-xl font-bold">Yes</span>
-          <span className="text-[10px] font-bold opacity-70 mt-0.5">${(market.odds.yesOdds / 100).toFixed(2)}</span>
+          <div className="flex gap-1 items-center mt-0.5">
+             <span className="text-[10px] font-bold opacity-70">
+                ${(quote ? quote.newProbabilities.yes : market.odds.yesOdds / 100).toFixed(2)}
+             </span>
+             {quote && side === 'YES' && (
+               <span className="text-[9px] text-[#0a0a0a] font-extrabold bg-white/20 px-1 rounded">NEW</span>
+             )}
+          </div>
         </button>
         <button
+          type="button"
           onClick={() => setSide('NO')}
           className={`h-16 rounded-2xl flex flex-col items-center justify-center transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] ${
             side === 'NO' 
@@ -144,7 +199,14 @@ export function PredictionCard({ market, userId, userBalance, onSuccess }: Predi
           }`}
         >
           <span className="text-xl font-bold">No</span>
-          <span className="text-[10px] font-bold opacity-70 mt-0.5">${(market.odds.noOdds / 100).toFixed(2)}</span>
+          <div className="flex gap-1 items-center mt-0.5">
+             <span className="text-[10px] font-bold opacity-70">
+                ${(quote ? quote.newProbabilities.no : market.odds.noOdds / 100).toFixed(2)}
+             </span>
+             {quote && side === 'NO' && (
+               <span className="text-[9px] text-[#0a0a0a] font-extrabold bg-white/20 px-1 rounded">NEW</span>
+             )}
+          </div>
         </button>
       </div>
 
@@ -170,22 +232,48 @@ export function PredictionCard({ market, userId, userBalance, onSuccess }: Predi
         {amountNum > 0 && (
           <div className="space-y-2">
             <div className="flex justify-between items-center px-4 py-3 bg-[#0d0d0d]/50 rounded-xl border border-white/5">
-               <span className="text-xs text-gray-400">Acciones Proyectadas</span>
-               <span className="text-sm font-bold text-white">{estimatedShares.toFixed(2)}</span>
+               <span className="text-xs text-gray-400">Acciones Estimadas</span>
+               <span className="text-sm font-bold text-white">
+                 {quoteLoading ? '...' : estimatedShares.toFixed(2)}
+               </span>
+            </div>
+            <div className="flex justify-between items-center px-4 py-3 bg-[#0d0d0d]/50 rounded-xl border border-white/5">
+               <span className="text-xs text-gray-400">Precio Promedio</span>
+               <span className="text-sm font-bold text-white">
+                 {quoteLoading ? '...' : `$${(quote ? quote.avgPrice : currentPrice).toFixed(3)}`}
+               </span>
             </div>
             <div className="flex justify-between items-center px-4 py-4 bg-[#64c883]/5 rounded-xl border border-[#64c883]/10">
-               <span className="text-xs text-[#64c883]">Retorno si Gana</span>
-               <span className="text-base font-extrabold text-[#64c883]">${potentialReturn.toFixed(2)}</span>
+               <span className="text-xs text-[#64c883]">Retorno ({Math.max(0, roi).toFixed(0)}%)</span>
+               <span className="text-base font-extrabold text-[#64c883]">
+                 {quoteLoading ? '...' : `$${potentialReturnValue.toFixed(2)}`}
+               </span>
             </div>
+          </div>
+        )}
+
+        {quote?.wouldExceedCap && (
+          <div className="bg-[#e16464]/10 border border-[#e16464]/20 p-3 rounded-xl text-[#e16464] text-[11px] mb-2">
+            <p className="font-bold mb-0.5">⚠️ Límite excedido</p>
+            <p>{quote.capReason}</p>
+            <p className="mt-1">Máximo permitido: <strong>${quote.maxAllowedAmount?.toFixed(2)}</strong></p>
+            <button
+              type="button"
+              onClick={() => setAmount(quote.maxAllowedAmount?.toString() || '')}
+              className="mt-2 text-[10px] font-extrabold underline uppercase tracking-tighter"
+            >
+              Ajustar al máximo
+            </button>
           </div>
         )}
 
         {error && <p className="text-[#e16464] text-xs text-center font-medium">{error}</p>}
 
+
         <Button
           type="submit"
-          disabled={!amount || loading}
-          loading={loading}
+          disabled={!amount || loading || quoteLoading || amountNum <= 0 || !!quote?.wouldExceedCap}
+          loading={loading || quoteLoading}
           className={`w-full py-6 rounded-2xl text-lg font-bold transition-all shadow-xl ${
             side === 'YES' 
             ? 'bg-[#64c883] text-[#0a0a0a] hover:bg-[#74db93] shadow-[#64c883]/20' 

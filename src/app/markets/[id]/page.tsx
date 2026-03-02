@@ -85,18 +85,126 @@ function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
             {/* Price Chart */}
             <div className="relative pb-8">
               <PriceChart 
-                history={market.history} 
+                data={market.history} 
                 height={350} 
                 showNo={false} 
               />
               {/* Bottom Volume Info */}
-              <div className="absolute bottom-[-4px] left-0 flex items-center gap-2">
-                <span className="text-sm font-bold text-gray-400 capitalize">Vol.:</span>
-                <span className="text-xl font-extrabold text-white leading-none">
-                  $ {totalVolume.toLocaleString()}
-                </span>
+              <div className="absolute bottom-[-4px] left-0 flex items-center gap-6">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-gray-400 capitalize">Vol.:</span>
+                  <span className="text-xl font-extrabold text-white leading-none">
+                    $ {totalVolume.toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-gray-400 capitalize">Liquidez:</span>
+                  <span className="text-sm font-bold text-gray-300 leading-none">
+                    $ {(market.seedCost || 0).toFixed(2)}
+                  </span>
+                </div>
               </div>
             </div>
+
+            {/* LMSR Audit Data */}
+            <details className="group pt-4">
+              <summary className="flex items-center gap-2 cursor-pointer text-[10px] font-bold uppercase tracking-[0.15em] text-gray-500 hover:text-gray-300 transition-colors select-none">
+                <span className="group-open:rotate-90 transition-transform text-xs">▶</span>
+                Datos LMSR / Auditoría
+              </summary>
+              <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-3">
+                {/* Liquidity */}
+                <div className="bg-[#111] border border-white/5 rounded-xl p-3">
+                  <div className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">Parámetro b</div>
+                  <div className="text-lg font-extrabold text-white mt-1">{market.b}</div>
+                  <div className="text-[9px] text-gray-600 mt-0.5">Liquidez del market maker</div>
+                </div>
+                {/* Seed Cost */}
+                <div className="bg-[#111] border border-white/5 rounded-xl p-3">
+                  <div className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">Seed Cost</div>
+                  <div className="text-lg font-extrabold text-white mt-1">$ {(market.seedCost || 0).toFixed(2)}</div>
+                  <div className="text-[9px] text-gray-600 mt-0.5">b × ln(2) = subsidio inicial</div>
+                </div>
+                {/* Platform Fee */}
+                <div className="bg-[#111] border border-white/5 rounded-xl p-3">
+                  <div className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">Fee Plataforma</div>
+                  <div className="text-lg font-extrabold text-white mt-1">{((market.platformFee || 0.10) * 100).toFixed(0)}%</div>
+                  <div className="text-[9px] text-gray-600 mt-0.5">Comisión por trade</div>
+                </div>
+                {/* Shares YES */}
+                <div className="bg-[#111] border border-white/5 rounded-xl p-3">
+                  <div className="text-[9px] font-bold text-[#64c883] uppercase tracking-wider">qYes (Shares)</div>
+                  <div className="text-lg font-extrabold text-white mt-1">{(market.qYes || 0).toFixed(2)}</div>
+                  <div className="text-[9px] text-gray-600 mt-0.5">Shares YES acumulados</div>
+                </div>
+                {/* Shares NO */}
+                <div className="bg-[#111] border border-white/5 rounded-xl p-3">
+                  <div className="text-[9px] font-bold text-[#e16464] uppercase tracking-wider">qNo (Shares)</div>
+                  <div className="text-lg font-extrabold text-white mt-1">{(market.qNo || 0).toFixed(2)}</div>
+                  <div className="text-[9px] text-gray-600 mt-0.5">Shares NO acumulados</div>
+                </div>
+                {/* Prices */}
+                <div className="bg-[#111] border border-white/5 rounded-xl p-3">
+                  <div className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">Precios LMSR</div>
+                  <div className="flex gap-3 mt-1">
+                    <span className="text-base font-extrabold text-[#64c883]">Y ${(market.odds.yesOdds / 100).toFixed(2)}</span>
+                    <span className="text-base font-extrabold text-[#e16464]">N ${(market.odds.noOdds / 100).toFixed(2)}</span>
+                  </div>
+                  <div className="text-[9px] text-gray-600 mt-0.5">Precio por share (YES/NO)</div>
+                </div>
+                {/* YES Pool */}
+                <div className="bg-[#111] border border-white/5 rounded-xl p-3">
+                  <div className="text-[9px] font-bold text-[#64c883] uppercase tracking-wider">Pool YES</div>
+                  <div className="text-lg font-extrabold text-white mt-1">$ {market.yesPool.toFixed(2)}</div>
+                  <div className="text-[9px] text-gray-600 mt-0.5">Total apostado a YES</div>
+                </div>
+                {/* NO Pool */}
+                <div className="bg-[#111] border border-white/5 rounded-xl p-3">
+                  <div className="text-[9px] font-bold text-[#e16464] uppercase tracking-wider">Pool NO</div>
+                  <div className="text-lg font-extrabold text-white mt-1">$ {market.noPool.toFixed(2)}</div>
+                  <div className="text-[9px] text-gray-600 mt-0.5">Total apostado a NO</div>
+                </div>
+                {/* Max Pool */}
+                <div className="bg-[#111] border border-white/5 rounded-xl p-3">
+                  <div className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">Cap Máximo</div>
+                  <div className="text-lg font-extrabold text-white mt-1">$ {market.maxPool.toLocaleString()}</div>
+                  <div className="text-[9px] text-gray-600 mt-0.5">Límite de mercado</div>
+                </div>
+                {/* Max Payout (worst case) */}
+                <div className="bg-[#111] border border-white/5 rounded-xl p-3">
+                  <div className="text-[9px] font-bold text-yellow-500 uppercase tracking-wider">Max Payout</div>
+                  <div className="text-lg font-extrabold text-white mt-1">
+                    $ {Math.max(market.qYes || 0, market.qNo || 0).toFixed(2)}
+                  </div>
+                  <div className="text-[9px] text-gray-600 mt-0.5">Peor caso: max(qYes, qNo) × $1</div>
+                </div>
+                {/* Collected Fees */}
+                <div className="bg-[#111] border border-white/5 rounded-xl p-3">
+                  <div className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">Fees Recolectados</div>
+                  <div className="text-lg font-extrabold text-white mt-1">
+                    $ {(totalVolume * (market.platformFee || 0.10)).toFixed(2)}
+                  </div>
+                  <div className="text-[9px] text-gray-600 mt-0.5">{((market.platformFee || 0.10) * 100).toFixed(0)}% del volumen</div>
+                </div>
+                {/* Platform PnL Estimate */}
+                <div className="bg-[#111] border border-white/5 rounded-xl p-3">
+                  <div className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">PnL Estimado</div>
+                  {(() => {
+                    const collected = totalVolume * (1 - (market.platformFee || 0.10))
+                    const maxPayout = Math.max(market.qYes || 0, market.qNo || 0)
+                    const pnl = totalVolume - maxPayout
+                    return (
+                      <>
+                        <div className={`text-lg font-extrabold mt-1 ${pnl >= 0 ? 'text-[#64c883]' : 'text-[#e16464]'}`}>
+                          {pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}
+                        </div>
+                        <div className="text-[9px] text-gray-600 mt-0.5">Recaudado − peor payout</div>
+                      </>
+                    )
+                  })()}
+                </div>
+              </div>
+            </details>
 
             {/* Active Positions */}
             {market.positions.length > 0 && (
@@ -118,7 +226,7 @@ function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
                         </div>
                         <div>
                           <div className="text-sm font-bold text-white group-hover:text-[#64c883] transition-colors">
-                            @{pos.currentOwner.username}
+                            {pos.currentOwner.username ? `@${pos.currentOwner.username}` : pos.currentOwner.email?.split('@')[0] || 'Usuario'}
                           </div>
                           <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mt-0.5">
                             {new Date(pos.createdAt).toLocaleDateString()}

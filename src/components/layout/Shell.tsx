@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useUser } from '@/contexts/UserContext'
 import { ReactNode } from 'react'
+import { signOut } from 'next-auth/react'
 
 interface ShellProps {
   children: ReactNode
@@ -11,7 +12,7 @@ interface ShellProps {
 
 export function Shell({ children }: ShellProps) {
   const pathname = usePathname()
-  const { user, setUser } = useUser()
+  const { user } = useUser()
 
   const navigation = [
     { name: 'Mercados', href: '/markets' },
@@ -22,9 +23,7 @@ export function Shell({ children }: ShellProps) {
   const adminNav = [{ name: 'Admin', href: '/admin' }]
 
   const handleLogout = () => {
-    setUser(null)
-    localStorage.removeItem('wsm_user')
-    window.location.href = '/'
+    signOut({ callbackUrl: '/login' })
   }
 
   return (
@@ -96,7 +95,9 @@ export function Shell({ children }: ShellProps) {
 
                 <div className="flex items-center gap-4">
                   <div className="flex flex-col items-end">
-                    <span className="text-[11px] font-bold text-white tracking-tight">@{user.username}</span>
+                    <span className="text-[11px] font-bold text-white tracking-tight">
+                      {user.username ? `@${user.username}` : user.email?.split('@')[0] || 'Usuario'}
+                    </span>
                     <button
                       onClick={handleLogout}
                       className="text-[9px] font-bold text-gray-400 hover:text-[#e16464] uppercase tracking-wider transition-colors"
