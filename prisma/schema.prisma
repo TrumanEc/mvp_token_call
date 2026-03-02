@@ -1,0 +1,228 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id                String               @id @default(cuid())
+  name              String?
+  username          String?              @unique
+  email             String?              @unique
+  emailVerified     DateTime?
+  image             String?
+  role              String               @default("USER")
+  balance           Decimal              @default(1000.00)
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  purchases         MarketplaceListing[] @relation("BuyerListings")
+  sellListings      MarketplaceListing[] @relation("SellerListings")
+  currentPositions  Position[]           @relation("CurrentOwner")
+  originalPositions Position[]           @relation("OriginalOwner")
+  transfersTo       PositionTransfer[]   @relation("TransfersTo")
+  transfersFrom     PositionTransfer[]   @relation("TransfersFrom")
+  transactions      Transaction[]
+  accounts          Account[]
+  sessions          Session[]
+
+  @@index([username])
+}
+
+model Market {
+  id             String               @id @default(cuid())
+  playerName     String?
+  question       String
+  description    String?
+  status         String               @default("DRAFT")
+  outcome        String?
+  b              Float                @default(100.0)
+  qYes           Float                @default(0)
+  qNo            Float                @default(0)
+  seedCost       Float                @default(0)
+  yesPool        Decimal              @default(0)
+  noPool         Decimal              @default(0)
+  maxPool        Decimal              @default(20000)
+  platformFee    Decimal              @default(0.10)
+  resolutionDate DateTime
+  resolvedAt     DateTime?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  maxBetAmount   Float?
+  maxPriceImpact Float?
+  lmsrSnapshots  LmsrSnapshot[]
+  history        MarketHistory[]
+  listings       MarketplaceListing[]
+  positions      Position[]
+
+  @@index([status])
+  @@index([resolutionDate])
+}
+
+model Position {
+  id                 String              @id @default(cuid())
+  marketId           String
+  originalOwnerId    String
+  currentOwnerId     String
+  side               String
+  amount             Decimal
+  status             String              @default("ACTIVE")
+  payout             Decimal?
+  isForSale          Boolean             @default(false)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  shares             Float               @default(0)
+  avgCostPerShare    Float               @default(0)
+  totalCost          Float               @default(0)
+  initialProbability Decimal             @default(0)
+  purchasePrice      Decimal             @default(0)
+  lastTransferredAt  DateTime?
+  listing            MarketplaceListing?
+  currentOwner       User                @relation("CurrentOwner", fields: [currentOwnerId], references: [id])
+  originalOwner      User                @relation("OriginalOwner", fields: [originalOwnerId], references: [id])
+  market             Market              @relation(fields: [marketId], references: [id], onDelete: Cascade)
+  transfers          PositionTransfer[]
+
+  @@index([marketId])
+  @@index([currentOwnerId])
+  @@index([status])
+  @@index([isForSale])
+}
+
+model MarketplaceListing {
+  id                 String    @id @default(cuid())
+  positionId         String    @unique
+  marketId           String
+  sellerId           String
+  buyerId            String?
+  askPrice           Decimal
+  suggestedPrice     Decimal
+  platformFee        Decimal   @default(0.025)
+  status             String    @default("ACTIVE")
+  listedAt           DateTime  @default(now())
+  soldAt             DateTime?
+  cancelledAt        DateTime?
+  shares             Float     @default(0)
+  askPricePerShare   Float     @default(0)
+  fairValueAtListing Float     @default(0)
+  buyer              User?     @relation("BuyerListings", fields: [buyerId], references: [id])
+  seller             User      @relation("SellerListings", fields: [sellerId], references: [id])
+  market             Market    @relation(fields: [marketId], references: [id], onDelete: Cascade)
+  position           Position  @relation(fields: [positionId], references: [id], onDelete: Cascade)
+
+  @@index([marketId])
+  @@index([status])
+  @@index([sellerId])
+}
+
+model LmsrSnapshot {
+  id          String   @id @default(cuid())
+  marketId    String
+  qYesBefore  Float
+  qNoBefore   Float
+  pYesBefore  Float
+  side        String
+  deltaShares Float
+  cost        Float
+  qYesAfter   Float
+  qNoAfter    Float
+  pYesAfter   Float
+  triggerType String
+  userId      String?
+  createdAt   DateTime @default(now())
+  market      Market   @relation(fields: [marketId], references: [id], onDelete: Cascade)
+
+  @@index([marketId])
+  @@index([createdAt])
+}
+
+model PositionTransfer {
+  id            String   @id @default(cuid())
+  positionId    String
+  fromUserId    String
+  toUserId      String
+  price         Decimal
+  listingId     String?
+  transferredAt DateTime @default(now())
+  toUser        User     @relation("TransfersTo", fields: [toUserId], references: [id])
+  fromUser      User     @relation("TransfersFrom", fields: [fromUserId], references: [id])
+  position      Position @relation(fields: [positionId], references: [id], onDelete: Cascade)
+
+  @@index([positionId])
+  @@index([fromUserId])
+  @@index([toUserId])
+}
+
+model Transaction {
+  id            String   @id @default(cuid())
+  userId        String
+  type          String
+  amount        Decimal
+  balanceBefore Decimal
+  balanceAfter  Decimal
+  reference     String?
+  description   String
+  createdAt     DateTime @default(now())
+  user          User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt])
+}
+
+model MarketHistory {
+  id        String   @id @default(cuid())
+  marketId  String
+  yesOdds   Decimal
+  noOdds    Decimal
+  totalPool Decimal
+  createdAt DateTime @default(now())
+  market    Market   @relation(fields: [marketId], references: [id], onDelete: Cascade)
+
+  @@index([marketId])
+  @@index([createdAt])
+}
+
+model PlatformConfig {
+  id               String @id @default("global")
+  defaultMaxBet    Float  @default(500)
+  defaultMaxImpact Float  @default(5.0)
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
