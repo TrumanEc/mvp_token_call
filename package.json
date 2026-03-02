@@ -15,10 +15,12 @@
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@auth/prisma-adapter": "^2.11.1",
     "@prisma/client": "^5.22.0",
     "decimal.js": "^10.6.0",
     "dotenv": "^17.2.3",
     "next": "16.1.6",
+    "next-auth": "^5.0.0-beta.30",
     "prisma": "^5.22.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
@@ -34,6 +36,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",
+    "ts-node": "^10.9.2",
     "tsx": "^4.21.0",
     "typescript": "^5"
   }

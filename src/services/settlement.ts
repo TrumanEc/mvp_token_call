@@ -1,7 +1,8 @@
 import { prisma } from '@/lib/prisma'
 import { Decimal } from '@prisma/client/runtime/library'
 import { BalanceService } from './balance'
-import { Outcome } from '@prisma/client'
+
+export type Outcome = 'YES' | 'NO'
 
 export class SettlementService {
   static async resolve(marketId: string, outcome: Outcome | 'VOID') {
@@ -35,10 +36,10 @@ export class SettlementService {
       if (outcome === 'VOID') {
         for (const position of market.positions) {
           if (position.status === 'ACTIVE') {
-            await BalanceService.credit(tx, position.currentOwnerId, position.amount, 'BET_REFUNDED', 'Refund for voided market')
+            await BalanceService.credit(tx, position.currentOwnerId, new Decimal(position.totalCost), 'BET_REFUNDED', 'Refund for voided market', marketId)
             await tx.position.update({
               where: { id: position.id },
-              data: { status: 'REFUNDED', payout: position.amount },
+              data: { status: 'REFUNDED', payout: new Decimal(position.totalCost) },
             })
           }
         }
@@ -49,15 +50,7 @@ export class SettlementService {
         return { type: 'VOID' as const, refunded: market.positions.length }
       }
 
-      // Calculate payouts
-      const totalPool = new Decimal(market.yesPool).plus(market.noPool)
-      const platformFee = totalPool.times(market.platformFee)
-      const netPool = totalPool.minus(platformFee)
-      const winningPool = outcome === 'YES' ? market.yesPool : market.noPool
-      const payoutMultiplier = new Decimal(winningPool).isZero()
-        ? new Decimal(0)
-        : netPool.dividedBy(winningPool)
-
+      // LMSR Settlement: Winning Share = $1
       let winnersCount = 0
       let losersCount = 0
       let totalPaidOut = new Decimal(0)
@@ -68,12 +61,16 @@ export class SettlementService {
         const isWinner = position.side === outcome
 
         if (isWinner) {
-          const payout = new Decimal(position.amount).times(payoutMultiplier)
-          await BalanceService.credit(tx, position.currentOwnerId, payout, 'PAYOUT_RECEIVED', 'Winnings from market resolution')
+          // Payout = 1.0 * shares (Decimal conversion needed)
+          const payout = new Decimal(position.shares).times(1)
+          
+          await BalanceService.credit(tx, position.currentOwnerId, payout, 'PAYOUT_RECEIVED', 'Winnings from market resolution', marketId)
+          
           await tx.position.update({
             where: { id: position.id },
             data: { status: 'WON', payout },
           })
+          
           totalPaidOut = totalPaidOut.plus(payout)
           winnersCount++
         } else {
@@ -84,6 +81,10 @@ export class SettlementService {
           losersCount++
         }
       }
+
+      // In LMSR, "platform fee" is effectively (Net Revenue - Paid Out), captured implicitly in the reserves.
+      // But for report consistency, we might want to calculate the theoretical fee or just track net PnL.
+      // For now, let's keep it simple.
 
       await tx.market.update({
         where: { id: marketId },
@@ -96,8 +97,9 @@ export class SettlementService {
         winnersCount,
         losersCount,
         totalPaidOut: totalPaidOut.toNumber(),
-        platformFee: platformFee.toNumber(),
-        payoutMultiplier: payoutMultiplier.toNumber(),
+        // Platform fee is implicit in LMSR (spread + net outcome difference)
+        platformFee: 0, 
+        payoutMultiplier: 1,
       }
     })
   }

@@ -1,10 +1,11 @@
-'use client'
-
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react'
+import { useSession } from 'next-auth/react'
 
 interface User {
   id: string
-  username: string
+  name: string | null
+  username: string | null
+  email?: string | null
   balance: number
   role: string
 }
@@ -13,6 +14,7 @@ interface UserContextType {
   user: User | null
   setUser: (user: User | null) => void
   login: (username: string) => Promise<void>
+  createUser: (username: string, email?: string) => Promise<boolean>
   refreshBalance: () => Promise<void>
   loading: boolean
 }
@@ -20,47 +22,61 @@ interface UserContextType {
 const UserContext = createContext<UserContextType | undefined>(undefined)
 
 export function UserProvider({ children }: { children: ReactNode }) {
+  const { data: session, status } = useSession()
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    const savedUser = localStorage.getItem('wsm_user')
-    if (savedUser) {
-      const parsed = JSON.parse(savedUser)
-      login(parsed.username).catch(() => setLoading(false))
-    } else {
-      setLoading(false)
-    }
-  }, [])
-
-  const login = useCallback(async (username: string) => {
-    setLoading(true)
-    try {
-      const res = await fetch(`/api/users/${username}`)
-      if (!res.ok) throw new Error('User not found')
-      const data = await res.json()
-      const userData = { id: data.id, username: data.username, balance: data.balance, role: data.role }
-      setUser(userData)
-      localStorage.setItem('wsm_user', JSON.stringify(userData))
-    } finally {
-      setLoading(false)
-    }
-  }, [])
 
   const refreshBalance = useCallback(async () => {
     if (!user) return
     try {
-      const res = await fetch(`/api/users/${user.username}`)
+      const res = await fetch(`/api/users/${user.id}`)
       if (res.ok) {
         const data = await res.json()
         setUser((prev) => prev ? { ...prev, balance: data.balance } : null)
-        localStorage.setItem('wsm_user', JSON.stringify({ ...user, balance: data.balance }))
       }
     } catch {}
   }, [user])
 
+  useEffect(() => {
+    if (status === 'loading') return
+
+    if (session?.user) {
+      const fetchUser = async () => {
+        try {
+          const res = await fetch(`/api/users/${session.user.id}`)
+          if (res.ok) {
+            const data = await res.json()
+            setUser({
+              id: data.id,
+              name: data.name,
+              username: data.username,
+              email: data.email,
+              balance: data.balance,
+              role: data.role
+            })
+          }
+        } finally {
+          setLoading(false)
+        }
+      }
+      fetchUser()
+    } else {
+      setUser(null)
+      setLoading(false)
+    }
+  }, [session, status])
+
+  const createUser = useCallback(async (username: string, email?: string) => {
+    // This is now handled by NextAuth, but we keep the type for compatibility if needed
+    return true
+  }, [])
+
+  const login = useCallback(async (username: string) => {
+    // This is now handled by NextAuth
+  }, [])
+
   return (
-    <UserContext.Provider value={{ user, setUser, login, refreshBalance, loading }}>
+    <UserContext.Provider value={{ user, setUser, login, createUser, refreshBalance, loading }}>
       {children}
     </UserContext.Provider>
   )

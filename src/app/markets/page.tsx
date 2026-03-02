@@ -38,21 +38,25 @@ function MarketsPage() {
 
   return (
     <Shell>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Mercados de Predicción</h1>
-        <div className="flex gap-2">
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-2xl font-bold text-white tracking-tight">Mercados Disponibles</h1>
+        <div className="flex bg-[#171717] p-1 rounded-xl border border-white/5">
           <button
             onClick={() => setFilter('ACTIVE')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              filter === 'ACTIVE' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
+              filter === 'ACTIVE' 
+                ? 'bg-[#64c883] text-[#0a0a0a] shadow-lg shadow-[#64c883]/20' 
+                : 'text-gray-400 hover:text-white'
             }`}
           >
             Activos
           </button>
           <button
             onClick={() => setFilter('ALL')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              filter === 'ALL' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
+              filter === 'ALL' 
+                ? 'bg-[#64c883] text-[#0a0a0a] shadow-lg shadow-[#64c883]/20' 
+                : 'text-gray-400 hover:text-white'
             }`}
           >
             Todos
@@ -65,7 +69,7 @@ function MarketsPage() {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto" />
         </div>
       ) : markets.length === 0 ? (
-        <div className="text-center py-12 text-gray-500">
+        <div className="text-center py-12 text-gray-400">
           <p>No hay mercados disponibles</p>
         </div>
       ) : (

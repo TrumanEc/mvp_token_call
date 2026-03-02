@@ -45,3 +45,11 @@ export const CardFooter = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivEleme
 )
 
 CardFooter.displayName = 'CardFooter'
+
+export const CardTitle = forwardRef<HTMLHeadingElement, HTMLAttributes<HTMLHeadingElement>>(
+  ({ className = '', ...props }, ref) => (
+    <h3 ref={ref} className={`font-semibold leading-none tracking-tight ${className}`} {...props} />
+  )
+)
+
+CardTitle.displayName = 'CardTitle'
