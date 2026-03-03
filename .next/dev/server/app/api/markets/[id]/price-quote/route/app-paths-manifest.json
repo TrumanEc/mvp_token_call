@@ -1,0 +1,3 @@
+{
+  "/api/markets/[id]/price-quote/route": "app/api/markets/[id]/price-quote/route.js"
+}
