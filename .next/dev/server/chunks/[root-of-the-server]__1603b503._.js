@@ -217,7 +217,7 @@ class LmsrService {
    * Cost = C(new) - C(old)
    */ getCostToBuy(qYes, qNo, b, side, deltaShares) {
         const before = this.costFunction(qYes, qNo, b);
-        const after = side === 'YES' ? this.costFunction(qYes + deltaShares, qNo, b) : this.costFunction(qYes, qNo + deltaShares, b);
+        const after = side === "YES" ? this.costFunction(qYes + deltaShares, qNo, b) : this.costFunction(qYes, qNo + deltaShares, b);
         return after - before;
     }
     /**
@@ -225,8 +225,7 @@ class LmsrService {
    * Uses binary search as the inverse of costFunction is not easily solvable analytically for delta
    */ getSharesToBuy(qYes, qNo, b, side, amount, tolerance = 1e-6) {
         let low = 0;
-        let high = amount * 10 // Heuristic upper bound, usually price < 1 so shares > amount
-        ;
+        let high = amount * 10; // Heuristic upper bound, usually price < 1 so shares > amount
         // Binary search for 100 iterations (sufficient precision)
         for(let i = 0; i < 100; i++){
             const mid = (low + high) / 2;
@@ -245,20 +244,19 @@ class LmsrService {
     /**
    * Calcula el monto máximo permitido para una transacción
    * dado un límite de price impact en porcentaje
-   */ getMaxAmountForPriceImpact(qYes, qNo, b, side, maxImpactPercent// ej: 5 = no mover más de 5%
-    ) {
+   */ getMaxAmountForPriceImpact(qYes, qNo, b, side, maxImpactPercent) {
         const { pYes, pNo } = this.getPrice(qYes, qNo, b);
-        const currentPrice = side === 'YES' ? pYes : pNo;
+        const currentPrice = side === "YES" ? pYes : pNo;
         const maxPrice = Math.min(currentPrice + maxImpactPercent / 100, 0.99);
         // Buscar binariamente cuántos shares llevan el precio hasta maxPrice
         let low = 0;
         let high = b * 20;
         for(let i = 0; i < 100; i++){
             const mid = (low + high) / 2;
-            const newQYes = side === 'YES' ? qYes + mid : qYes;
-            const newQNo = side === 'NO' ? qNo + mid : qNo;
+            const newQYes = side === "YES" ? qYes + mid : qYes;
+            const newQNo = side === "NO" ? qNo + mid : qNo;
             const { pYes: pAfter, pNo: pNoAfter } = this.getPrice(newQYes, newQNo, b);
-            const priceAfter = side === 'YES' ? pAfter : pNoAfter;
+            const priceAfter = side === "YES" ? pAfter : pNoAfter;
             if (priceAfter < maxPrice) low = mid;
             else high = mid;
         }
@@ -269,8 +267,8 @@ class LmsrService {
    * Valida una transacción contra todos los límites configurados.
    * Devuelve el monto máximo permitido y la razón si fue limitado.
    */ validateBetAmount(amount, qYes, qNo, b, side, maxBetAmount, maxPriceImpact) {
-        // 1. CAP fijo
-        if (amount > maxBetAmount) {
+        // 1. CAP fijo (Add 1 cent tolerance for float precision)
+        if (maxBetAmount && amount > maxBetAmount + 0.01) {
             return {
                 allowed: false,
                 maxAllowed: maxBetAmount,
@@ -280,10 +278,10 @@ class LmsrService {
         // 2. CAP dinámico por price impact (si está configurado)
         if (maxPriceImpact) {
             const maxByImpact = this.getMaxAmountForPriceImpact(qYes, qNo, b, side, maxPriceImpact);
-            if (amount > maxByImpact) {
+            if (amount > maxByImpact + 0.01) {
                 return {
                     allowed: false,
-                    maxAllowed: Math.min(maxBetAmount, maxByImpact),
+                    maxAllowed: maxBetAmount ? Math.min(maxBetAmount, maxByImpact) : maxByImpact,
                     reason: `Esta compra movería el precio más del ${maxPriceImpact}% permitido`
                 };
             }
@@ -308,8 +306,8 @@ class LmsrService {
         return {
             qYes,
             qNo,
-            pYes: parseFloat((pYes * 100).toFixed(4)),
-            pNo: parseFloat((pNo * 100).toFixed(4)),
+            pYes,
+            pNo,
             costAccumulated: cost,
             maxLoss,
             liquidityRemaining: maxLoss - cost + maxLoss,
@@ -344,51 +342,44 @@ class PositionService {
                     id: data.marketId
                 }
             });
-            if (!market || market.status !== 'ACTIVE') {
-                throw new Error('Market is not active');
+            if (!market || market.status !== "ACTIVE") {
+                throw new Error("Market is not active");
             }
             const user = await tx.user.findUnique({
                 where: {
                     id: data.userId
                 }
             });
-            if (!user) throw new Error('User not found');
+            if (!user) throw new Error("User not found");
             const amount = new __TURBOPACK__imported__module__$5b$externals$5d2f40$prisma$2f$client$2f$runtime$2f$library__$5b$external$5d$__$2840$prisma$2f$client$2f$runtime$2f$library$2c$__cjs$2c$__$5b$project$5d2f$node_modules$2f40$prisma$2f$client$29$__["Decimal"](data.amount);
             if (new __TURBOPACK__imported__module__$5b$externals$5d2f40$prisma$2f$client$2f$runtime$2f$library__$5b$external$5d$__$2840$prisma$2f$client$2f$runtime$2f$library$2c$__cjs$2c$__$5b$project$5d2f$node_modules$2f40$prisma$2f$client$29$__["Decimal"](user.balance).lessThan(amount)) {
-                throw new Error('Insufficient balance');
+                throw new Error("Insufficient balance");
             }
             // LMSR Logic
             const lmsrService = new __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$lmsr$2e$service$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["LmsrService"]();
-            // Load global config for defaults
-            const config = await tx.platformConfig.findUnique({
-                where: {
-                    id: 'global'
-                }
-            });
-            const defaultMaxBet = config?.defaultMaxBet ?? 500;
-            const defaultMaxImpact = config?.defaultMaxImpact ?? 5.0;
-            // Market specific configs or fallback to defaults
-            const maxBetAmount = market.maxBetAmount ?? defaultMaxBet;
-            const maxPriceImpact = market.maxPriceImpact ?? defaultMaxImpact;
+            // Market specific configs (no global fallbacks - explicit limits only)
+            const maxBetAmount = market.maxBetAmount ?? null;
+            const maxPriceImpact = market.maxPriceImpact ?? null;
             const validation = lmsrService.validateBetAmount(data.amount, market.qYes, market.qNo, market.b, data.side, maxBetAmount, maxPriceImpact);
             if (!validation.allowed) {
-                throw new Error(validation.reason || 'Monto excede los límites permitidos');
+                throw new Error(validation.reason || "Monto excede los límites permitidos");
             }
             // State before
             const stateBefore = lmsrService.getMarketState(market.qYes, market.qNo, market.b);
-            // Apply platform fee (10% - configurable later)
-            const platformFee = 0.10;
-            const netAmount = amount.toNumber() * (1 - platformFee);
+            // Apply platform fee from market config
+            const platformFeeRate = market.platformFee ? Number(market.platformFee) : 0.1;
+            const feeAmount = amount.toNumber() * platformFeeRate;
+            const netAmount = amount.toNumber() - feeAmount;
             // Calculate shares to buy
             const shares = lmsrService.getSharesToBuy(market.qYes, market.qNo, market.b, data.side, netAmount);
             const cost = lmsrService.getCostToBuy(market.qYes, market.qNo, market.b, data.side, shares);
             const avgCostPerShare = shares > 0 ? cost / shares : 0;
             // Update Market State
-            const newQYes = data.side === 'YES' ? market.qYes + shares : market.qYes;
-            const newQNo = data.side === 'NO' ? market.qNo + shares : market.qNo;
+            const newQYes = data.side === "YES" ? market.qYes + shares : market.qYes;
+            const newQNo = data.side === "NO" ? market.qNo + shares : market.qNo;
             const stateAfter = lmsrService.getMarketState(newQYes, newQNo, market.b);
             // Deduct balance
-            await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$balance$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["BalanceService"].deduct(tx, user.id, amount, 'BET_PLACED', `Bet ${data.amount} on ${data.side}`, data.marketId);
+            await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$balance$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["BalanceService"].deduct(tx, user.id, amount, "BET_PLACED", `Bet ${data.amount} on ${data.side}`, data.marketId);
             // Create Position
             const position = await tx.position.create({
                 data: {
@@ -397,7 +388,7 @@ class PositionService {
                     currentOwnerId: data.userId,
                     side: data.side,
                     amount,
-                    status: 'ACTIVE',
+                    status: "ACTIVE",
                     shares,
                     avgCostPerShare,
                     totalCost: cost
@@ -416,10 +407,10 @@ class PositionService {
                     qYes: newQYes,
                     qNo: newQNo,
                     // Update legacy pools for audit/volume tracking
-                    yesPool: data.side === 'YES' ? {
+                    yesPool: data.side === "YES" ? {
                         increment: amount
                     } : undefined,
-                    noPool: data.side === 'NO' ? {
+                    noPool: data.side === "NO" ? {
                         increment: amount
                     } : undefined
                 }
@@ -438,7 +429,7 @@ class PositionService {
                     qYesAfter: stateAfter.qYes,
                     qNoAfter: stateAfter.qNo,
                     pYesAfter: stateAfter.pYes,
-                    triggerType: 'BUY'
+                    triggerType: "BUY"
                 }
             });
             return {
@@ -461,12 +452,12 @@ class PositionService {
                 listing: true
             },
             orderBy: {
-                createdAt: 'desc'
+                createdAt: "desc"
             }
         });
         return positions.map((p)=>{
             const odds = __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$odds$2d$calculator$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["OddsCalculator"].calculateOdds(p.market.yesPool, p.market.noPool);
-            const currentPrice = new __TURBOPACK__imported__module__$5b$externals$5d2f40$prisma$2f$client$2f$runtime$2f$library__$5b$external$5d$__$2840$prisma$2f$client$2f$runtime$2f$library$2c$__cjs$2c$__$5b$project$5d2f$node_modules$2f40$prisma$2f$client$29$__["Decimal"](p.side === 'YES' ? odds.yesOdds : odds.noOdds).dividedBy(100);
+            const currentPrice = new __TURBOPACK__imported__module__$5b$externals$5d2f40$prisma$2f$client$2f$runtime$2f$library__$5b$external$5d$__$2840$prisma$2f$client$2f$runtime$2f$library$2c$__cjs$2c$__$5b$project$5d2f$node_modules$2f40$prisma$2f$client$29$__["Decimal"](p.side === "YES" ? odds.yesOdds : odds.noOdds).dividedBy(100);
             // Fallback for legacy positions: derive shares from initialProbability
             const initialProb = p.initialProbability?.toNumber() || 50;
             const legacyPrice = new __TURBOPACK__imported__module__$5b$externals$5d2f40$prisma$2f$client$2f$runtime$2f$library__$5b$external$5d$__$2840$prisma$2f$client$2f$runtime$2f$library$2c$__cjs$2c$__$5b$project$5d2f$node_modules$2f40$prisma$2f$client$29$__["Decimal"](initialProb).dividedBy(100);
@@ -485,7 +476,7 @@ class PositionService {
                 purchasePrice: purchasePrice.toNumber(),
                 currentPrice: currentPrice.toNumber(),
                 fairValue: fairValue.toNumber(),
-                currentPayout: p.side === 'YES' ? odds.yesPayout : odds.noPayout,
+                currentPayout: p.side === "YES" ? odds.yesPayout : odds.noPayout,
                 potentialReturn,
                 market: {
                     ...p.market,
@@ -514,14 +505,14 @@ class PositionService {
                 listing: true
             },
             orderBy: {
-                createdAt: 'desc'
+                createdAt: "desc"
             }
         });
         const groups = {};
         for (const p of rawPositions){
             // Group active positions by market and side
             // Keep inactive (RESOLVED) positions separate to show history correctly
-            const key = p.status === 'ACTIVE' ? `${p.marketId}-${p.side}` : `resolved-${p.id}`;
+            const key = p.status === "ACTIVE" ? `${p.marketId}-${p.side}` : `resolved-${p.id}`;
             if (!groups[key]) {
                 groups[key] = {
                     id: p.id,
@@ -537,6 +528,7 @@ class PositionService {
                     side: p.side,
                     shares: new __TURBOPACK__imported__module__$5b$externals$5d2f40$prisma$2f$client$2f$runtime$2f$library__$5b$external$5d$__$2840$prisma$2f$client$2f$runtime$2f$library$2c$__cjs$2c$__$5b$project$5d2f$node_modules$2f40$prisma$2f$client$29$__["Decimal"](0),
                     amount: new __TURBOPACK__imported__module__$5b$externals$5d2f40$prisma$2f$client$2f$runtime$2f$library__$5b$external$5d$__$2840$prisma$2f$client$2f$runtime$2f$library$2c$__cjs$2c$__$5b$project$5d2f$node_modules$2f40$prisma$2f$client$29$__["Decimal"](0),
+                    totalFees: new __TURBOPACK__imported__module__$5b$externals$5d2f40$prisma$2f$client$2f$runtime$2f$library__$5b$external$5d$__$2840$prisma$2f$client$2f$runtime$2f$library$2c$__cjs$2c$__$5b$project$5d2f$node_modules$2f40$prisma$2f$client$29$__["Decimal"](0),
                     status: p.status,
                     isForSale: false,
                     createdAt: p.createdAt,
@@ -544,8 +536,10 @@ class PositionService {
                 };
             }
             const pShares = new __TURBOPACK__imported__module__$5b$externals$5d2f40$prisma$2f$client$2f$runtime$2f$library__$5b$external$5d$__$2840$prisma$2f$client$2f$runtime$2f$library$2c$__cjs$2c$__$5b$project$5d2f$node_modules$2f40$prisma$2f$client$29$__["Decimal"](p.shares || 0);
+            const feeAmount = p.amount.minus(new __TURBOPACK__imported__module__$5b$externals$5d2f40$prisma$2f$client$2f$runtime$2f$library__$5b$external$5d$__$2840$prisma$2f$client$2f$runtime$2f$library$2c$__cjs$2c$__$5b$project$5d2f$node_modules$2f40$prisma$2f$client$29$__["Decimal"](p.totalCost || 0));
             groups[key].shares = groups[key].shares.plus(pShares);
             groups[key].amount = groups[key].amount.plus(p.amount);
+            groups[key].totalFees = groups[key].totalFees.plus(feeAmount);
             groups[key].history.push({
                 id: p.id,
                 amount: p.amount.toNumber(),
@@ -557,22 +551,22 @@ class PositionService {
         }
         return Object.values(groups).map((g)=>{
             const odds = __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$odds$2d$calculator$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["OddsCalculator"].calculateOdds(new __TURBOPACK__imported__module__$5b$externals$5d2f40$prisma$2f$client$2f$runtime$2f$library__$5b$external$5d$__$2840$prisma$2f$client$2f$runtime$2f$library$2c$__cjs$2c$__$5b$project$5d2f$node_modules$2f40$prisma$2f$client$29$__["Decimal"](g.market.yesPool), new __TURBOPACK__imported__module__$5b$externals$5d2f40$prisma$2f$client$2f$runtime$2f$library__$5b$external$5d$__$2840$prisma$2f$client$2f$runtime$2f$library$2c$__cjs$2c$__$5b$project$5d2f$node_modules$2f40$prisma$2f$client$29$__["Decimal"](g.market.noPool));
-            const currentPrice = new __TURBOPACK__imported__module__$5b$externals$5d2f40$prisma$2f$client$2f$runtime$2f$library__$5b$external$5d$__$2840$prisma$2f$client$2f$runtime$2f$library$2c$__cjs$2c$__$5b$project$5d2f$node_modules$2f40$prisma$2f$client$29$__["Decimal"](g.side === 'YES' ? odds.yesOdds : odds.noOdds).dividedBy(100);
+            const currentPrice = new __TURBOPACK__imported__module__$5b$externals$5d2f40$prisma$2f$client$2f$runtime$2f$library__$5b$external$5d$__$2840$prisma$2f$client$2f$runtime$2f$library$2c$__cjs$2c$__$5b$project$5d2f$node_modules$2f40$prisma$2f$client$29$__["Decimal"](g.side === "YES" ? odds.yesOdds : odds.noOdds).dividedBy(100);
             const sharesNum = g.shares.toNumber();
             const amountNum = g.amount.toNumber();
             const avgPrice = sharesNum > 0 ? amountNum / sharesNum : 0;
             const fairValue = sharesNum * currentPrice.toNumber();
-            const potentialReturn = sharesNum // wins $1 per share
-            ;
+            const potentialReturn = sharesNum; // wins $1 per share
             return {
                 ...g,
                 shares: sharesNum,
                 amount: amountNum,
+                totalFees: g.totalFees.toNumber(),
                 purchasePrice: avgPrice,
                 currentPrice: currentPrice.toNumber(),
                 fairValue,
                 potentialReturn,
-                currentPayout: g.side === 'YES' ? odds.yesPayout : odds.noPayout,
+                currentPayout: g.side === "YES" ? odds.yesPayout : odds.noPayout,
                 breakEvenPrice: avgPrice
             };
         });
@@ -590,7 +584,7 @@ class PositionService {
         });
         if (!position) return null;
         const odds = __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$odds$2d$calculator$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["OddsCalculator"].calculateOdds(position.market.yesPool, position.market.noPool);
-        const currentPrice = new __TURBOPACK__imported__module__$5b$externals$5d2f40$prisma$2f$client$2f$runtime$2f$library__$5b$external$5d$__$2840$prisma$2f$client$2f$runtime$2f$library$2c$__cjs$2c$__$5b$project$5d2f$node_modules$2f40$prisma$2f$client$29$__["Decimal"](position.side === 'YES' ? odds.yesOdds : odds.noOdds).dividedBy(100);
+        const currentPrice = new __TURBOPACK__imported__module__$5b$externals$5d2f40$prisma$2f$client$2f$runtime$2f$library__$5b$external$5d$__$2840$prisma$2f$client$2f$runtime$2f$library$2c$__cjs$2c$__$5b$project$5d2f$node_modules$2f40$prisma$2f$client$29$__["Decimal"](position.side === "YES" ? odds.yesOdds : odds.noOdds).dividedBy(100);
         // Fallback for legacy
         const initialProb = position.initialProbability?.toNumber() || 50;
         const legacyPrice = new __TURBOPACK__imported__module__$5b$externals$5d2f40$prisma$2f$client$2f$runtime$2f$library__$5b$external$5d$__$2840$prisma$2f$client$2f$runtime$2f$library$2c$__cjs$2c$__$5b$project$5d2f$node_modules$2f40$prisma$2f$client$29$__["Decimal"](initialProb).dividedBy(100);
@@ -606,7 +600,7 @@ class PositionService {
             purchasePrice: purchasePrice.toNumber(),
             currentPrice: currentPrice.toNumber(),
             fairValue: fairValue.toNumber(),
-            currentPayout: position.side === 'YES' ? odds.yesPayout : odds.noPayout,
+            currentPayout: position.side === "YES" ? odds.yesPayout : odds.noPayout,
             potentialReturn: shares.toNumber(),
             market: {
                 ...position.market,
@@ -633,16 +627,16 @@ class PositionService {
                 market: true
             }
         });
-        if (!position) throw new Error('Position not found');
-        if (position.currentOwnerId !== userId) throw new Error('Not position owner');
-        if (position.isForSale) throw new Error('Position already listed');
-        if (position.market.status !== 'ACTIVE') throw new Error('Market not active');
+        if (!position) throw new Error("Position not found");
+        if (position.currentOwnerId !== userId) throw new Error("Not position owner");
+        if (position.isForSale) throw new Error("Position already listed");
+        if (position.market.status !== "ACTIVE") throw new Error("Market not active");
         const splitDecimal = new __TURBOPACK__imported__module__$5b$externals$5d2f40$prisma$2f$client$2f$runtime$2f$library__$5b$external$5d$__$2840$prisma$2f$client$2f$runtime$2f$library$2c$__cjs$2c$__$5b$project$5d2f$node_modules$2f40$prisma$2f$client$29$__["Decimal"](splitAmount);
         if (splitDecimal.lessThanOrEqualTo(0)) {
-            throw new Error('Split amount must be positive');
+            throw new Error("Split amount must be positive");
         }
         if (splitDecimal.greaterThanOrEqualTo(position.amount)) {
-            throw new Error('Split amount must be less than position amount');
+            throw new Error("Split amount must be less than position amount");
         }
         // Reduce the original position amount
         await tx.position.update({
@@ -661,7 +655,7 @@ class PositionService {
                 currentOwnerId: position.currentOwnerId,
                 side: position.side,
                 amount: splitDecimal,
-                status: 'ACTIVE',
+                status: "ACTIVE",
                 shares: position.shares.times(splitDecimal.dividedBy(position.amount)),
                 purchasePrice: position.purchasePrice,
                 isForSale: true

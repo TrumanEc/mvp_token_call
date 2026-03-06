@@ -1,4 +1,4 @@
-import { Decimal } from '@prisma/client/runtime/library'
+import { Decimal } from "@prisma/client/runtime/library";
 
 export class LmsrService {
   /**
@@ -6,32 +6,37 @@ export class LmsrService {
    * Uses log-sum-exp trick for numerical stability
    */
   costFunction(qYes: number, qNo: number, b: number): number {
-    const maxQ = Math.max(qYes / b, qNo / b)
-    return b * (maxQ + Math.log(
-      Math.exp(qYes / b - maxQ) + Math.exp(qNo / b - maxQ)
-    ))
+    const maxQ = Math.max(qYes / b, qNo / b);
+    return (
+      b *
+      (maxQ + Math.log(Math.exp(qYes / b - maxQ) + Math.exp(qNo / b - maxQ)))
+    );
   }
 
   /**
    * Instantaneous price (probability) of an outcome
    * P_yes = e^(qYes/b) / (e^(qYes/b) + e^(qNo/b))
    */
-  getPrice(qYes: number, qNo: number, b: number): { pYes: number; pNo: number } {
-    const expYes = Math.exp(qYes / b)
-    const expNo  = Math.exp(qNo / b)
-    const sum    = expYes + expNo
-    
+  getPrice(
+    qYes: number,
+    qNo: number,
+    b: number,
+  ): { pYes: number; pNo: number } {
+    const expYes = Math.exp(qYes / b);
+    const expNo = Math.exp(qNo / b);
+    const sum = expYes + expNo;
+
     // Handle potential overflow/underflow if b is very small or q is very large
     if (!isFinite(expYes) || !isFinite(expNo) || !isFinite(sum)) {
       // Fallback: if qYes >>> qNo, pYes -> 1
-      if (qYes > qNo) return { pYes: 1, pNo: 0 }
-      else return { pYes: 0, pNo: 1 }
+      if (qYes > qNo) return { pYes: 1, pNo: 0 };
+      else return { pYes: 0, pNo: 1 };
     }
 
     return {
       pYes: expYes / sum,
-      pNo:  expNo / sum,
-    }
+      pNo: expNo / sum,
+    };
   }
 
   /**
@@ -42,14 +47,15 @@ export class LmsrService {
     qYes: number,
     qNo: number,
     b: number,
-    side: 'YES' | 'NO',
-    deltaShares: number
+    side: "YES" | "NO",
+    deltaShares: number,
   ): number {
-    const before = this.costFunction(qYes, qNo, b)
-    const after  = side === 'YES'
-      ? this.costFunction(qYes + deltaShares, qNo, b)
-      : this.costFunction(qYes, qNo + deltaShares, b)
-    return after - before
+    const before = this.costFunction(qYes, qNo, b);
+    const after =
+      side === "YES"
+        ? this.costFunction(qYes + deltaShares, qNo, b)
+        : this.costFunction(qYes, qNo + deltaShares, b);
+    return after - before;
   }
 
   /**
@@ -60,30 +66,30 @@ export class LmsrService {
     qYes: number,
     qNo: number,
     b: number,
-    side: 'YES' | 'NO',
+    side: "YES" | "NO",
     amount: number,
-    tolerance: number = 1e-6
+    tolerance: number = 1e-6,
   ): number {
-    let low = 0
-    let high = amount * 10 // Heuristic upper bound, usually price < 1 so shares > amount
-    
+    let low = 0;
+    let high = amount * 10; // Heuristic upper bound, usually price < 1 so shares > amount
+
     // Binary search for 100 iterations (sufficient precision)
     for (let i = 0; i < 100; i++) {
-      const mid = (low + high) / 2
-      const cost = this.getCostToBuy(qYes, qNo, b, side, mid)
-      
+      const mid = (low + high) / 2;
+      const cost = this.getCostToBuy(qYes, qNo, b, side, mid);
+
       if (Math.abs(cost - amount) < tolerance) {
-        return mid
+        return mid;
       }
-      
+
       if (cost < amount) {
-        low = mid
+        low = mid;
       } else {
-        high = mid
+        high = mid;
       }
     }
-    
-    return (low + high) / 2
+
+    return (low + high) / 2;
   }
 
   /**
@@ -94,30 +100,30 @@ export class LmsrService {
     qYes: number,
     qNo: number,
     b: number,
-    side: 'YES' | 'NO',
-    maxImpactPercent: number // ej: 5 = no mover más de 5%
+    side: "YES" | "NO",
+    maxImpactPercent: number, // ej: 5 = no mover más de 5%
   ): number {
-    const { pYes, pNo } = this.getPrice(qYes, qNo, b)
-    const currentPrice = side === 'YES' ? pYes : pNo
-    const maxPrice = Math.min(currentPrice + maxImpactPercent / 100, 0.99)
+    const { pYes, pNo } = this.getPrice(qYes, qNo, b);
+    const currentPrice = side === "YES" ? pYes : pNo;
+    const maxPrice = Math.min(currentPrice + maxImpactPercent / 100, 0.99);
 
     // Buscar binariamente cuántos shares llevan el precio hasta maxPrice
-    let low = 0
-    let high = b * 20
+    let low = 0;
+    let high = b * 20;
 
     for (let i = 0; i < 100; i++) {
-      const mid = (low + high) / 2
-      const newQYes = side === 'YES' ? qYes + mid : qYes
-      const newQNo  = side === 'NO'  ? qNo  + mid : qNo
-      const { pYes: pAfter, pNo: pNoAfter } = this.getPrice(newQYes, newQNo, b)
-      const priceAfter = side === 'YES' ? pAfter : pNoAfter
+      const mid = (low + high) / 2;
+      const newQYes = side === "YES" ? qYes + mid : qYes;
+      const newQNo = side === "NO" ? qNo + mid : qNo;
+      const { pYes: pAfter, pNo: pNoAfter } = this.getPrice(newQYes, newQNo, b);
+      const priceAfter = side === "YES" ? pAfter : pNoAfter;
 
-      if (priceAfter < maxPrice) low = mid
-      else high = mid
+      if (priceAfter < maxPrice) low = mid;
+      else high = mid;
     }
 
-    const maxShares = (low + high) / 2
-    return this.getCostToBuy(qYes, qNo, b, side, maxShares)
+    const maxShares = (low + high) / 2;
+    return this.getCostToBuy(qYes, qNo, b, side, maxShares);
   }
 
   /**
@@ -129,36 +135,41 @@ export class LmsrService {
     qYes: number,
     qNo: number,
     b: number,
-    side: 'YES' | 'NO',
-    maxBetAmount: number,
-    maxPriceImpact?: number | null
+    side: "YES" | "NO",
+    maxBetAmount?: number | null,
+    maxPriceImpact?: number | null,
   ): { allowed: boolean; maxAllowed: number; reason?: string } {
-    
-    // 1. CAP fijo
-    if (amount > maxBetAmount) {
+    // 1. CAP fijo (Add 1 cent tolerance for float precision)
+    if (maxBetAmount && amount > maxBetAmount + 0.01) {
       return {
         allowed: false,
         maxAllowed: maxBetAmount,
         reason: `El monto máximo por transacción es $${maxBetAmount}`,
-      }
+      };
     }
 
     // 2. CAP dinámico por price impact (si está configurado)
     if (maxPriceImpact) {
       const maxByImpact = this.getMaxAmountForPriceImpact(
-        qYes, qNo, b, side, maxPriceImpact
-      )
+        qYes,
+        qNo,
+        b,
+        side,
+        maxPriceImpact,
+      );
 
-      if (amount > maxByImpact) {
+      if (amount > maxByImpact + 0.01) {
         return {
           allowed: false,
-          maxAllowed: Math.min(maxBetAmount, maxByImpact),
+          maxAllowed: maxBetAmount
+            ? Math.min(maxBetAmount, maxByImpact)
+            : maxByImpact,
           reason: `Esta compra movería el precio más del ${maxPriceImpact}% permitido`,
-        }
+        };
       }
     }
 
-    return { allowed: true, maxAllowed: amount }
+    return { allowed: true, maxAllowed: amount };
   }
 
   /**
@@ -166,27 +177,27 @@ export class LmsrService {
    * Max Loss = b * ln(2) for binary market
    */
   getMaxLoss(b: number): number {
-    return b * Math.log(2)
+    return b * Math.log(2);
   }
 
   /**
    * Market snapshot state
    */
   getMarketState(qYes: number, qNo: number, b: number) {
-    const { pYes, pNo } = this.getPrice(qYes, qNo, b)
-    const cost = this.costFunction(qYes, qNo, b)
-    const maxLoss = this.getMaxLoss(b)
-    
+    const { pYes, pNo } = this.getPrice(qYes, qNo, b);
+    const cost = this.costFunction(qYes, qNo, b);
+    const maxLoss = this.getMaxLoss(b);
+
     return {
       qYes,
       qNo,
-      pYes: parseFloat((pYes * 100).toFixed(4)),
-      pNo:  parseFloat((pNo * 100).toFixed(4)),
+      pYes,
+      pNo,
       costAccumulated: cost,
       maxLoss,
       liquidityRemaining: maxLoss - cost + maxLoss, // Rough estimate
       impliedOddsYes: pYes > 0 ? 1 / pYes : 0,
-      impliedOddsNo:  pNo > 0 ? 1 / pNo : 0,
-    }
+      impliedOddsNo: pNo > 0 ? 1 / pNo : 0,
+    };
   }
 }

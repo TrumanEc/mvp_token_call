@@ -98,7 +98,7 @@ class LmsrService {
    * Cost = C(new) - C(old)
    */ getCostToBuy(qYes, qNo, b, side, deltaShares) {
         const before = this.costFunction(qYes, qNo, b);
-        const after = side === 'YES' ? this.costFunction(qYes + deltaShares, qNo, b) : this.costFunction(qYes, qNo + deltaShares, b);
+        const after = side === "YES" ? this.costFunction(qYes + deltaShares, qNo, b) : this.costFunction(qYes, qNo + deltaShares, b);
         return after - before;
     }
     /**
@@ -106,8 +106,7 @@ class LmsrService {
    * Uses binary search as the inverse of costFunction is not easily solvable analytically for delta
    */ getSharesToBuy(qYes, qNo, b, side, amount, tolerance = 1e-6) {
         let low = 0;
-        let high = amount * 10 // Heuristic upper bound, usually price < 1 so shares > amount
-        ;
+        let high = amount * 10; // Heuristic upper bound, usually price < 1 so shares > amount
         // Binary search for 100 iterations (sufficient precision)
         for(let i = 0; i < 100; i++){
             const mid = (low + high) / 2;
@@ -126,20 +125,19 @@ class LmsrService {
     /**
    * Calcula el monto máximo permitido para una transacción
    * dado un límite de price impact en porcentaje
-   */ getMaxAmountForPriceImpact(qYes, qNo, b, side, maxImpactPercent// ej: 5 = no mover más de 5%
-    ) {
+   */ getMaxAmountForPriceImpact(qYes, qNo, b, side, maxImpactPercent) {
         const { pYes, pNo } = this.getPrice(qYes, qNo, b);
-        const currentPrice = side === 'YES' ? pYes : pNo;
+        const currentPrice = side === "YES" ? pYes : pNo;
         const maxPrice = Math.min(currentPrice + maxImpactPercent / 100, 0.99);
         // Buscar binariamente cuántos shares llevan el precio hasta maxPrice
         let low = 0;
         let high = b * 20;
         for(let i = 0; i < 100; i++){
             const mid = (low + high) / 2;
-            const newQYes = side === 'YES' ? qYes + mid : qYes;
-            const newQNo = side === 'NO' ? qNo + mid : qNo;
+            const newQYes = side === "YES" ? qYes + mid : qYes;
+            const newQNo = side === "NO" ? qNo + mid : qNo;
             const { pYes: pAfter, pNo: pNoAfter } = this.getPrice(newQYes, newQNo, b);
-            const priceAfter = side === 'YES' ? pAfter : pNoAfter;
+            const priceAfter = side === "YES" ? pAfter : pNoAfter;
             if (priceAfter < maxPrice) low = mid;
             else high = mid;
         }
@@ -150,8 +148,8 @@ class LmsrService {
    * Valida una transacción contra todos los límites configurados.
    * Devuelve el monto máximo permitido y la razón si fue limitado.
    */ validateBetAmount(amount, qYes, qNo, b, side, maxBetAmount, maxPriceImpact) {
-        // 1. CAP fijo
-        if (amount > maxBetAmount) {
+        // 1. CAP fijo (Add 1 cent tolerance for float precision)
+        if (maxBetAmount && amount > maxBetAmount + 0.01) {
             return {
                 allowed: false,
                 maxAllowed: maxBetAmount,
@@ -161,10 +159,10 @@ class LmsrService {
         // 2. CAP dinámico por price impact (si está configurado)
         if (maxPriceImpact) {
             const maxByImpact = this.getMaxAmountForPriceImpact(qYes, qNo, b, side, maxPriceImpact);
-            if (amount > maxByImpact) {
+            if (amount > maxByImpact + 0.01) {
                 return {
                     allowed: false,
-                    maxAllowed: Math.min(maxBetAmount, maxByImpact),
+                    maxAllowed: maxBetAmount ? Math.min(maxBetAmount, maxByImpact) : maxByImpact,
                     reason: `Esta compra movería el precio más del ${maxPriceImpact}% permitido`
                 };
             }
@@ -189,8 +187,8 @@ class LmsrService {
         return {
             qYes,
             qNo,
-            pYes: parseFloat((pYes * 100).toFixed(4)),
-            pNo: parseFloat((pNo * 100).toFixed(4)),
+            pYes,
+            pNo,
             costAccumulated: cost,
             maxLoss,
             liquidityRemaining: maxLoss - cost + maxLoss,
@@ -220,7 +218,7 @@ class MarketService {
                 status
             } : undefined,
             orderBy: {
-                createdAt: 'desc'
+                createdAt: "desc"
             }
         });
         const lmsrService = new __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$lmsr$2e$service$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["LmsrService"]();
@@ -256,7 +254,7 @@ class MarketService {
                 listings: true,
                 lmsrSnapshots: {
                     orderBy: {
-                        createdAt: 'desc'
+                        createdAt: "desc"
                     },
                     take: 100
                 }
@@ -284,16 +282,19 @@ class MarketService {
                     shares: Number(p.shares || 0),
                     purchasePrice: Number(p.purchasePrice || 0),
                     // Calculate current fair value for position
-                    fairValue: Number(p.shares || 0) * (p.side === 'YES' ? prices.pYes : prices.pNo),
-                    currentPrice: p.side === 'YES' ? prices.pYes : prices.pNo
+                    fairValue: Number(p.shares || 0) * (p.side === "YES" ? prices.pYes : prices.pNo),
+                    currentPrice: p.side === "YES" ? prices.pYes : prices.pNo
                 })),
-            history: market.lmsrSnapshots.map((s)=>({
+            history: market.lmsrSnapshots.map((s)=>{
+                const p = s.pYesAfter > 1 ? s.pYesAfter / 100 : s.pYesAfter;
+                return {
                     timestamp: s.createdAt,
-                    price: s.pYesAfter,
+                    price: p,
                     volume: s.cost,
                     qYes: s.qYesAfter,
                     qNo: s.qNoAfter
-                })).reverse() // Oldest first for chart
+                };
+            }).reverse()
         };
     }
     static async create(data) {
@@ -303,11 +304,14 @@ class MarketService {
         const seedCost = lmsrService.getMaxLoss(b);
         return __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$prisma$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["prisma"].market.create({
             data: {
-                ...data,
+                playerName: data.playerName,
+                question: data.question,
+                description: data.description,
+                resolutionDate: data.resolutionDate,
                 maxPool: data.maxPool ? new __TURBOPACK__imported__module__$5b$externals$5d2f40$prisma$2f$client$2f$runtime$2f$library__$5b$external$5d$__$2840$prisma$2f$client$2f$runtime$2f$library$2c$__cjs$2c$__$5b$project$5d2f$node_modules$2f40$prisma$2f$client$29$__["Decimal"](data.maxPool) : undefined,
                 maxBetAmount: data.maxBetAmount ? Number(data.maxBetAmount) : undefined,
                 maxPriceImpact: data.maxPriceImpact ? Number(data.maxPriceImpact) : undefined,
-                status: 'DRAFT',
+                status: "DRAFT",
                 // LMSR Initialization
                 b,
                 qYes: 0,
@@ -326,14 +330,14 @@ class MarketService {
                         qYesBefore: 0,
                         qNoBefore: 0,
                         pYesBefore: 0.5,
-                        side: 'INIT',
+                        side: "INIT",
                         deltaShares: 0,
                         cost: seedCost,
                         qYesAfter: 0,
                         qNoAfter: 0,
                         pYesAfter: 0.5,
-                        triggerType: 'INIT',
-                        userId: 'SYSTEM'
+                        triggerType: "INIT",
+                        userId: "SYSTEM"
                     }
                 }
             }
@@ -345,7 +349,7 @@ class MarketService {
                 id
             },
             data: {
-                status: 'ACTIVE'
+                status: "ACTIVE"
             }
         });
     }
@@ -355,7 +359,7 @@ class MarketService {
                 id
             },
             data: {
-                status: 'CLOSED'
+                status: "CLOSED"
             }
         });
     }

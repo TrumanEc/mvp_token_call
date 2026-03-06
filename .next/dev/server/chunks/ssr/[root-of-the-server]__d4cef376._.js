@@ -794,16 +794,16 @@ __turbopack_context__.s([
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/server/route-modules/app-page/vendored/ssr/react-jsx-dev-runtime.js [app-ssr] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/server/route-modules/app-page/vendored/ssr/react.js [app-ssr] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$Button$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/ui/Button.tsx [app-ssr] (ecmascript)");
-'use client';
+"use client";
 ;
 ;
 ;
 function PredictionCard({ market, userId, userBalance, onSuccess }) {
-    const [side, setSide] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])('YES');
-    const [amount, setAmount] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])('');
+    const [side, setSide] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])("YES");
+    const [amount, setAmount] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])("");
     const [loading, setLoading] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(false);
     const [quoteLoading, setQuoteLoading] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(false);
-    const [error, setError] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])('');
+    const [error, setError] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])("");
     const [quote, setQuote] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(null);
     const yesOdds = market.odds.yesOdds;
     const totalVolume = market.yesPool + market.noPool;
@@ -826,11 +826,11 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
                 if (res.ok) {
                     setQuote(data);
                 } else {
-                    console.error('Error fetching quote:', data.error, data.details);
-                    setError(data.details || data.error || 'Error al obtener cotización');
+                    console.error("Error fetching quote:", data.error, data.details);
+                    setError(data.details || data.error || "Error al obtener cotización");
                 }
             } catch (err) {
-                console.error('Failed to fetch quote', err);
+                console.error("Failed to fetch quote", err);
             } finally{
                 setQuoteLoading(false);
             }
@@ -843,7 +843,7 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
         market.id
     ]);
     // Use quoted values or fallback to current market price for estimation
-    const currentPrice = (side === 'YES' ? market.odds.yesOdds : market.odds.noOdds) / 100;
+    const currentPrice = (side === "YES" ? market.odds.yesOdds : market.odds.noOdds) / 100;
     const estimatedShares = quote ? quote.shares : amountNum / currentPrice;
     // In LMSR, return is $1 per share. So potential return value = shares.
     const potentialReturnValue = estimatedShares;
@@ -851,21 +851,21 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
     const roi = amountNum > 0 ? potentialProfit / amountNum * 100 : 0;
     const handleSubmit = async (e)=>{
         e.preventDefault();
-        setError('');
+        setError("");
         if (amountNum <= 0) {
-            setError('Ingresa un monto válido');
+            setError("Ingresa un monto válido");
             return;
         }
         if (amountNum > userBalance) {
-            setError('Saldo insuficiente');
+            setError("Saldo insuficiente");
             return;
         }
         setLoading(true);
         try {
-            const res = await fetch('/api/positions', {
-                method: 'POST',
+            const res = await fetch("/api/positions", {
+                method: "POST",
                 headers: {
-                    'Content-Type': 'application/json'
+                    "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
                     marketId: market.id,
@@ -875,12 +875,12 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
                 })
             });
             const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Error al crear posición');
-            setAmount('');
+            if (!res.ok) throw new Error(data.error || "Error al crear posición");
+            setAmount("");
             setQuote(null);
             onSuccess();
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Error desconocido');
+            setError(e instanceof Error ? e.message : "Error desconocido");
         } finally{
             setLoading(false);
         }
@@ -903,7 +903,7 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
                         children: market.question
                     }, void 0, false, {
                         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                        lineNumber: 131,
+                        lineNumber: 141,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -929,7 +929,7 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
                                         className: "transform -rotate-180 origin-center"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                        lineNumber: 138,
+                                        lineNumber: 152,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("circle", {
@@ -939,7 +939,7 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
                                         strokeDasharray: `${semiCircumference} ${circumference}`,
                                         style: {
                                             strokeDashoffset,
-                                            transition: 'stroke-dashoffset 0.5s ease-in-out'
+                                            transition: "stroke-dashoffset 0.5s ease-in-out"
                                         },
                                         r: normalizedRadius,
                                         cx: radius,
@@ -948,13 +948,13 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
                                         className: "transform -rotate-180 origin-center"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                        lineNumber: 151,
+                                        lineNumber: 165,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                lineNumber: 136,
+                                lineNumber: 146,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -968,7 +968,7 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                        lineNumber: 165,
+                                        lineNumber: 182,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -976,25 +976,25 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
                                         children: "Chance"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                        lineNumber: 166,
+                                        lineNumber: 185,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                lineNumber: 164,
+                                lineNumber: 181,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                        lineNumber: 135,
+                        lineNumber: 145,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                lineNumber: 130,
+                lineNumber: 140,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1002,102 +1002,82 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
                 children: [
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                         type: "button",
-                        onClick: ()=>setSide('YES'),
-                        className: `h-16 rounded-2xl flex flex-col items-center justify-center transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] ${side === 'YES' ? 'bg-[#64c883] text-[#0a0a0a] shadow-lg shadow-[#64c883]/20' : 'bg-[#1a2e21]/40 text-[#64c883]/60 border border-[#64c883]/10'}`,
+                        onClick: ()=>setSide("YES"),
+                        className: `h-16 rounded-2xl flex flex-col items-center justify-center transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] ${side === "YES" ? "bg-[#64c883] text-[#0a0a0a] shadow-lg shadow-[#64c883]/20" : "bg-[#1a2e21]/40 text-[#64c883]/60 border border-[#64c883]/10"}`,
                         children: [
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                 className: "text-xl font-bold",
                                 children: "Yes"
                             }, void 0, false, {
                                 fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                lineNumber: 182,
+                                lineNumber: 203,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                 className: "flex gap-1 items-center mt-0.5",
-                                children: [
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                        className: "text-[10px] font-bold opacity-70",
-                                        children: [
-                                            "$",
-                                            (quote ? quote.newProbabilities.yes : market.odds.yesOdds / 100).toFixed(2)
-                                        ]
-                                    }, void 0, true, {
-                                        fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                        lineNumber: 184,
-                                        columnNumber: 14
-                                    }, this),
-                                    quote && side === 'YES' && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                        className: "text-[9px] text-[#0a0a0a] font-extrabold bg-white/20 px-1 rounded",
-                                        children: "NEW"
-                                    }, void 0, false, {
-                                        fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                        lineNumber: 188,
-                                        columnNumber: 16
-                                    }, this)
-                                ]
-                            }, void 0, true, {
+                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                    className: "text-[10px] font-bold opacity-70",
+                                    children: [
+                                        "$",
+                                        (market.odds.yesOdds / 100).toFixed(2)
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "[project]/src/components/markets/PredictionCard.tsx",
+                                    lineNumber: 205,
+                                    columnNumber: 13
+                                }, this)
+                            }, void 0, false, {
                                 fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                lineNumber: 183,
+                                lineNumber: 204,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                        lineNumber: 173,
+                        lineNumber: 194,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                         type: "button",
-                        onClick: ()=>setSide('NO'),
-                        className: `h-16 rounded-2xl flex flex-col items-center justify-center transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] ${side === 'NO' ? 'bg-[#e16464] text-[#0a0a0a] shadow-lg shadow-[#e16464]/20' : 'bg-[#2e1a1a]/40 text-[#e16464]/60 border border-[#e16464]/10'}`,
+                        onClick: ()=>setSide("NO"),
+                        className: `h-16 rounded-2xl flex flex-col items-center justify-center transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] ${side === "NO" ? "bg-[#e16464] text-[#0a0a0a] shadow-lg shadow-[#e16464]/20" : "bg-[#2e1a1a]/40 text-[#e16464]/60 border border-[#e16464]/10"}`,
                         children: [
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                 className: "text-xl font-bold",
                                 children: "No"
                             }, void 0, false, {
                                 fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                lineNumber: 201,
+                                lineNumber: 219,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                 className: "flex gap-1 items-center mt-0.5",
-                                children: [
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                        className: "text-[10px] font-bold opacity-70",
-                                        children: [
-                                            "$",
-                                            (quote ? quote.newProbabilities.no : market.odds.noOdds / 100).toFixed(2)
-                                        ]
-                                    }, void 0, true, {
-                                        fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                        lineNumber: 203,
-                                        columnNumber: 14
-                                    }, this),
-                                    quote && side === 'NO' && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                        className: "text-[9px] text-[#0a0a0a] font-extrabold bg-white/20 px-1 rounded",
-                                        children: "NEW"
-                                    }, void 0, false, {
-                                        fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                        lineNumber: 207,
-                                        columnNumber: 16
-                                    }, this)
-                                ]
-                            }, void 0, true, {
+                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                    className: "text-[10px] font-bold opacity-70",
+                                    children: [
+                                        "$",
+                                        (market.odds.noOdds / 100).toFixed(2)
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "[project]/src/components/markets/PredictionCard.tsx",
+                                    lineNumber: 221,
+                                    columnNumber: 13
+                                }, this)
+                            }, void 0, false, {
                                 fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                lineNumber: 202,
+                                lineNumber: 220,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                        lineNumber: 192,
+                        lineNumber: 210,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                lineNumber: 172,
+                lineNumber: 193,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("form", {
@@ -1114,8 +1094,8 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
                                         children: "Monto a invertir"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                        lineNumber: 217,
-                                        columnNumber: 14
+                                        lineNumber: 232,
+                                        columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                         children: [
@@ -1124,13 +1104,13 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                        lineNumber: 218,
-                                        columnNumber: 14
+                                        lineNumber: 233,
+                                        columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                lineNumber: 216,
+                                lineNumber: 231,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1144,7 +1124,7 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
                                         className: "w-full bg-[#0d0d0d] border border-[#272727] rounded-xl px-4 py-3 text-white font-bold text-lg outline-none transition-all group-focus-within:border-[#64c883] group-focus-within:ring-1 group-focus-within:ring-[#64c883]/20"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                        lineNumber: 221,
+                                        lineNumber: 236,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1152,24 +1132,56 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
                                         children: "$"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                        lineNumber: 228,
+                                        lineNumber: 243,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                lineNumber: 220,
+                                lineNumber: 235,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                        lineNumber: 215,
+                        lineNumber: 230,
                         columnNumber: 9
                     }, this),
                     amountNum > 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                         className: "space-y-2",
                         children: [
+                            quote?.feeAmount !== undefined && quote.feeAmount > 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                className: "flex justify-between items-center px-4 py-3 bg-[#0d0d0d]/50 rounded-xl border border-white/5",
+                                children: [
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                        className: "text-xs text-gray-400",
+                                        children: [
+                                            "Comisión WIN (",
+                                            (quote.platformFeeRate * 100).toFixed(0),
+                                            "%)"
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/src/components/markets/PredictionCard.tsx",
+                                        lineNumber: 253,
+                                        columnNumber: 17
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                        className: "text-sm font-bold text-[#e16464]",
+                                        children: [
+                                            "- $",
+                                            quote.feeAmount.toFixed(2)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/src/components/markets/PredictionCard.tsx",
+                                        lineNumber: 256,
+                                        columnNumber: 17
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "[project]/src/components/markets/PredictionCard.tsx",
+                                lineNumber: 252,
+                                columnNumber: 15
+                            }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                 className: "flex justify-between items-center px-4 py-3 bg-[#0d0d0d]/50 rounded-xl border border-white/5",
                                 children: [
@@ -1178,21 +1190,21 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
                                         children: "Acciones Estimadas"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                        lineNumber: 235,
-                                        columnNumber: 16
+                                        lineNumber: 262,
+                                        columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                         className: "text-sm font-bold text-white",
-                                        children: quoteLoading ? '...' : estimatedShares.toFixed(2)
+                                        children: quoteLoading ? "..." : estimatedShares.toFixed(2)
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                        lineNumber: 236,
-                                        columnNumber: 16
+                                        lineNumber: 263,
+                                        columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                lineNumber: 234,
+                                lineNumber: 261,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1203,22 +1215,47 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
                                         children: "Precio Promedio"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                        lineNumber: 241,
-                                        columnNumber: 16
+                                        lineNumber: 268,
+                                        columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                         className: "text-sm font-bold text-white",
-                                        children: quoteLoading ? '...' : `$${(quote ? quote.avgPrice : currentPrice).toFixed(3)}`
+                                        children: quoteLoading ? "..." : `$${(quote ? quote.avgPrice : currentPrice).toFixed(3)}`
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                        lineNumber: 242,
-                                        columnNumber: 16
+                                        lineNumber: 269,
+                                        columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                lineNumber: 240,
+                                lineNumber: 267,
                                 columnNumber: 13
+                            }, this),
+                            quote && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                className: "flex justify-between items-center px-4 py-3 bg-[#0d0d0d]/50 rounded-xl border border-white/5",
+                                children: [
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                        className: "text-xs text-gray-400",
+                                        children: "Nuevo Precio del Mercado"
+                                    }, void 0, false, {
+                                        fileName: "[project]/src/components/markets/PredictionCard.tsx",
+                                        lineNumber: 277,
+                                        columnNumber: 17
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                        className: "text-sm font-bold text-white",
+                                        children: quoteLoading ? "..." : `$${(side === "YES" ? quote.newProbabilities.yes : quote.newProbabilities.no).toFixed(2)}`
+                                    }, void 0, false, {
+                                        fileName: "[project]/src/components/markets/PredictionCard.tsx",
+                                        lineNumber: 280,
+                                        columnNumber: 17
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "[project]/src/components/markets/PredictionCard.tsx",
+                                lineNumber: 276,
+                                columnNumber: 15
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                 className: "flex justify-between items-center px-4 py-4 bg-[#64c883]/5 rounded-xl border border-[#64c883]/10",
@@ -1232,27 +1269,27 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                        lineNumber: 247,
-                                        columnNumber: 16
+                                        lineNumber: 288,
+                                        columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                         className: "text-base font-extrabold text-[#64c883]",
-                                        children: quoteLoading ? '...' : `$${potentialReturnValue.toFixed(2)}`
+                                        children: quoteLoading ? "..." : `$${potentialReturnValue.toFixed(2)}`
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                        lineNumber: 248,
-                                        columnNumber: 16
+                                        lineNumber: 291,
+                                        columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                lineNumber: 246,
+                                lineNumber: 287,
                                 columnNumber: 13
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                        lineNumber: 233,
+                        lineNumber: 250,
                         columnNumber: 11
                     }, this),
                     quote?.wouldExceedCap && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1263,20 +1300,21 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
                                 children: "⚠️ Límite excedido"
                             }, void 0, false, {
                                 fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                lineNumber: 257,
+                                lineNumber: 300,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                 children: quote.capReason
                             }, void 0, false, {
                                 fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                lineNumber: 258,
+                                lineNumber: 301,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                 className: "mt-1",
                                 children: [
-                                    "Máximo permitido: ",
+                                    "Máximo permitido:",
+                                    " ",
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("strong", {
                                         children: [
                                             "$",
@@ -1284,29 +1322,29 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                        lineNumber: 259,
-                                        columnNumber: 51
+                                        lineNumber: 304,
+                                        columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                lineNumber: 259,
+                                lineNumber: 302,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                                 type: "button",
-                                onClick: ()=>setAmount(quote.maxAllowedAmount?.toString() || ''),
+                                onClick: ()=>setAmount(quote.maxAllowedAmount?.toString() || ""),
                                 className: "mt-2 text-[10px] font-extrabold underline uppercase tracking-tighter",
                                 children: "Ajustar al máximo"
                             }, void 0, false, {
                                 fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                lineNumber: 260,
+                                lineNumber: 306,
                                 columnNumber: 13
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                        lineNumber: 256,
+                        lineNumber: 299,
                         columnNumber: 11
                     }, this),
                     error && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1314,27 +1352,27 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
                         children: error
                     }, void 0, false, {
                         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                        lineNumber: 270,
-                        columnNumber: 19
+                        lineNumber: 319,
+                        columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$Button$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Button"], {
                         type: "submit",
                         disabled: !amount || loading || quoteLoading || amountNum <= 0 || !!quote?.wouldExceedCap,
                         loading: loading || quoteLoading,
-                        className: `w-full py-6 rounded-2xl text-lg font-bold transition-all shadow-xl ${side === 'YES' ? 'bg-[#64c883] text-[#0a0a0a] hover:bg-[#74db93] shadow-[#64c883]/20' : 'bg-[#e16464] text-white hover:bg-[#ef7a7a] shadow-[#e16464]/20'}`,
+                        className: `w-full py-6 rounded-2xl text-lg font-bold transition-all shadow-xl ${side === "YES" ? "bg-[#64c883] text-[#0a0a0a] hover:bg-[#74db93] shadow-[#64c883]/20" : "bg-[#e16464] text-white hover:bg-[#ef7a7a] shadow-[#e16464]/20"}`,
                         children: [
                             "Confirmar ",
                             side
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                        lineNumber: 273,
+                        lineNumber: 324,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                lineNumber: 214,
+                lineNumber: 229,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1347,18 +1385,18 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
                     ]
                 }, void 0, true, {
                     fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                    lineNumber: 289,
+                    lineNumber: 346,
                     columnNumber: 9
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                lineNumber: 288,
+                lineNumber: 345,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-        lineNumber: 128,
+        lineNumber: 138,
         columnNumber: 5
     }, this);
 }
@@ -1377,7 +1415,7 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$contexts$2f$UserConte
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$layout$2f$Shell$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/layout/Shell.tsx [app-ssr] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$markets$2f$PriceChart$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/markets/PriceChart.tsx [app-ssr] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$markets$2f$PredictionCard$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/markets/PredictionCard.tsx [app-ssr] (ecmascript)");
-'use client';
+"use client";
 ;
 ;
 ;
@@ -1396,7 +1434,7 @@ function MarketDetailPage({ params }) {
     };
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useEffect"])(()=>{
         if (!loading && !user) {
-            router.push('/');
+            router.push("/");
         }
     }, [
         user,
@@ -1458,7 +1496,7 @@ function MarketDetailPage({ params }) {
                             children: "← Volver"
                         }, void 0, false, {
                             fileName: "[project]/src/app/markets/[id]/page.tsx",
-                            lineNumber: 63,
+                            lineNumber: 65,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h1", {
@@ -1466,13 +1504,13 @@ function MarketDetailPage({ params }) {
                             children: market.question
                         }, void 0, false, {
                             fileName: "[project]/src/app/markets/[id]/page.tsx",
-                            lineNumber: 69,
+                            lineNumber: 71,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/src/app/markets/[id]/page.tsx",
-                    lineNumber: 62,
+                    lineNumber: 64,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1492,7 +1530,7 @@ function MarketDetailPage({ params }) {
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                            lineNumber: 79,
+                                            lineNumber: 81,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1500,13 +1538,13 @@ function MarketDetailPage({ params }) {
                                             children: "Chance"
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                            lineNumber: 82,
+                                            lineNumber: 84,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                    lineNumber: 78,
+                                    lineNumber: 80,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1518,7 +1556,7 @@ function MarketDetailPage({ params }) {
                                             showNo: false
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                            lineNumber: 87,
+                                            lineNumber: 91,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1543,7 +1581,7 @@ function MarketDetailPage({ params }) {
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                            lineNumber: 96,
+                                                            lineNumber: 98,
                                                             columnNumber: 19
                                                         }, this)
                                                     ]
@@ -1560,7 +1598,7 @@ function MarketDetailPage({ params }) {
                                                             children: "Liquidez:"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                            lineNumber: 101,
+                                                            lineNumber: 103,
                                                             columnNumber: 19
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1571,13 +1609,13 @@ function MarketDetailPage({ params }) {
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                            lineNumber: 102,
+                                                            lineNumber: 106,
                                                             columnNumber: 19
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                    lineNumber: 100,
+                                                    lineNumber: 102,
                                                     columnNumber: 17
                                                 }, this)
                                             ]
@@ -1589,7 +1627,7 @@ function MarketDetailPage({ params }) {
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                    lineNumber: 86,
+                                    lineNumber: 90,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("details", {
@@ -1603,14 +1641,14 @@ function MarketDetailPage({ params }) {
                                                     children: "▶"
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                    lineNumber: 112,
+                                                    lineNumber: 116,
                                                     columnNumber: 17
                                                 }, this),
                                                 "Datos LMSR / Auditoría"
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                            lineNumber: 111,
+                                            lineNumber: 115,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1624,7 +1662,7 @@ function MarketDetailPage({ params }) {
                                                             children: "Parámetro b"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                            lineNumber: 118,
+                                                            lineNumber: 124,
                                                             columnNumber: 19
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1632,7 +1670,7 @@ function MarketDetailPage({ params }) {
                                                             children: market.b
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                            lineNumber: 119,
+                                                            lineNumber: 127,
                                                             columnNumber: 19
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1640,43 +1678,7 @@ function MarketDetailPage({ params }) {
                                                             children: "Liquidez del market maker"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                            lineNumber: 120,
-                                                            columnNumber: 19
-                                                        }, this)
-                                                    ]
-                                                }, void 0, true, {
-                                                    fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                    lineNumber: 117,
-                                                    columnNumber: 17
-                                                }, this),
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                    className: "bg-[#111] border border-white/5 rounded-xl p-3",
-                                                    children: [
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                            className: "text-[9px] font-bold text-gray-500 uppercase tracking-wider",
-                                                            children: "Seed Cost"
-                                                        }, void 0, false, {
-                                                            fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                            lineNumber: 124,
-                                                            columnNumber: 19
-                                                        }, this),
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                            className: "text-lg font-extrabold text-white mt-1",
-                                                            children: [
-                                                                "$ ",
-                                                                (market.seedCost || 0).toFixed(2)
-                                                            ]
-                                                        }, void 0, true, {
-                                                            fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                            lineNumber: 125,
-                                                            columnNumber: 19
-                                                        }, this),
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                            className: "text-[9px] text-gray-600 mt-0.5",
-                                                            children: "b × ln(2) = subsidio inicial"
-                                                        }, void 0, false, {
-                                                            fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                            lineNumber: 126,
+                                                            lineNumber: 130,
                                                             columnNumber: 19
                                                         }, this)
                                                     ]
@@ -1690,43 +1692,7 @@ function MarketDetailPage({ params }) {
                                                     children: [
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                             className: "text-[9px] font-bold text-gray-500 uppercase tracking-wider",
-                                                            children: "Fee Plataforma"
-                                                        }, void 0, false, {
-                                                            fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                            lineNumber: 130,
-                                                            columnNumber: 19
-                                                        }, this),
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                            className: "text-lg font-extrabold text-white mt-1",
-                                                            children: [
-                                                                ((market.platformFee || 0.10) * 100).toFixed(0),
-                                                                "%"
-                                                            ]
-                                                        }, void 0, true, {
-                                                            fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                            lineNumber: 131,
-                                                            columnNumber: 19
-                                                        }, this),
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                            className: "text-[9px] text-gray-600 mt-0.5",
-                                                            children: "Comisión por trade"
-                                                        }, void 0, false, {
-                                                            fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                            lineNumber: 132,
-                                                            columnNumber: 19
-                                                        }, this)
-                                                    ]
-                                                }, void 0, true, {
-                                                    fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                    lineNumber: 129,
-                                                    columnNumber: 17
-                                                }, this),
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                    className: "bg-[#111] border border-white/5 rounded-xl p-3",
-                                                    children: [
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                            className: "text-[9px] font-bold text-[#64c883] uppercase tracking-wider",
-                                                            children: "qYes (Shares)"
+                                                            children: "Seed Cost"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/markets/[id]/page.tsx",
                                                             lineNumber: 136,
@@ -1734,18 +1700,21 @@ function MarketDetailPage({ params }) {
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                             className: "text-lg font-extrabold text-white mt-1",
-                                                            children: (market.qYes || 0).toFixed(2)
-                                                        }, void 0, false, {
+                                                            children: [
+                                                                "$ ",
+                                                                (market.seedCost || 0).toFixed(2)
+                                                            ]
+                                                        }, void 0, true, {
                                                             fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                            lineNumber: 137,
+                                                            lineNumber: 139,
                                                             columnNumber: 19
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                             className: "text-[9px] text-gray-600 mt-0.5",
-                                                            children: "Shares YES acumulados"
+                                                            children: "b × ln(2) = subsidio inicial"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                            lineNumber: 138,
+                                                            lineNumber: 142,
                                                             columnNumber: 19
                                                         }, this)
                                                     ]
@@ -1758,83 +1727,30 @@ function MarketDetailPage({ params }) {
                                                     className: "bg-[#111] border border-white/5 rounded-xl p-3",
                                                     children: [
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                            className: "text-[9px] font-bold text-[#e16464] uppercase tracking-wider",
-                                                            children: "qNo (Shares)"
-                                                        }, void 0, false, {
-                                                            fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                            lineNumber: 142,
-                                                            columnNumber: 19
-                                                        }, this),
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                            className: "text-lg font-extrabold text-white mt-1",
-                                                            children: (market.qNo || 0).toFixed(2)
-                                                        }, void 0, false, {
-                                                            fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                            lineNumber: 143,
-                                                            columnNumber: 19
-                                                        }, this),
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                            className: "text-[9px] text-gray-600 mt-0.5",
-                                                            children: "Shares NO acumulados"
-                                                        }, void 0, false, {
-                                                            fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                            lineNumber: 144,
-                                                            columnNumber: 19
-                                                        }, this)
-                                                    ]
-                                                }, void 0, true, {
-                                                    fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                    lineNumber: 141,
-                                                    columnNumber: 17
-                                                }, this),
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                    className: "bg-[#111] border border-white/5 rounded-xl p-3",
-                                                    children: [
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                             className: "text-[9px] font-bold text-gray-500 uppercase tracking-wider",
-                                                            children: "Precios LMSR"
+                                                            children: "Fee Plataforma"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/markets/[id]/page.tsx",
                                                             lineNumber: 148,
                                                             columnNumber: 19
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                            className: "flex gap-3 mt-1",
+                                                            className: "text-lg font-extrabold text-white mt-1",
                                                             children: [
-                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                                    className: "text-base font-extrabold text-[#64c883]",
-                                                                    children: [
-                                                                        "Y $",
-                                                                        (market.odds.yesOdds / 100).toFixed(2)
-                                                                    ]
-                                                                }, void 0, true, {
-                                                                    fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                                    lineNumber: 150,
-                                                                    columnNumber: 21
-                                                                }, this),
-                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                                    className: "text-base font-extrabold text-[#e16464]",
-                                                                    children: [
-                                                                        "N $",
-                                                                        (market.odds.noOdds / 100).toFixed(2)
-                                                                    ]
-                                                                }, void 0, true, {
-                                                                    fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                                    lineNumber: 151,
-                                                                    columnNumber: 21
-                                                                }, this)
+                                                                ((market.platformFee || 0.1) * 100).toFixed(0),
+                                                                "%"
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                            lineNumber: 149,
+                                                            lineNumber: 151,
                                                             columnNumber: 19
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                             className: "text-[9px] text-gray-600 mt-0.5",
-                                                            children: "Precio por share (YES/NO)"
+                                                            children: "Comisión por trade"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                            lineNumber: 153,
+                                                            lineNumber: 154,
                                                             columnNumber: 19
                                                         }, this)
                                                     ]
@@ -1848,10 +1764,132 @@ function MarketDetailPage({ params }) {
                                                     children: [
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                             className: "text-[9px] font-bold text-[#64c883] uppercase tracking-wider",
+                                                            children: "qYes (Shares)"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/markets/[id]/page.tsx",
+                                                            lineNumber: 160,
+                                                            columnNumber: 19
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            className: "text-lg font-extrabold text-white mt-1",
+                                                            children: (market.qYes || 0).toFixed(2)
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/markets/[id]/page.tsx",
+                                                            lineNumber: 163,
+                                                            columnNumber: 19
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            className: "text-[9px] text-gray-600 mt-0.5",
+                                                            children: "Shares YES acumulados"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/markets/[id]/page.tsx",
+                                                            lineNumber: 166,
+                                                            columnNumber: 19
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/src/app/markets/[id]/page.tsx",
+                                                    lineNumber: 159,
+                                                    columnNumber: 17
+                                                }, this),
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                    className: "bg-[#111] border border-white/5 rounded-xl p-3",
+                                                    children: [
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            className: "text-[9px] font-bold text-[#e16464] uppercase tracking-wider",
+                                                            children: "qNo (Shares)"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/markets/[id]/page.tsx",
+                                                            lineNumber: 172,
+                                                            columnNumber: 19
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            className: "text-lg font-extrabold text-white mt-1",
+                                                            children: (market.qNo || 0).toFixed(2)
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/markets/[id]/page.tsx",
+                                                            lineNumber: 175,
+                                                            columnNumber: 19
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            className: "text-[9px] text-gray-600 mt-0.5",
+                                                            children: "Shares NO acumulados"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/markets/[id]/page.tsx",
+                                                            lineNumber: 178,
+                                                            columnNumber: 19
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/src/app/markets/[id]/page.tsx",
+                                                    lineNumber: 171,
+                                                    columnNumber: 17
+                                                }, this),
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                    className: "bg-[#111] border border-white/5 rounded-xl p-3",
+                                                    children: [
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            className: "text-[9px] font-bold text-gray-500 uppercase tracking-wider",
+                                                            children: "Precios LMSR"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/markets/[id]/page.tsx",
+                                                            lineNumber: 184,
+                                                            columnNumber: 19
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            className: "flex gap-3 mt-1",
+                                                            children: [
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                    className: "text-base font-extrabold text-[#64c883]",
+                                                                    children: [
+                                                                        "Y $",
+                                                                        (market.odds.yesOdds / 100).toFixed(2)
+                                                                    ]
+                                                                }, void 0, true, {
+                                                                    fileName: "[project]/src/app/markets/[id]/page.tsx",
+                                                                    lineNumber: 188,
+                                                                    columnNumber: 21
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                    className: "text-base font-extrabold text-[#e16464]",
+                                                                    children: [
+                                                                        "N $",
+                                                                        (market.odds.noOdds / 100).toFixed(2)
+                                                                    ]
+                                                                }, void 0, true, {
+                                                                    fileName: "[project]/src/app/markets/[id]/page.tsx",
+                                                                    lineNumber: 191,
+                                                                    columnNumber: 21
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/src/app/markets/[id]/page.tsx",
+                                                            lineNumber: 187,
+                                                            columnNumber: 19
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            className: "text-[9px] text-gray-600 mt-0.5",
+                                                            children: "Precio por share (YES/NO)"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/markets/[id]/page.tsx",
+                                                            lineNumber: 195,
+                                                            columnNumber: 19
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/src/app/markets/[id]/page.tsx",
+                                                    lineNumber: 183,
+                                                    columnNumber: 17
+                                                }, this),
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                    className: "bg-[#111] border border-white/5 rounded-xl p-3",
+                                                    children: [
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            className: "text-[9px] font-bold text-[#64c883] uppercase tracking-wider",
                                                             children: "Pool YES"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                            lineNumber: 157,
+                                                            lineNumber: 201,
                                                             columnNumber: 19
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1862,7 +1900,7 @@ function MarketDetailPage({ params }) {
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                            lineNumber: 158,
+                                                            lineNumber: 204,
                                                             columnNumber: 19
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1870,13 +1908,13 @@ function MarketDetailPage({ params }) {
                                                             children: "Total apostado a YES"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                            lineNumber: 159,
+                                                            lineNumber: 207,
                                                             columnNumber: 19
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                    lineNumber: 156,
+                                                    lineNumber: 200,
                                                     columnNumber: 17
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1887,7 +1925,7 @@ function MarketDetailPage({ params }) {
                                                             children: "Pool NO"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                            lineNumber: 163,
+                                                            lineNumber: 213,
                                                             columnNumber: 19
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1898,7 +1936,7 @@ function MarketDetailPage({ params }) {
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                            lineNumber: 164,
+                                                            lineNumber: 216,
                                                             columnNumber: 19
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1906,13 +1944,13 @@ function MarketDetailPage({ params }) {
                                                             children: "Total apostado a NO"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                            lineNumber: 165,
+                                                            lineNumber: 219,
                                                             columnNumber: 19
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                    lineNumber: 162,
+                                                    lineNumber: 212,
                                                     columnNumber: 17
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1923,18 +1961,15 @@ function MarketDetailPage({ params }) {
                                                             children: "Cap Máximo"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                            lineNumber: 169,
+                                                            lineNumber: 225,
                                                             columnNumber: 19
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                             className: "text-lg font-extrabold text-white mt-1",
-                                                            children: [
-                                                                "$ ",
-                                                                market.maxPool.toLocaleString()
-                                                            ]
-                                                        }, void 0, true, {
+                                                            children: market.maxPool ? `$ ${market.maxPool.toLocaleString()}` : "Ilimitado"
+                                                        }, void 0, false, {
                                                             fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                            lineNumber: 170,
+                                                            lineNumber: 228,
                                                             columnNumber: 19
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1942,13 +1977,13 @@ function MarketDetailPage({ params }) {
                                                             children: "Límite de mercado"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                            lineNumber: 171,
+                                                            lineNumber: 233,
                                                             columnNumber: 19
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                    lineNumber: 168,
+                                                    lineNumber: 224,
                                                     columnNumber: 17
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1959,7 +1994,7 @@ function MarketDetailPage({ params }) {
                                                             children: "Max Payout"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                            lineNumber: 175,
+                                                            lineNumber: 239,
                                                             columnNumber: 19
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1970,7 +2005,7 @@ function MarketDetailPage({ params }) {
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                            lineNumber: 176,
+                                                            lineNumber: 242,
                                                             columnNumber: 19
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1978,13 +2013,13 @@ function MarketDetailPage({ params }) {
                                                             children: "Peor caso: max(qYes, qNo) × $1"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                            lineNumber: 179,
+                                                            lineNumber: 245,
                                                             columnNumber: 19
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                    lineNumber: 174,
+                                                    lineNumber: 238,
                                                     columnNumber: 17
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1995,35 +2030,35 @@ function MarketDetailPage({ params }) {
                                                             children: "Fees Recolectados"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                            lineNumber: 183,
+                                                            lineNumber: 251,
                                                             columnNumber: 19
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                             className: "text-lg font-extrabold text-white mt-1",
                                                             children: [
                                                                 "$ ",
-                                                                (totalVolume * (market.platformFee || 0.10)).toFixed(2)
+                                                                (totalVolume * (market.platformFee || 0.1)).toFixed(2)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                            lineNumber: 184,
+                                                            lineNumber: 254,
                                                             columnNumber: 19
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                             className: "text-[9px] text-gray-600 mt-0.5",
                                                             children: [
-                                                                ((market.platformFee || 0.10) * 100).toFixed(0),
+                                                                ((market.platformFee || 0.1) * 100).toFixed(0),
                                                                 "% del volumen"
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                            lineNumber: 187,
+                                                            lineNumber: 257,
                                                             columnNumber: 19
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                    lineNumber: 182,
+                                                    lineNumber: 250,
                                                     columnNumber: 17
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2034,25 +2069,25 @@ function MarketDetailPage({ params }) {
                                                             children: "PnL Estimado"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                            lineNumber: 191,
+                                                            lineNumber: 264,
                                                             columnNumber: 19
                                                         }, this),
                                                         (()=>{
-                                                            const collected = totalVolume * (1 - (market.platformFee || 0.10));
+                                                            const collected = totalVolume * (1 - (market.platformFee || 0.1));
                                                             const maxPayout = Math.max(market.qYes || 0, market.qNo || 0);
                                                             const pnl = totalVolume - maxPayout;
                                                             return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Fragment"], {
                                                                 children: [
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                                        className: `text-lg font-extrabold mt-1 ${pnl >= 0 ? 'text-[#64c883]' : 'text-[#e16464]'}`,
+                                                                        className: `text-lg font-extrabold mt-1 ${pnl >= 0 ? "text-[#64c883]" : "text-[#e16464]"}`,
                                                                         children: [
-                                                                            pnl >= 0 ? '+' : '',
+                                                                            pnl >= 0 ? "+" : "",
                                                                             "$",
                                                                             pnl.toFixed(2)
                                                                         ]
                                                                     }, void 0, true, {
                                                                         fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                                        lineNumber: 198,
+                                                                        lineNumber: 277,
                                                                         columnNumber: 25
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2060,7 +2095,7 @@ function MarketDetailPage({ params }) {
                                                                         children: "Recaudado − peor payout"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                                        lineNumber: 201,
+                                                                        lineNumber: 282,
                                                                         columnNumber: 25
                                                                     }, this)
                                                                 ]
@@ -2069,19 +2104,19 @@ function MarketDetailPage({ params }) {
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                    lineNumber: 190,
+                                                    lineNumber: 263,
                                                     columnNumber: 17
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                            lineNumber: 115,
+                                            lineNumber: 121,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                    lineNumber: 110,
+                                    lineNumber: 114,
                                     columnNumber: 13
                                 }, this),
                                 market.positions.length > 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2096,7 +2131,7 @@ function MarketDetailPage({ params }) {
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                            lineNumber: 212,
+                                            lineNumber: 295,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2108,21 +2143,21 @@ function MarketDetailPage({ params }) {
                                                             className: "flex items-center gap-4",
                                                             children: [
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                                    className: `w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs ${pos.side === 'YES' ? 'bg-[#64c883]/10 text-[#64c883]' : 'bg-[#e16464]/10 text-[#e16464]'}`,
+                                                                    className: `w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs ${pos.side === "YES" ? "bg-[#64c883]/10 text-[#64c883]" : "bg-[#e16464]/10 text-[#e16464]"}`,
                                                                     children: pos.side
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                                    lineNumber: 222,
+                                                                    lineNumber: 305,
                                                                     columnNumber: 25
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                                     children: [
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                                             className: "text-sm font-bold text-white group-hover:text-[#64c883] transition-colors",
-                                                                            children: pos.currentOwner.username ? `@${pos.currentOwner.username}` : pos.currentOwner.email?.split('@')[0] || 'Usuario'
+                                                                            children: pos.currentOwner.username ? `@${pos.currentOwner.username}` : pos.currentOwner.email?.split("@")[0] || "Usuario"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                                            lineNumber: 228,
+                                                                            lineNumber: 315,
                                                                             columnNumber: 27
                                                                         }, this),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2130,19 +2165,19 @@ function MarketDetailPage({ params }) {
                                                                             children: new Date(pos.createdAt).toLocaleDateString()
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                                            lineNumber: 231,
+                                                                            lineNumber: 321,
                                                                             columnNumber: 27
                                                                         }, this)
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                                    lineNumber: 227,
+                                                                    lineNumber: 314,
                                                                     columnNumber: 25
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                            lineNumber: 221,
+                                                            lineNumber: 304,
                                                             columnNumber: 23
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2156,7 +2191,7 @@ function MarketDetailPage({ params }) {
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                                    lineNumber: 237,
+                                                                    lineNumber: 327,
                                                                     columnNumber: 25
                                                                 }, this),
                                                                 pos.initialProbability && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2168,36 +2203,36 @@ function MarketDetailPage({ params }) {
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                                    lineNumber: 239,
+                                                                    lineNumber: 331,
                                                                     columnNumber: 27
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                            lineNumber: 236,
+                                                            lineNumber: 326,
                                                             columnNumber: 23
                                                         }, this)
                                                     ]
                                                 }, pos.id, true, {
                                                     fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                    lineNumber: 217,
+                                                    lineNumber: 300,
                                                     columnNumber: 21
                                                 }, this))
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                            lineNumber: 215,
+                                            lineNumber: 298,
                                             columnNumber: 17
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                    lineNumber: 211,
+                                    lineNumber: 294,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/app/markets/[id]/page.tsx",
-                            lineNumber: 76,
+                            lineNumber: 78,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2210,8 +2245,8 @@ function MarketDetailPage({ params }) {
                                     onSuccess: handleTransactionSuccess
                                 }, void 0, false, {
                                     fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                    lineNumber: 253,
-                                    columnNumber: 14
+                                    lineNumber: 345,
+                                    columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                     className: "mt-8 space-y-4",
@@ -2223,22 +2258,22 @@ function MarketDetailPage({ params }) {
                                                     children: "Resolución"
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                    lineNumber: 262,
-                                                    columnNumber: 19
+                                                    lineNumber: 354,
+                                                    columnNumber: 17
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                                     className: "text-gray-300",
                                                     children: new Date(market.resolutionDate).toLocaleDateString()
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                    lineNumber: 263,
-                                                    columnNumber: 19
+                                                    lineNumber: 355,
+                                                    columnNumber: 17
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                            lineNumber: 261,
-                                            columnNumber: 17
+                                            lineNumber: 353,
+                                            columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                             className: "flex justify-between items-center text-[10px] font-bold uppercase tracking-wider text-gray-400",
@@ -2247,50 +2282,50 @@ function MarketDetailPage({ params }) {
                                                     children: "Plataforma"
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                    lineNumber: 266,
-                                                    columnNumber: 19
+                                                    lineNumber: 360,
+                                                    columnNumber: 17
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                                     className: "text-gray-300",
                                                     children: "WIN"
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                                    lineNumber: 267,
-                                                    columnNumber: 19
+                                                    lineNumber: 361,
+                                                    columnNumber: 17
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                            lineNumber: 265,
-                                            columnNumber: 17
+                                            lineNumber: 359,
+                                            columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/app/markets/[id]/page.tsx",
-                                    lineNumber: 260,
-                                    columnNumber: 15
+                                    lineNumber: 352,
+                                    columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/app/markets/[id]/page.tsx",
-                            lineNumber: 252,
+                            lineNumber: 344,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/src/app/markets/[id]/page.tsx",
-                    lineNumber: 74,
+                    lineNumber: 76,
                     columnNumber: 9
                 }, this)
             ]
         }, void 0, true, {
             fileName: "[project]/src/app/markets/[id]/page.tsx",
-            lineNumber: 60,
+            lineNumber: 62,
             columnNumber: 7
         }, this)
     }, void 0, false, {
         fileName: "[project]/src/app/markets/[id]/page.tsx",
-        lineNumber: 59,
+        lineNumber: 61,
         columnNumber: 5
     }, this);
 }
@@ -2300,12 +2335,12 @@ function Page({ params }) {
             params: params
         }, void 0, false, {
             fileName: "[project]/src/app/markets/[id]/page.tsx",
-            lineNumber: 280,
+            lineNumber: 374,
             columnNumber: 7
         }, this)
     }, void 0, false, {
         fileName: "[project]/src/app/markets/[id]/page.tsx",
-        lineNumber: 279,
+        lineNumber: 373,
         columnNumber: 5
     }, this);
 }

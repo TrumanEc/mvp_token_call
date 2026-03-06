@@ -98,7 +98,7 @@ class LmsrService {
    * Cost = C(new) - C(old)
    */ getCostToBuy(qYes, qNo, b, side, deltaShares) {
         const before = this.costFunction(qYes, qNo, b);
-        const after = side === 'YES' ? this.costFunction(qYes + deltaShares, qNo, b) : this.costFunction(qYes, qNo + deltaShares, b);
+        const after = side === "YES" ? this.costFunction(qYes + deltaShares, qNo, b) : this.costFunction(qYes, qNo + deltaShares, b);
         return after - before;
     }
     /**
@@ -106,8 +106,7 @@ class LmsrService {
    * Uses binary search as the inverse of costFunction is not easily solvable analytically for delta
    */ getSharesToBuy(qYes, qNo, b, side, amount, tolerance = 1e-6) {
         let low = 0;
-        let high = amount * 10 // Heuristic upper bound, usually price < 1 so shares > amount
-        ;
+        let high = amount * 10; // Heuristic upper bound, usually price < 1 so shares > amount
         // Binary search for 100 iterations (sufficient precision)
         for(let i = 0; i < 100; i++){
             const mid = (low + high) / 2;
@@ -126,20 +125,19 @@ class LmsrService {
     /**
    * Calcula el monto máximo permitido para una transacción
    * dado un límite de price impact en porcentaje
-   */ getMaxAmountForPriceImpact(qYes, qNo, b, side, maxImpactPercent// ej: 5 = no mover más de 5%
-    ) {
+   */ getMaxAmountForPriceImpact(qYes, qNo, b, side, maxImpactPercent) {
         const { pYes, pNo } = this.getPrice(qYes, qNo, b);
-        const currentPrice = side === 'YES' ? pYes : pNo;
+        const currentPrice = side === "YES" ? pYes : pNo;
         const maxPrice = Math.min(currentPrice + maxImpactPercent / 100, 0.99);
         // Buscar binariamente cuántos shares llevan el precio hasta maxPrice
         let low = 0;
         let high = b * 20;
         for(let i = 0; i < 100; i++){
             const mid = (low + high) / 2;
-            const newQYes = side === 'YES' ? qYes + mid : qYes;
-            const newQNo = side === 'NO' ? qNo + mid : qNo;
+            const newQYes = side === "YES" ? qYes + mid : qYes;
+            const newQNo = side === "NO" ? qNo + mid : qNo;
             const { pYes: pAfter, pNo: pNoAfter } = this.getPrice(newQYes, newQNo, b);
-            const priceAfter = side === 'YES' ? pAfter : pNoAfter;
+            const priceAfter = side === "YES" ? pAfter : pNoAfter;
             if (priceAfter < maxPrice) low = mid;
             else high = mid;
         }
@@ -150,8 +148,8 @@ class LmsrService {
    * Valida una transacción contra todos los límites configurados.
    * Devuelve el monto máximo permitido y la razón si fue limitado.
    */ validateBetAmount(amount, qYes, qNo, b, side, maxBetAmount, maxPriceImpact) {
-        // 1. CAP fijo
-        if (amount > maxBetAmount) {
+        // 1. CAP fijo (Add 1 cent tolerance for float precision)
+        if (maxBetAmount && amount > maxBetAmount + 0.01) {
             return {
                 allowed: false,
                 maxAllowed: maxBetAmount,
@@ -161,10 +159,10 @@ class LmsrService {
         // 2. CAP dinámico por price impact (si está configurado)
         if (maxPriceImpact) {
             const maxByImpact = this.getMaxAmountForPriceImpact(qYes, qNo, b, side, maxPriceImpact);
-            if (amount > maxByImpact) {
+            if (amount > maxByImpact + 0.01) {
                 return {
                     allowed: false,
-                    maxAllowed: Math.min(maxBetAmount, maxByImpact),
+                    maxAllowed: maxBetAmount ? Math.min(maxBetAmount, maxByImpact) : maxByImpact,
                     reason: `Esta compra movería el precio más del ${maxPriceImpact}% permitido`
                 };
             }
@@ -216,12 +214,12 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$lmsr$2e$s
 async function GET(request, { params }) {
     const { searchParams } = new URL(request.url);
     const { id } = await params;
-    const side = searchParams.get('side');
-    const amountStr = searchParams.get('amount');
-    const sharesStr = searchParams.get('shares');
-    if (!side || side !== 'YES' && side !== 'NO') {
+    const side = searchParams.get("side");
+    const amountStr = searchParams.get("amount");
+    const sharesStr = searchParams.get("shares");
+    if (!side || side !== "YES" && side !== "NO") {
         return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
-            error: 'Invalid side'
+            error: "Invalid side"
         }, {
             status: 400
         });
@@ -237,12 +235,13 @@ async function GET(request, { params }) {
                 qNo: true,
                 b: true,
                 maxBetAmount: true,
-                maxPriceImpact: true
+                maxPriceImpact: true,
+                platformFee: true
             }
         });
         if (!market) {
             return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
-                error: 'Market not found'
+                error: "Market not found"
             }, {
                 status: 404
             });
@@ -250,54 +249,51 @@ async function GET(request, { params }) {
         const lmsrService = new __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$lmsr$2e$service$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["LmsrService"]();
         let shares = 0;
         let totalCost = 0;
+        const platformFeeRate = market.platformFee ? Number(market.platformFee) : 0.1;
+        let feeAmount = 0;
         // Scenario 1: User wants to spend X amount (e.g. $10)
         if (amountStr && !sharesStr) {
             const amount = parseFloat(amountStr);
             if (isNaN(amount) || amount <= 0) {
                 return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
-                    error: 'Invalid amount'
+                    error: "Invalid amount"
                 }, {
                     status: 400
                 });
             }
+            feeAmount = amount * platformFeeRate;
+            const netAmount = amount - feeAmount;
             // Calculate shares for amount
-            shares = lmsrService.getSharesToBuy(market.qYes, market.qNo, market.b, side, amount);
-            totalCost = amount; // Approx cost is the input amount (minus dust error)
-            // Recalculate exact cost for those shares to be precise
-            totalCost = lmsrService.getCostToBuy(market.qYes, market.qNo, market.b, side, shares);
+            shares = lmsrService.getSharesToBuy(market.qYes, market.qNo, market.b, side, netAmount);
+            totalCost = amount; // User pays the full amount
         } else if (sharesStr) {
             shares = parseFloat(sharesStr);
             if (isNaN(shares) || shares <= 0) {
                 return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
-                    error: 'Invalid shares'
+                    error: "Invalid shares"
                 }, {
                     status: 400
                 });
             }
-            // Calculate cost for shares
-            totalCost = lmsrService.getCostToBuy(market.qYes, market.qNo, market.b, side, shares);
+            // Calculate net cost to pool for these shares
+            const netCost = lmsrService.getCostToBuy(market.qYes, market.qNo, market.b, side, shares);
+            totalCost = netCost / (1 - platformFeeRate);
+            feeAmount = totalCost - netCost;
         } else {
             return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
-                error: 'Must provide either amount or shares'
+                error: "Must provide either amount or shares"
             }, {
                 status: 400
             });
         }
         const avgPrice = shares > 0 ? totalCost / shares : 0;
-        // Validate bounds for the requested amount
-        const config = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$prisma$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["prisma"].platformConfig.findUnique({
-            where: {
-                id: 'global'
-            }
-        });
-        const defaultMaxBet = config?.defaultMaxBet ?? 500;
-        const defaultMaxImpact = config?.defaultMaxImpact ?? 5.0;
-        const maxBetAmount = market.maxBetAmount ?? defaultMaxBet;
-        const maxPriceImpact = market.maxPriceImpact ?? defaultMaxImpact;
+        // Validate bounds for the requested amount (explicit limits only)
+        const maxBetAmount = market.maxBetAmount ?? null;
+        const maxPriceImpact = market.maxPriceImpact ?? null;
         const validation = lmsrService.validateBetAmount(totalCost, market.qYes, market.qNo, market.b, side, maxBetAmount, maxPriceImpact);
         // Calculate new probabilities (post-trade state simulation)
-        const newQYes = side === 'YES' ? market.qYes + shares : market.qYes;
-        const newQNo = side === 'NO' ? market.qNo + shares : market.qNo;
+        const newQYes = side === "YES" ? market.qYes + shares : market.qYes;
+        const newQNo = side === "NO" ? market.qNo + shares : market.qNo;
         const newPrices = lmsrService.getPrice(newQYes, newQNo, market.b);
         return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
             side,
@@ -308,15 +304,17 @@ async function GET(request, { params }) {
                 yes: newPrices.pYes,
                 no: newPrices.pNo
             },
+            feeAmount,
+            platformFeeRate,
             priceImpact: 0,
             maxAllowedAmount: validation.maxAllowed,
             capReason: validation.reason || null,
             wouldExceedCap: !validation.allowed
         });
     } catch (error) {
-        console.error('Error calculating price quote:', error);
+        console.error("Error calculating price quote:", error);
         return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
-            error: 'Internal Server Error',
+            error: "Internal Server Error",
             details: error instanceof Error ? error.message : String(error)
         }, {
             status: 500

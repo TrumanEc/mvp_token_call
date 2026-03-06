@@ -1116,7 +1116,7 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$I
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$Button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/ui/Button.tsx [app-client] (ecmascript)");
 ;
 var _s = __turbopack_context__.k.signature();
-'use client';
+"use client";
 ;
 ;
 ;
@@ -1126,70 +1126,48 @@ function LmsrCalculator() {
     const [b, setB] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(100);
     const [qYes, setQYes] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(0);
     const [qNo, setQNo] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(0);
-    const [prices, setPrices] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])({
-        pYes: 0.5,
-        pNo: 0.5
-    });
-    const [cost, setCost] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(0);
     // Caps for simulation
-    const [maxBetAmount, setMaxBetAmount] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])('');
-    const [maxPriceImpact, setMaxPriceImpact] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])('');
+    const [maxBetAmount, setMaxBetAmount] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])("");
+    const [maxPriceImpact, setMaxPriceImpact] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])("");
+    const [platformFeeRate, setPlatformFeeRate] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])("10");
     // Simulation state
-    const [simAmount, setSimAmount] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])('100');
-    const [simSide, setSimSide] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])('YES');
-    const [simResult, setSimResult] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
-    (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
-        "LmsrCalculator.useEffect": ()=>{
-            // Calculate current state locally
-            const maxQ = Math.max(qYes / b, qNo / b);
-            const expYes = Math.exp(qYes / b - maxQ);
-            const expNo = Math.exp(qNo / b - maxQ);
-            const sum = expYes + expNo;
-            setPrices({
-                pYes: expYes / sum,
-                pNo: expNo / sum
-            });
-            // Cost function: C = b * ln(exp(q1/b) + exp(q2/b))
-            // Optimized: C = b * (maxQ + ln(sum))
-            setCost(b * (maxQ + Math.log(sum)));
-        }
-    }["LmsrCalculator.useEffect"], [
-        b,
-        qYes,
-        qNo
-    ]);
-    const runSimulation = ()=>{
-        const amount = parseFloat(simAmount) || 0;
-        if (amount <= 0) return;
-        // This is a rough estimation client-side. 
-        // Ideally we'd use the same service logic, but for a simple calculator, 
-        // re-implementing the core logic here is fine for admin visualization.
-        // To find shares for exact amount: C(new) - C(old) = amount
-        // It requires iterative solution or binary search. 
-        // For simplicity in this UI calculator, let's just approximate or show the "Next Share Price"
-        // Let's implement a quick binary search for shares
+    const [simAmount, setSimAmount] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])("100");
+    const [simSide, setSimSide] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])("YES");
+    // Calculate current state locally
+    const maxQ = b > 0 ? Math.max(qYes / b, qNo / b) : 0;
+    const expYes = b > 0 ? Math.exp(qYes / b - maxQ) : 0;
+    const expNo = b > 0 ? Math.exp(qNo / b - maxQ) : 0;
+    const sum = expYes + expNo;
+    const pYes = sum > 0 ? expYes / sum : 0.5;
+    const pNo = sum > 0 ? expNo / sum : 0.5;
+    const cost = b > 0 ? b * (maxQ + Math.log(sum)) : 0;
+    const amount = parseFloat(simAmount) || 0;
+    let simResult = null;
+    if (amount > 0 && b > 0) {
+        const feeRate = parseFloat(platformFeeRate) / 100 || 0;
+        const feeAmount = amount * feeRate;
+        const netAmount = amount - feeAmount;
         let low = 0;
-        let high = amount * 2 // Upper bound guess
-        ;
+        let high = netAmount * 2; // Upper bound guess
         let shares = 0;
         // Binary search for shares
         for(let i = 0; i < 20; i++){
             const mid = (low + high) / 2;
-            const testQYes = simSide === 'YES' ? qYes + mid : qYes;
-            const testQNo = simSide === 'NO' ? qNo + mid : qNo;
-            const maxQ = Math.max(testQYes / b, testQNo / b);
-            const costNew = b * (maxQ + Math.log(Math.exp(testQYes / b - maxQ) + Math.exp(testQNo / b - maxQ)));
+            const testQYes = simSide === "YES" ? qYes + mid : qYes;
+            const testQNo = simSide === "NO" ? qNo + mid : qNo;
+            const testMaxQ = Math.max(testQYes / b, testQNo / b);
+            const costNew = b * (testMaxQ + Math.log(Math.exp(testQYes / b - testMaxQ) + Math.exp(testQNo / b - testMaxQ)));
             const deltaCost = costNew - cost;
-            if (Math.abs(deltaCost - amount) < 0.01) {
+            if (Math.abs(deltaCost - netAmount) < 0.01) {
                 shares = mid;
                 break;
             }
-            if (deltaCost > amount) high = mid;
+            if (deltaCost > netAmount) high = mid;
             else low = mid;
         }
         shares = (low + high) / 2;
-        const newQYes = simSide === 'YES' ? qYes + shares : qYes;
-        const newQNo = simSide === 'NO' ? qNo + shares : qNo;
+        const newQYes = simSide === "YES" ? qYes + shares : qYes;
+        const newQNo = simSide === "NO" ? qNo + shares : qNo;
         const maxQNew = Math.max(newQYes / b, newQNo / b);
         const expYesNew = Math.exp(newQYes / b - maxQNew);
         const expNoNew = Math.exp(newQNo / b - maxQNew);
@@ -1199,14 +1177,14 @@ function LmsrCalculator() {
             pNo: expNoNew / sumNew
         };
         // Price Impact Calculation
-        const currentPrice = simSide === 'YES' ? prices.pYes : prices.pNo;
-        const newPrice = simSide === 'YES' ? newPrices.pYes : newPrices.pNo;
+        const currentPrice = simSide === "YES" ? pYes : pNo;
+        const newPrice = simSide === "YES" ? newPrices.pYes : newPrices.pNo;
         const priceImpact = (newPrice - currentPrice) * 100;
         // Validation
         const maxBet = parseFloat(maxBetAmount);
         const maxImpact = parseFloat(maxPriceImpact);
         let wouldExceedCap = false;
-        let capReason = '';
+        let capReason = "";
         if (!isNaN(maxBet) && amount > maxBet) {
             wouldExceedCap = true;
             capReason = `Excede el monto máximo por transacción ($${maxBet})`;
@@ -1214,15 +1192,20 @@ function LmsrCalculator() {
             wouldExceedCap = true;
             capReason = `Excede el impacto de precio máximo (${priceImpact.toFixed(2)}% > ${maxImpact}%)`;
         }
-        setSimResult({
+        simResult = {
             shares,
-            avgPrice: amount / shares,
+            avgPrice: shares > 0 ? amount / shares : 0,
             newPrices,
             priceImpact,
             wouldExceedCap,
-            capReason
-        });
-    };
+            capReason,
+            feeAmount
+        };
+    }
+    // Liquidity Report Simulation
+    const initialSeed = b * Math.LN2;
+    const netInvestments = Math.max(0, cost - initialSeed);
+    const netProfitLoss = netInvestments - initialSeed;
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$Card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Card"], {
         className: "bg-[#121212] border-white/5",
         children: [
@@ -1232,12 +1215,12 @@ function LmsrCalculator() {
                     children: "Simulador LMSR"
                 }, void 0, false, {
                     fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                    lineNumber: 126,
+                    lineNumber: 122,
                     columnNumber: 9
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                lineNumber: 125,
+                lineNumber: 121,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$Card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["CardContent"], {
@@ -1253,7 +1236,7 @@ function LmsrCalculator() {
                                         children: "Liquidez (b)"
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                        lineNumber: 131,
+                                        lineNumber: 129,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$Input$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Input"], {
@@ -1269,7 +1252,7 @@ function LmsrCalculator() {
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                lineNumber: 130,
+                                lineNumber: 128,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1289,7 +1272,7 @@ function LmsrCalculator() {
                                         className: "bg-[#0a0a0a] border-white/5 text-white"
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                        lineNumber: 141,
+                                        lineNumber: 143,
                                         columnNumber: 13
                                     }, this)
                                 ]
@@ -1305,7 +1288,7 @@ function LmsrCalculator() {
                                         children: "Shares NO (q2)"
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                        lineNumber: 149,
+                                        lineNumber: 151,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$Input$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Input"], {
@@ -1315,23 +1298,248 @@ function LmsrCalculator() {
                                         className: "bg-[#0a0a0a] border-white/5 text-white"
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                        lineNumber: 150,
+                                        lineNumber: 154,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                lineNumber: 148,
+                                lineNumber: 150,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                        lineNumber: 129,
+                        lineNumber: 127,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                        className: "grid grid-cols-2 gap-4",
+                        className: "grid grid-cols-1 md:grid-cols-2 gap-4",
+                        children: [
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                className: "bg-[#0a0a0a] p-5 rounded-2xl border border-white/5 space-y-3",
+                                children: [
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h4", {
+                                        className: "text-[10px] font-bold text-white uppercase tracking-wider mb-2",
+                                        children: "Balance de Liquidez (WIN)"
+                                    }, void 0, false, {
+                                        fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
+                                        lineNumber: 165,
+                                        columnNumber: 13
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        className: "space-y-2",
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                className: "flex justify-between items-center text-[10px]",
+                                                children: [
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                        className: "text-gray-500",
+                                                        children: "Liquidez puesta por WIN (b)"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
+                                                        lineNumber: 170,
+                                                        columnNumber: 17
+                                                    }, this),
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                        className: "text-white font-bold",
+                                                        children: [
+                                                            "$ ",
+                                                            b.toFixed(2)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
+                                                        lineNumber: 173,
+                                                        columnNumber: 17
+                                                    }, this)
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
+                                                lineNumber: 169,
+                                                columnNumber: 15
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                className: "flex justify-between items-center text-[10px]",
+                                                children: [
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                        className: "text-gray-500",
+                                                        children: "Subsidio Inicial (Seed Cost)"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
+                                                        lineNumber: 176,
+                                                        columnNumber: 17
+                                                    }, this),
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                        className: "text-white font-bold",
+                                                        children: [
+                                                            "$",
+                                                            initialSeed.toFixed(2)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
+                                                        lineNumber: 179,
+                                                        columnNumber: 17
+                                                    }, this)
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
+                                                lineNumber: 175,
+                                                columnNumber: 15
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                className: "flex justify-between items-center text-[10px]",
+                                                children: [
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                        className: "text-gray-500",
+                                                        children: "Inversiones Netas (In)"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
+                                                        lineNumber: 184,
+                                                        columnNumber: 17
+                                                    }, this),
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                        className: "text-white font-bold",
+                                                        children: [
+                                                            "$",
+                                                            netInvestments.toFixed(2)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
+                                                        lineNumber: 185,
+                                                        columnNumber: 17
+                                                    }, this)
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
+                                                lineNumber: 183,
+                                                columnNumber: 15
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                className: "flex justify-between items-center text-[10px] pt-1 mt-1 border-t border-white/5",
+                                                children: [
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                        className: "text-gray-400 font-bold uppercase",
+                                                        children: "PnL de Liquidez (Neto)"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
+                                                        lineNumber: 190,
+                                                        columnNumber: 17
+                                                    }, this),
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                        className: `font-extrabold ${netProfitLoss >= 0 ? "text-[#64c883]" : "text-[#e16464]"}`,
+                                                        children: [
+                                                            "$",
+                                                            netProfitLoss.toFixed(2)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
+                                                        lineNumber: 193,
+                                                        columnNumber: 17
+                                                    }, this)
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
+                                                lineNumber: 189,
+                                                columnNumber: 15
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                className: "pt-2",
+                                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                    className: "text-[9px] text-gray-500 leading-tight italic",
+                                                    children: "* El Seed Cost se calcula como b × ln(2). El factor 0.6931 representa el costo de establecer las probabilidades al 50% inicial en un mercado LMSR."
+                                                }, void 0, false, {
+                                                    fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
+                                                    lineNumber: 200,
+                                                    columnNumber: 17
+                                                }, this)
+                                            }, void 0, false, {
+                                                fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
+                                                lineNumber: 199,
+                                                columnNumber: 15
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
+                                        lineNumber: 168,
+                                        columnNumber: 13
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
+                                lineNumber: 164,
+                                columnNumber: 11
+                            }, this),
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                className: "bg-[#0a0a0a] p-5 rounded-2xl border border-white/5 grid grid-cols-2 gap-4 text-center items-center",
+                                children: [
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                className: "text-[10px] font-bold text-[#64c883] uppercase",
+                                                children: "Precio SÍ"
+                                            }, void 0, false, {
+                                                fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
+                                                lineNumber: 211,
+                                                columnNumber: 15
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                className: "text-2xl font-extrabold text-[#64c883]",
+                                                children: [
+                                                    (pYes * 100).toFixed(1),
+                                                    "%"
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
+                                                lineNumber: 214,
+                                                columnNumber: 15
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
+                                        lineNumber: 210,
+                                        columnNumber: 13
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                className: "text-[10px] font-bold text-[#e16464] uppercase",
+                                                children: "Precio NO"
+                                            }, void 0, false, {
+                                                fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
+                                                lineNumber: 219,
+                                                columnNumber: 15
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                className: "text-2xl font-extrabold text-[#e16464]",
+                                                children: [
+                                                    (pNo * 100).toFixed(1),
+                                                    "%"
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
+                                                lineNumber: 222,
+                                                columnNumber: 15
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
+                                        lineNumber: 218,
+                                        columnNumber: 13
+                                    }, this)
+                                ]
+                            }, void 0, true, {
+                                fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
+                                lineNumber: 209,
+                                columnNumber: 11
+                            }, this)
+                        ]
+                    }, void 0, true, {
+                        fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
+                        lineNumber: 163,
+                        columnNumber: 9
+                    }, this),
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                        className: "grid grid-cols-3 gap-4",
                         children: [
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                 children: [
@@ -1340,8 +1548,8 @@ function LmsrCalculator() {
                                         children: "CAP Pago ($)"
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                        lineNumber: 161,
-                                        columnNumber: 14
+                                        lineNumber: 231,
+                                        columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$Input$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Input"], {
                                         type: "number",
@@ -1351,14 +1559,14 @@ function LmsrCalculator() {
                                         className: "bg-[#0a0a0a] border-white/5 text-white"
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                        lineNumber: 162,
-                                        columnNumber: 14
+                                        lineNumber: 234,
+                                        columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                lineNumber: 160,
-                                columnNumber: 12
+                                lineNumber: 230,
+                                columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                 children: [
@@ -1367,8 +1575,8 @@ function LmsrCalculator() {
                                         children: "CAP Impacto (%)"
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                        lineNumber: 171,
-                                        columnNumber: 14
+                                        lineNumber: 243,
+                                        columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$Input$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Input"], {
                                         type: "number",
@@ -1378,82 +1586,45 @@ function LmsrCalculator() {
                                         className: "bg-[#0a0a0a] border-white/5 text-white"
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                        lineNumber: 172,
-                                        columnNumber: 14
+                                        lineNumber: 246,
+                                        columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                lineNumber: 170,
-                                columnNumber: 12
-                            }, this)
-                        ]
-                    }, void 0, true, {
-                        fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                        lineNumber: 159,
-                        columnNumber: 9
-                    }, this),
-                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                        className: "bg-[#0a0a0a] p-4 rounded-xl border border-white/5 grid grid-cols-2 gap-4 text-center",
-                        children: [
-                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                children: [
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                        className: "text-[10px] font-bold text-[#64c883] uppercase",
-                                        children: "Precio SÍ"
-                                    }, void 0, false, {
-                                        fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                        lineNumber: 184,
-                                        columnNumber: 14
-                                    }, this),
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                        className: "text-2xl font-extrabold text-[#64c883]",
-                                        children: [
-                                            (prices.pYes * 100).toFixed(2),
-                                            "%"
-                                        ]
-                                    }, void 0, true, {
-                                        fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                        lineNumber: 185,
-                                        columnNumber: 14
-                                    }, this)
-                                ]
-                            }, void 0, true, {
-                                fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                lineNumber: 183,
-                                columnNumber: 12
+                                lineNumber: 242,
+                                columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                 children: [
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                        className: "text-[10px] font-bold text-[#e16464] uppercase",
-                                        children: "Precio NO"
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                        className: "text-[10px] font-bold text-gray-400 uppercase",
+                                        children: "Comisión WIN (%)"
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                        lineNumber: 188,
-                                        columnNumber: 14
+                                        lineNumber: 255,
+                                        columnNumber: 13
                                     }, this),
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                        className: "text-2xl font-extrabold text-[#e16464]",
-                                        children: [
-                                            (prices.pNo * 100).toFixed(2),
-                                            "%"
-                                        ]
-                                    }, void 0, true, {
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$Input$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Input"], {
+                                        type: "number",
+                                        value: platformFeeRate,
+                                        onChange: (e)=>setPlatformFeeRate(e.target.value),
+                                        className: "bg-[#0a0a0a] border-white/5 text-white"
+                                    }, void 0, false, {
                                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                        lineNumber: 189,
-                                        columnNumber: 14
+                                        lineNumber: 258,
+                                        columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                lineNumber: 187,
-                                columnNumber: 12
+                                lineNumber: 254,
+                                columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                        lineNumber: 182,
+                        lineNumber: 229,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1464,8 +1635,8 @@ function LmsrCalculator() {
                                 children: "Simular Compra"
                             }, void 0, false, {
                                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                lineNumber: 194,
-                                columnNumber: 12
+                                lineNumber: 268,
+                                columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                 className: "flex gap-2",
@@ -1480,55 +1651,46 @@ function LmsrCalculator() {
                                             placeholder: "Monto ($)"
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                            lineNumber: 197,
-                                            columnNumber: 17
+                                            lineNumber: 273,
+                                            columnNumber: 15
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                        lineNumber: 196,
-                                        columnNumber: 14
+                                        lineNumber: 272,
+                                        columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                         className: "flex gap-2",
                                         children: [
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$Button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
-                                                onClick: ()=>setSimSide('YES'),
-                                                className: `font-bold ${simSide === 'YES' ? 'bg-[#64c883] text-black' : 'bg-[#1a2e21] text-[#64c883]'}`,
+                                                onClick: ()=>setSimSide("YES"),
+                                                className: `font-bold ${simSide === "YES" ? "bg-[#64c883] text-black" : "bg-[#1a2e21] text-[#64c883]"}`,
                                                 children: "YES"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                                lineNumber: 206,
-                                                columnNumber: 17
+                                                lineNumber: 282,
+                                                columnNumber: 15
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$Button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
-                                                onClick: ()=>setSimSide('NO'),
-                                                className: `font-bold ${simSide === 'NO' ? 'bg-[#e16464] text-black' : 'bg-[#2e1a1a] text-[#e16464]'}`,
+                                                onClick: ()=>setSimSide("NO"),
+                                                className: `font-bold ${simSide === "NO" ? "bg-[#e16464] text-black" : "bg-[#2e1a1a] text-[#e16464]"}`,
                                                 children: "NO"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                                lineNumber: 212,
-                                                columnNumber: 17
+                                                lineNumber: 288,
+                                                columnNumber: 15
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                        lineNumber: 205,
-                                        columnNumber: 14
+                                        lineNumber: 281,
+                                        columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                lineNumber: 195,
-                                columnNumber: 12
-                            }, this),
-                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$Button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
-                                onClick: runSimulation,
-                                className: "w-full bg-white text-black font-bold uppercase tracking-wider text-xs",
-                                children: "Calculadora"
-                            }, void 0, false, {
-                                fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                lineNumber: 221,
-                                columnNumber: 12
+                                lineNumber: 271,
+                                columnNumber: 11
                             }, this),
                             simResult && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                 className: "bg-[#1a1a1a] p-3 rounded-lg text-xs space-y-1 border border-white/5",
@@ -1541,22 +1703,50 @@ function LmsrCalculator() {
                                                 children: "Shares Recibidas:"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                                lineNumber: 226,
-                                                columnNumber: 20
+                                                lineNumber: 300,
+                                                columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                                 className: "text-white font-bold",
                                                 children: simResult.shares.toFixed(2)
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                                lineNumber: 227,
-                                                columnNumber: 20
+                                                lineNumber: 301,
+                                                columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                        lineNumber: 225,
-                                        columnNumber: 17
+                                        lineNumber: 299,
+                                        columnNumber: 15
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        className: "flex justify-between",
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                className: "text-gray-400",
+                                                children: "Comisión WIN:"
+                                            }, void 0, false, {
+                                                fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
+                                                lineNumber: 306,
+                                                columnNumber: 17
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                className: "text-white font-bold",
+                                                children: [
+                                                    "$",
+                                                    simResult.feeAmount.toFixed(2)
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
+                                                lineNumber: 307,
+                                                columnNumber: 17
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
+                                        lineNumber: 305,
+                                        columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                         className: "flex justify-between",
@@ -1566,8 +1756,8 @@ function LmsrCalculator() {
                                                 children: "Precio Promedio:"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                                lineNumber: 230,
-                                                columnNumber: 20
+                                                lineNumber: 312,
+                                                columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                                 className: "text-white font-bold",
@@ -1577,14 +1767,14 @@ function LmsrCalculator() {
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                                lineNumber: 231,
-                                                columnNumber: 20
+                                                lineNumber: 313,
+                                                columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                        lineNumber: 229,
-                                        columnNumber: 17
+                                        lineNumber: 311,
+                                        columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                         className: "flex justify-between pt-2 border-t border-white/5 mt-2",
@@ -1594,25 +1784,25 @@ function LmsrCalculator() {
                                                 children: "Impacto p:"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                                lineNumber: 234,
-                                                columnNumber: 21
+                                                lineNumber: 318,
+                                                columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                className: `font-bold ${simResult.wouldExceedCap ? 'text-[#e16464]' : 'text-[#64c883]'}`,
+                                                className: `font-bold ${simResult.wouldExceedCap ? "text-[#e16464]" : "text-[#64c883]"}`,
                                                 children: [
                                                     simResult.priceImpact.toFixed(2),
                                                     "%"
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                                lineNumber: 235,
-                                                columnNumber: 21
+                                                lineNumber: 319,
+                                                columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                        lineNumber: 233,
-                                        columnNumber: 18
+                                        lineNumber: 317,
+                                        columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                         className: "flex justify-between",
@@ -1626,25 +1816,25 @@ function LmsrCalculator() {
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                                lineNumber: 240,
-                                                columnNumber: 21
+                                                lineNumber: 326,
+                                                columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                className: `font-bold ${simSide === 'YES' ? 'text-[#64c883]' : 'text-[#e16464]'}`,
+                                                className: `font-bold ${simSide === "YES" ? "text-[#64c883]" : "text-[#e16464]"}`,
                                                 children: [
-                                                    (simResult.newPrices[simSide === 'YES' ? 'pYes' : 'pNo'] * 100).toFixed(2),
+                                                    (simResult.newPrices[simSide === "YES" ? "pYes" : "pNo"] * 100).toFixed(2),
                                                     "%"
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                                lineNumber: 241,
-                                                columnNumber: 21
+                                                lineNumber: 327,
+                                                columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                        lineNumber: 239,
-                                        columnNumber: 18
+                                        lineNumber: 325,
+                                        columnNumber: 15
                                     }, this),
                                     simResult.wouldExceedCap && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                         className: "mt-2 text-[#e16464] font-bold text-[10px] animate-pulse",
@@ -1654,35 +1844,35 @@ function LmsrCalculator() {
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                        lineNumber: 246,
-                                        columnNumber: 20
+                                        lineNumber: 338,
+                                        columnNumber: 17
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                lineNumber: 224,
-                                columnNumber: 14
+                                lineNumber: 298,
+                                columnNumber: 13
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                        lineNumber: 193,
+                        lineNumber: 267,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                lineNumber: 128,
+                lineNumber: 126,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-        lineNumber: 124,
+        lineNumber: 120,
         columnNumber: 5
     }, this);
 }
-_s(LmsrCalculator, "SXgzFVzkXxcWUZOOEj9sLhHUyFo=");
+_s(LmsrCalculator, "fzMPVtq0h1vYngY8K+3Sjb6C1xE=");
 _c = LmsrCalculator;
 var _c;
 __turbopack_context__.k.register(_c, "LmsrCalculator");
@@ -1707,7 +1897,7 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$contexts$2f$UserConte
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$app$2f$admin$2f$lmsr$2d$calculator$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/app/admin/lmsr-calculator.tsx [app-client] (ecmascript)");
 ;
 var _s = __turbopack_context__.k.signature();
-'use client';
+"use client";
 ;
 ;
 ;
@@ -1725,7 +1915,7 @@ function AdminPage() {
     const [showResolveModal, setShowResolveModal] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
     const [creating, setCreating] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
     const [resolving, setResolving] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
-    const [activeTab, setActiveTab] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])('markets');
+    const [activeTab, setActiveTab] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])("markets");
     const [users, setUsers] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])([]);
     const [loadingUsers, setLoadingUsers] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
     const [purchases, setPurchases] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])([]);
@@ -1734,29 +1924,29 @@ function AdminPage() {
     const [loadingTransactions, setLoadingTransactions] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
     const [showCreateUserModal, setShowCreateUserModal] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
     const [newUser, setNewUser] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])({
-        username: '',
-        email: ''
+        username: "",
+        email: ""
     });
-    const [selectedMarketId, setSelectedMarketId] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])('');
+    const [selectedMarketId, setSelectedMarketId] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])("");
     const [selectedUserStats, setSelectedUserStats] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
     const [selectedMarketStats, setSelectedMarketStats] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
     const [lmsrLogs, setLmsrLogs] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])([]);
     const [loadingDetails, setLoadingDetails] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
     const [loadingLogs, setLoadingLogs] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
     const [newMarket, setNewMarket] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])({
-        playerName: '',
-        question: '',
-        description: '',
-        resolutionDate: '',
-        maxPool: '20000',
-        b: '100',
-        maxBetAmount: '',
-        maxPriceImpact: ''
+        playerName: "",
+        question: "",
+        description: "",
+        resolutionDate: "",
+        maxPool: "",
+        b: "100",
+        maxBetAmount: "",
+        maxPriceImpact: ""
     });
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
         "AdminPage.useEffect": ()=>{
-            if (!loading && (!user || user.role !== 'ADMIN')) {
-                router.push('/');
+            if (!loading && (!user || user.role !== "ADMIN")) {
+                router.push("/");
             }
         }
     }["AdminPage.useEffect"], [
@@ -1766,12 +1956,12 @@ function AdminPage() {
     ]);
     const fetchMarkets = ()=>{
         setLoadingMarkets(true);
-        fetch('/api/markets').then((r)=>r.json()).then(setMarkets).catch(()=>{}).finally(()=>setLoadingMarkets(false));
+        fetch("/api/markets").then((r)=>r.json()).then(setMarkets).catch(()=>{}).finally(()=>setLoadingMarkets(false));
     };
     const fetchUsers = async ()=>{
         setLoadingUsers(true);
         try {
-            const res = await fetch('/api/users');
+            const res = await fetch("/api/users");
             const data = await res.json();
             setUsers(data);
         } finally{
@@ -1781,7 +1971,7 @@ function AdminPage() {
     const fetchPurchases = async (marketId)=>{
         setLoadingPurchases(true);
         try {
-            const url = marketId ? `/api/admin/purchases?marketId=${marketId}` : '/api/admin/purchases';
+            const url = marketId ? `/api/admin/purchases?marketId=${marketId}` : "/api/admin/purchases";
             const res = await fetch(url);
             const data = await res.json();
             setPurchases(data);
@@ -1792,7 +1982,7 @@ function AdminPage() {
     const fetchTransactions = async (marketId)=>{
         setLoadingTransactions(true);
         try {
-            const url = marketId ? `/api/admin/transactions?marketId=${marketId}` : '/api/admin/transactions';
+            const url = marketId ? `/api/admin/transactions?marketId=${marketId}` : "/api/admin/transactions";
             const res = await fetch(url);
             const data = await res.json();
             setTransactions(data);
@@ -1835,8 +2025,8 @@ function AdminPage() {
     }["AdminPage.useEffect"], []);
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
         "AdminPage.useEffect": ()=>{
-            if (activeTab === 'purchases') fetchPurchases(selectedMarketId);
-            if (activeTab === 'payments') fetchTransactions(selectedMarketId);
+            if (activeTab === "purchases") fetchPurchases(selectedMarketId);
+            if (activeTab === "payments") fetchTransactions(selectedMarketId);
         }
     }["AdminPage.useEffect"], [
         activeTab,
@@ -1845,14 +2035,14 @@ function AdminPage() {
     const handleCreate = async ()=>{
         setCreating(true);
         try {
-            const res = await fetch('/api/markets', {
-                method: 'POST',
+            const res = await fetch("/api/markets", {
+                method: "POST",
                 headers: {
-                    'Content-Type': 'application/json'
+                    "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
                     ...newMarket,
-                    maxPool: parseFloat(newMarket.maxPool) || 20000,
+                    maxPool: newMarket.maxPool ? parseFloat(newMarket.maxPool) : undefined,
                     b: parseFloat(newMarket.b) || 100,
                     maxBetAmount: newMarket.maxBetAmount ? parseFloat(newMarket.maxBetAmount) : undefined,
                     maxPriceImpact: newMarket.maxPriceImpact ? parseFloat(newMarket.maxPriceImpact) : undefined
@@ -1861,14 +2051,14 @@ function AdminPage() {
             if (res.ok) {
                 setShowCreateModal(false);
                 setNewMarket({
-                    playerName: '',
-                    question: '',
-                    description: '',
-                    resolutionDate: '',
-                    maxPool: '20000',
-                    b: '100',
-                    maxBetAmount: '',
-                    maxPriceImpact: ''
+                    playerName: "",
+                    question: "",
+                    description: "",
+                    resolutionDate: "",
+                    maxPool: "",
+                    b: "100",
+                    maxBetAmount: "",
+                    maxPriceImpact: ""
                 });
                 fetchMarkets();
             }
@@ -1878,12 +2068,12 @@ function AdminPage() {
     };
     const handleActivate = async (id)=>{
         await fetch(`/api/markets/${id}`, {
-            method: 'PATCH',
+            method: "PATCH",
             headers: {
-                'Content-Type': 'application/json'
+                "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                action: 'activate'
+                action: "activate"
             })
         });
         fetchMarkets();
@@ -1892,9 +2082,9 @@ function AdminPage() {
         setResolving(true);
         try {
             await fetch(`/api/markets/${showResolveModal.id}/resolve`, {
-                method: 'POST',
+                method: "POST",
                 headers: {
-                    'Content-Type': 'application/json'
+                    "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
                     outcome
@@ -1902,18 +2092,18 @@ function AdminPage() {
             });
             setShowResolveModal(null);
             fetchMarkets();
-            if (activeTab === 'payments') fetchTransactions(selectedMarketId);
+            if (activeTab === "payments") fetchTransactions(selectedMarketId);
         } finally{
             setResolving(false);
         }
     };
     const handleToggleRole = async (userId, currentRole)=>{
-        const newRole = currentRole === 'ADMIN' ? 'USER' : 'ADMIN';
+        const newRole = currentRole === "ADMIN" ? "USER" : "ADMIN";
         try {
             const res = await fetch(`/api/admin/users/${userId}/role`, {
-                method: 'PATCH',
+                method: "PATCH",
                 headers: {
-                    'Content-Type': 'application/json'
+                    "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
                     role: newRole
@@ -1923,25 +2113,25 @@ function AdminPage() {
                 fetchUsers();
             }
         } catch (error) {
-            console.error('Error toggling role:', error);
-            alert('Error técnico al cambiar el rol. Revisa la consola del servidor.');
+            console.error("Error toggling role:", error);
+            alert("Error técnico al cambiar el rol. Revisa la consola del servidor.");
         }
     };
     const handleCreateUser = async ()=>{
         setCreating(true);
         try {
-            const res = await fetch('/api/users', {
-                method: 'POST',
+            const res = await fetch("/api/users", {
+                method: "POST",
                 headers: {
-                    'Content-Type': 'application/json'
+                    "Content-Type": "application/json"
                 },
                 body: JSON.stringify(newUser)
             });
             if (res.ok) {
                 setShowCreateUserModal(false);
                 setNewUser({
-                    username: '',
-                    email: ''
+                    username: "",
+                    email: ""
                 });
                 fetchUsers();
             }
@@ -1949,19 +2139,19 @@ function AdminPage() {
             setCreating(false);
         }
     };
-    if (loading || !user || user.role !== 'ADMIN') {
+    if (loading || !user || user.role !== "ADMIN") {
         return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
             className: "min-h-screen bg-[#0a0a0a] flex items-center justify-center",
             children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                 className: "animate-spin rounded-full h-12 w-12 border-b-2 border-[#64c883]"
             }, void 0, false, {
                 fileName: "[project]/src/app/admin/page.tsx",
-                lineNumber: 226,
+                lineNumber: 247,
                 columnNumber: 9
             }, this)
         }, void 0, false, {
             fileName: "[project]/src/app/admin/page.tsx",
-            lineNumber: 225,
+            lineNumber: 246,
             columnNumber: 7
         }, this);
     }
@@ -1980,63 +2170,67 @@ function AdminPage() {
                                         children: "Panel Admin"
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/admin/page.tsx",
-                                        lineNumber: 237,
-                                        columnNumber: 14
+                                        lineNumber: 258,
+                                        columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                         className: "flex items-center gap-4 text-[11px] font-bold uppercase tracking-[0.1em] text-white/40",
                                         children: "Control de Plataforma"
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/admin/page.tsx",
-                                        lineNumber: 240,
+                                        lineNumber: 261,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/app/admin/page.tsx",
-                                lineNumber: 236,
+                                lineNumber: 257,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                 className: "flex bg-[#121212] p-1 rounded-xl border border-white/5",
                                 children: [
                                     {
-                                        id: 'markets',
-                                        label: 'Mercados'
+                                        id: "markets",
+                                        label: "Mercados"
                                     },
                                     {
-                                        id: 'users',
-                                        label: 'Usuarios'
+                                        id: "users",
+                                        label: "Usuarios"
                                     },
                                     {
-                                        id: 'purchases',
-                                        label: 'Compras'
+                                        id: "purchases",
+                                        label: "Compras"
                                     },
                                     {
-                                        id: 'payments',
-                                        label: 'Pagos'
+                                        id: "payments",
+                                        label: "Pagos"
+                                    },
+                                    {
+                                        id: "simulator",
+                                        label: "Simulador"
                                     }
                                 ].map((tab)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                                         onClick: ()=>{
                                             setActiveTab(tab.id);
-                                            setSelectedMarketId('');
+                                            setSelectedMarketId("");
                                         },
-                                        className: `px-5 py-2 rounded-lg text-[10px] font-bold uppercase tracking-[0.1em] transition-all ${activeTab === tab.id ? 'bg-[#64c883] text-[#0a0a0a] shadow-lg shadow-[#64c883]/10' : 'text-gray-400 hover:text-white'}`,
+                                        className: `px-5 py-2 rounded-lg text-[10px] font-bold uppercase tracking-[0.1em] transition-all ${activeTab === tab.id ? "bg-[#64c883] text-[#0a0a0a] shadow-lg shadow-[#64c883]/10" : "text-gray-400 hover:text-white"}`,
                                         children: tab.label
                                     }, tab.id, false, {
                                         fileName: "[project]/src/app/admin/page.tsx",
-                                        lineNumber: 252,
+                                        lineNumber: 274,
                                         columnNumber: 15
                                     }, this))
                             }, void 0, false, {
                                 fileName: "[project]/src/app/admin/page.tsx",
-                                lineNumber: 245,
+                                lineNumber: 266,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/app/admin/page.tsx",
-                        lineNumber: 235,
+                        lineNumber: 256,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2044,16 +2238,16 @@ function AdminPage() {
                         children: [
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
                                 className: "text-xs font-bold uppercase tracking-[0.15em] text-white",
-                                children: activeTab === 'markets' ? 'Gestión de Mercados' : activeTab === 'users' ? 'Gestión de Usuarios' : activeTab === 'purchases' ? 'Historial de Compras' : 'Historial de Pagos'
+                                children: activeTab === "markets" ? "Gestión de Mercados" : activeTab === "users" ? "Gestión de Usuarios" : activeTab === "purchases" ? "Historial de Compras" : activeTab === "payments" ? "Historial de Pagos" : "Simulador LMSR"
                             }, void 0, false, {
                                 fileName: "[project]/src/app/admin/page.tsx",
-                                lineNumber: 269,
+                                lineNumber: 294,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                 className: "flex items-center gap-4",
                                 children: [
-                                    (activeTab === 'purchases' || activeTab === 'payments') && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
+                                    (activeTab === "purchases" || activeTab === "payments") && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
                                         className: "bg-[#0a0a0a] text-white text-[10px] font-bold uppercase tracking-[0.1em] px-4 py-2 border border-white/5 rounded-xl outline-none focus:border-[#64c883] transition-all",
                                         value: selectedMarketId,
                                         onChange: (e)=>setSelectedMarketId(e.target.value),
@@ -2063,7 +2257,7 @@ function AdminPage() {
                                                 children: "Filtro: Todos"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/admin/page.tsx",
-                                                lineNumber: 282,
+                                                lineNumber: 312,
                                                 columnNumber: 17
                                             }, this),
                                             markets.map((m)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
@@ -2071,72 +2265,72 @@ function AdminPage() {
                                                     children: m.playerName || m.question.substring(0, 20)
                                                 }, m.id, false, {
                                                     fileName: "[project]/src/app/admin/page.tsx",
-                                                    lineNumber: 284,
+                                                    lineNumber: 314,
                                                     columnNumber: 19
                                                 }, this))
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/app/admin/page.tsx",
-                                        lineNumber: 277,
+                                        lineNumber: 307,
                                         columnNumber: 15
                                     }, this),
-                                    activeTab === 'markets' && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                    activeTab === "markets" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                                         onClick: ()=>setShowCreateModal(true),
                                         className: "bg-[#64c883] text-[#0a0a0a] text-[10px] font-bold uppercase tracking-[0.1em] px-5 py-2 rounded-xl transition-all hover:scale-[1.02]",
                                         children: "+ Crear Mercado"
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/admin/page.tsx",
-                                        lineNumber: 289,
+                                        lineNumber: 321,
                                         columnNumber: 15
                                     }, this),
-                                    activeTab === 'users' && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                    activeTab === "users" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                                         onClick: ()=>setShowCreateUserModal(true),
                                         className: "bg-white text-[#0a0a0a] text-[10px] font-bold uppercase tracking-[0.1em] px-5 py-2 rounded-xl transition-all hover:scale-[1.02]",
                                         children: "+ Crear Usuario"
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/admin/page.tsx",
-                                        lineNumber: 297,
+                                        lineNumber: 329,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/app/admin/page.tsx",
-                                lineNumber: 275,
+                                lineNumber: 305,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/app/admin/page.tsx",
-                        lineNumber: 268,
+                        lineNumber: 293,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                         className: "space-y-6",
                         children: [
-                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                className: "col-span-1 md:col-span-3 lg:col-span-1",
+                            activeTab === "simulator" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                className: "max-w-3xl mx-auto",
                                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$app$2f$admin$2f$lmsr$2d$calculator$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["LmsrCalculator"], {}, void 0, false, {
                                     fileName: "[project]/src/app/admin/page.tsx",
-                                    lineNumber: 311,
-                                    columnNumber: 14
+                                    lineNumber: 343,
+                                    columnNumber: 15
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/src/app/admin/page.tsx",
-                                lineNumber: 310,
-                                columnNumber: 11
+                                lineNumber: 342,
+                                columnNumber: 13
                             }, this),
-                            activeTab === 'markets' && (loadingMarkets ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                            activeTab === "markets" && (loadingMarkets ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                 className: "flex justify-center py-20",
                                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                     className: "animate-spin rounded-full h-8 w-8 border-b-2 border-[#64c883]"
                                 }, void 0, false, {
                                     fileName: "[project]/src/app/admin/page.tsx",
-                                    lineNumber: 316,
-                                    columnNumber: 58
+                                    lineNumber: 350,
+                                    columnNumber: 17
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/src/app/admin/page.tsx",
-                                lineNumber: 316,
+                                lineNumber: 349,
                                 columnNumber: 15
                             }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                 className: "grid grid-cols-1 md:grid-cols-2 gap-6",
@@ -2151,11 +2345,11 @@ function AdminPage() {
                                                         className: "space-y-1",
                                                         children: [
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                                className: `px-2 py-0.5 text-[9px] font-bold rounded-full uppercase tracking-wider ${market.status === 'ACTIVE' ? 'bg-[#64c883]/10 text-[#64c883]' : market.status === 'DRAFT' ? 'bg-gray-800 text-gray-400' : market.status === 'RESOLVED' ? 'bg-white/10 text-white' : 'bg-[#e16464]/10 text-[#e16464]'}`,
+                                                                className: `px-2 py-0.5 text-[9px] font-bold rounded-full uppercase tracking-wider ${market.status === "ACTIVE" ? "bg-[#64c883]/10 text-[#64c883]" : market.status === "DRAFT" ? "bg-gray-800 text-gray-400" : market.status === "RESOLVED" ? "bg-white/10 text-white" : "bg-[#e16464]/10 text-[#e16464]"}`,
                                                                 children: market.status
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/app/admin/page.tsx",
-                                                                lineNumber: 323,
+                                                                lineNumber: 362,
                                                                 columnNumber: 25
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h4", {
@@ -2163,47 +2357,47 @@ function AdminPage() {
                                                                 children: market.question
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/app/admin/page.tsx",
-                                                                lineNumber: 331,
+                                                                lineNumber: 375,
                                                                 columnNumber: 25
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/src/app/admin/page.tsx",
-                                                        lineNumber: 322,
+                                                        lineNumber: 361,
                                                         columnNumber: 23
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                         className: "flex gap-2",
                                                         onClick: (e)=>e.stopPropagation(),
                                                         children: [
-                                                            market.status === 'DRAFT' && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                            market.status === "DRAFT" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                                                                 onClick: ()=>handleActivate(market.id),
                                                                 className: "px-3 py-1 bg-[#64c883] text-[#0a0a0a] text-[9px] font-bold rounded-lg uppercase tracking-wider",
                                                                 children: "Activar"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/app/admin/page.tsx",
-                                                                lineNumber: 335,
+                                                                lineNumber: 384,
                                                                 columnNumber: 27
                                                             }, this),
-                                                            (market.status === 'ACTIVE' || market.status === 'CLOSED') && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                            (market.status === "ACTIVE" || market.status === "CLOSED") && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                                                                 onClick: ()=>setShowResolveModal(market),
-                                                                className: "px-3 py-1 bg-white text-[#0a0a0a] text-[9px] font-bold rounded-lg uppercase tracking-wider",
+                                                                className: "px-3 py-1 bg-[#64c883] text-[#0a0a0a] text-[9px] font-bold rounded-lg uppercase tracking-wider",
                                                                 children: "Resolver"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/app/admin/page.tsx",
-                                                                lineNumber: 338,
+                                                                lineNumber: 393,
                                                                 columnNumber: 27
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/src/app/admin/page.tsx",
-                                                        lineNumber: 333,
+                                                        lineNumber: 379,
                                                         columnNumber: 23
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/app/admin/page.tsx",
-                                                lineNumber: 321,
+                                                lineNumber: 360,
                                                 columnNumber: 21
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2216,7 +2410,7 @@ function AdminPage() {
                                                                 children: "YES Pool"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/app/admin/page.tsx",
-                                                                lineNumber: 344,
+                                                                lineNumber: 404,
                                                                 columnNumber: 25
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2227,13 +2421,13 @@ function AdminPage() {
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/src/app/admin/page.tsx",
-                                                                lineNumber: 345,
+                                                                lineNumber: 407,
                                                                 columnNumber: 25
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/src/app/admin/page.tsx",
-                                                        lineNumber: 343,
+                                                        lineNumber: 403,
                                                         columnNumber: 23
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2243,7 +2437,7 @@ function AdminPage() {
                                                                 children: "NO Pool"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/app/admin/page.tsx",
-                                                                lineNumber: 348,
+                                                                lineNumber: 412,
                                                                 columnNumber: 25
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2254,13 +2448,13 @@ function AdminPage() {
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/src/app/admin/page.tsx",
-                                                                lineNumber: 349,
+                                                                lineNumber: 415,
                                                                 columnNumber: 25
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/src/app/admin/page.tsx",
-                                                        lineNumber: 347,
+                                                        lineNumber: 411,
                                                         columnNumber: 23
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2271,55 +2465,56 @@ function AdminPage() {
                                                                 children: "Total"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/app/admin/page.tsx",
-                                                                lineNumber: 352,
+                                                                lineNumber: 420,
                                                                 columnNumber: 25
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                                 className: "text-sm font-extrabold text-white",
                                                                 children: [
-                                                                    "$ ",
+                                                                    "$",
+                                                                    " ",
                                                                     (Number(market.yesPool || 0) + Number(market.noPool || 0)).toFixed(0)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/src/app/admin/page.tsx",
-                                                                lineNumber: 353,
+                                                                lineNumber: 423,
                                                                 columnNumber: 25
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/src/app/admin/page.tsx",
-                                                        lineNumber: 351,
+                                                        lineNumber: 419,
                                                         columnNumber: 23
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/app/admin/page.tsx",
-                                                lineNumber: 342,
+                                                lineNumber: 402,
                                                 columnNumber: 21
                                             }, this)
                                         ]
                                     }, market.id, true, {
                                         fileName: "[project]/src/app/admin/page.tsx",
-                                        lineNumber: 320,
+                                        lineNumber: 355,
                                         columnNumber: 19
                                     }, this))
                             }, void 0, false, {
                                 fileName: "[project]/src/app/admin/page.tsx",
-                                lineNumber: 318,
+                                lineNumber: 353,
                                 columnNumber: 15
                             }, this)),
-                            activeTab === 'users' && (loadingUsers ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                            activeTab === "users" && (loadingUsers ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                 className: "flex justify-center py-20",
                                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                     className: "animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"
                                 }, void 0, false, {
                                     fileName: "[project]/src/app/admin/page.tsx",
-                                    lineNumber: 364,
-                                    columnNumber: 58
+                                    lineNumber: 440,
+                                    columnNumber: 17
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/src/app/admin/page.tsx",
-                                lineNumber: 364,
+                                lineNumber: 439,
                                 columnNumber: 15
                             }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                 className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6",
@@ -2332,10 +2527,10 @@ function AdminPage() {
                                                 children: [
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                         className: "w-12 h-12 rounded-full bg-white/5 flex items-center justify-center font-bold text-gray-400 uppercase text-xs border border-white/5",
-                                                        children: (u.username || u.email || '?')[0]
+                                                        children: (u.username || u.email || "?")[0]
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/app/admin/page.tsx",
-                                                        lineNumber: 370,
+                                                        lineNumber: 451,
                                                         columnNumber: 23
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2344,31 +2539,31 @@ function AdminPage() {
                                                                 className: "text-base font-bold text-white group-hover:text-[#64c883] transition-colors truncate max-w-[150px]",
                                                                 children: [
                                                                     "@",
-                                                                    u.username || u.email.split('@')[0]
+                                                                    u.username || u.email.split("@")[0]
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/src/app/admin/page.tsx",
-                                                                lineNumber: 374,
+                                                                lineNumber: 455,
                                                                 columnNumber: 25
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                                className: `text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider ${u.role === 'ADMIN' ? 'bg-white/10 text-white' : 'bg-gray-800 text-gray-400'}`,
+                                                                className: `text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider ${u.role === "ADMIN" ? "bg-white/10 text-white" : "bg-gray-800 text-gray-400"}`,
                                                                 children: u.role
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/app/admin/page.tsx",
-                                                                lineNumber: 377,
+                                                                lineNumber: 458,
                                                                 columnNumber: 25
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/src/app/admin/page.tsx",
-                                                        lineNumber: 373,
+                                                        lineNumber: 454,
                                                         columnNumber: 23
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/app/admin/page.tsx",
-                                                lineNumber: 369,
+                                                lineNumber: 450,
                                                 columnNumber: 21
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2379,8 +2574,8 @@ function AdminPage() {
                                                         children: "Balance"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/app/admin/page.tsx",
-                                                        lineNumber: 385,
-                                                        columnNumber: 24
+                                                        lineNumber: 470,
+                                                        columnNumber: 23
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                                         className: "text-base font-extrabold text-[#64c883]",
@@ -2390,13 +2585,13 @@ function AdminPage() {
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/src/app/admin/page.tsx",
-                                                        lineNumber: 386,
-                                                        columnNumber: 24
+                                                        lineNumber: 473,
+                                                        columnNumber: 23
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/app/admin/page.tsx",
-                                                lineNumber: 384,
+                                                lineNumber: 469,
                                                 columnNumber: 21
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -2404,25 +2599,25 @@ function AdminPage() {
                                                     e.stopPropagation();
                                                     handleToggleRole(u.id, u.role);
                                                 },
-                                                className: `w-full py-2 rounded-xl text-[9px] font-bold uppercase tracking-wider transition-all ${u.role === 'ADMIN' ? 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700' : 'bg-white/10 text-white hover:bg-white/20'}`,
-                                                children: u.role === 'ADMIN' ? 'Revocar Admin' : 'Hacer Admin'
+                                                className: `w-full py-2 rounded-xl text-[9px] font-bold uppercase tracking-wider transition-all ${u.role === "ADMIN" ? "bg-zinc-800 text-zinc-400 hover:bg-zinc-700" : "bg-white/10 text-white hover:bg-white/20"}`,
+                                                children: u.role === "ADMIN" ? "Revocar Admin" : "Hacer Admin"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/admin/page.tsx",
-                                                lineNumber: 388,
+                                                lineNumber: 477,
                                                 columnNumber: 21
                                             }, this)
                                         ]
                                     }, u.id, true, {
                                         fileName: "[project]/src/app/admin/page.tsx",
-                                        lineNumber: 368,
+                                        lineNumber: 445,
                                         columnNumber: 19
                                     }, this))
                             }, void 0, false, {
                                 fileName: "[project]/src/app/admin/page.tsx",
-                                lineNumber: 366,
+                                lineNumber: 443,
                                 columnNumber: 15
                             }, this)),
-                            (activeTab === 'purchases' || activeTab === 'payments') && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                            (activeTab === "purchases" || activeTab === "payments") && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                 className: "bg-[#121212] border border-white/5 rounded-3xl overflow-hidden",
                                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                     className: "overflow-x-auto",
@@ -2433,47 +2628,47 @@ function AdminPage() {
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("thead", {
                                                     children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("tr", {
                                                         className: "border-b border-white/5 bg-[#171717]",
-                                                        children: activeTab === 'purchases' ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
+                                                        children: activeTab === "purchases" ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
                                                             children: [
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
                                                                     className: "p-4 text-[9px] font-bold text-gray-400 uppercase tracking-[0.1em]",
                                                                     children: "Mercado"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/admin/page.tsx",
-                                                                    lineNumber: 413,
-                                                                    columnNumber: 28
+                                                                    lineNumber: 504,
+                                                                    columnNumber: 27
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
                                                                     className: "p-4 text-[9px] font-bold text-gray-400 uppercase tracking-[0.1em]",
                                                                     children: "Posición"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/admin/page.tsx",
-                                                                    lineNumber: 414,
-                                                                    columnNumber: 28
+                                                                    lineNumber: 507,
+                                                                    columnNumber: 27
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
                                                                     className: "p-4 text-[9px] font-bold text-gray-400 uppercase tracking-[0.1em]",
                                                                     children: "Monto"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/admin/page.tsx",
-                                                                    lineNumber: 415,
-                                                                    columnNumber: 28
+                                                                    lineNumber: 510,
+                                                                    columnNumber: 27
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
                                                                     className: "p-4 text-[9px] font-bold text-gray-400 uppercase tracking-[0.1em]",
                                                                     children: "Usuario"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/admin/page.tsx",
-                                                                    lineNumber: 416,
-                                                                    columnNumber: 28
+                                                                    lineNumber: 513,
+                                                                    columnNumber: 27
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
                                                                     className: "p-4 text-[9px] font-bold text-gray-400 uppercase tracking-[0.1em]",
                                                                     children: "Estado"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/admin/page.tsx",
-                                                                    lineNumber: 417,
-                                                                    columnNumber: 28
+                                                                    lineNumber: 516,
+                                                                    columnNumber: 27
                                                                 }, this)
                                                             ]
                                                         }, void 0, true) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
@@ -2483,77 +2678,78 @@ function AdminPage() {
                                                                     children: "Usuario"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/admin/page.tsx",
-                                                                    lineNumber: 421,
-                                                                    columnNumber: 28
+                                                                    lineNumber: 522,
+                                                                    columnNumber: 27
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
                                                                     className: "p-4 text-[9px] font-bold text-gray-400 uppercase tracking-[0.1em]",
                                                                     children: "Tipo"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/admin/page.tsx",
-                                                                    lineNumber: 422,
-                                                                    columnNumber: 28
+                                                                    lineNumber: 525,
+                                                                    columnNumber: 27
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
                                                                     className: "p-4 text-[9px] font-bold text-gray-400 uppercase tracking-[0.1em]",
                                                                     children: "Monto"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/admin/page.tsx",
-                                                                    lineNumber: 423,
-                                                                    columnNumber: 28
+                                                                    lineNumber: 528,
+                                                                    columnNumber: 27
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
                                                                     className: "p-4 text-[9px] font-bold text-gray-400 uppercase tracking-[0.1em]",
                                                                     children: "Fecha"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/admin/page.tsx",
-                                                                    lineNumber: 424,
-                                                                    columnNumber: 28
+                                                                    lineNumber: 531,
+                                                                    columnNumber: 27
                                                                 }, this)
                                                             ]
                                                         }, void 0, true)
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/app/admin/page.tsx",
-                                                        lineNumber: 410,
-                                                        columnNumber: 22
+                                                        lineNumber: 501,
+                                                        columnNumber: 21
                                                     }, this)
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/admin/page.tsx",
-                                                    lineNumber: 409,
-                                                    columnNumber: 20
+                                                    lineNumber: 500,
+                                                    columnNumber: 19
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("tbody", {
                                                     className: "divide-y divide-white/5",
-                                                    children: activeTab === 'purchases' ? purchases.map((p)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("tr", {
+                                                    children: activeTab === "purchases" ? purchases.map((p)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("tr", {
                                                             className: "hover:bg-white/5 transition-colors",
                                                             children: [
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
                                                                     className: "p-4 text-xs font-bold text-white",
-                                                                    children: p.market.playerName || 'Mercado'
+                                                                    children: p.market.playerName || "Mercado"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/admin/page.tsx",
-                                                                    lineNumber: 433,
-                                                                    columnNumber: 28
+                                                                    lineNumber: 545,
+                                                                    columnNumber: 29
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
                                                                     className: "p-4",
                                                                     children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                                        className: `px-2 py-0.5 text-[9px] font-bold rounded-full uppercase tracking-wider ${p.side === 'YES' ? 'bg-[#64c883]/10 text-[#64c883]' : 'bg-[#e16464]/10 text-[#e16464]'}`,
+                                                                        className: `px-2 py-0.5 text-[9px] font-bold rounded-full uppercase tracking-wider ${p.side === "YES" ? "bg-[#64c883]/10 text-[#64c883]" : "bg-[#e16464]/10 text-[#e16464]"}`,
                                                                         children: [
                                                                             p.side,
-                                                                            " @ ",
+                                                                            " @",
+                                                                            " ",
                                                                             parseFloat(p.initialProbability).toFixed(0),
                                                                             "%"
                                                                         ]
                                                                     }, void 0, true, {
                                                                         fileName: "[project]/src/app/admin/page.tsx",
-                                                                        lineNumber: 435,
+                                                                        lineNumber: 549,
                                                                         columnNumber: 31
                                                                     }, this)
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/admin/page.tsx",
-                                                                    lineNumber: 434,
-                                                                    columnNumber: 28
+                                                                    lineNumber: 548,
+                                                                    columnNumber: 29
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
                                                                     className: "p-4 text-sm font-extrabold text-white",
@@ -2563,8 +2759,8 @@ function AdminPage() {
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/src/app/admin/page.tsx",
-                                                                    lineNumber: 439,
-                                                                    columnNumber: 28
+                                                                    lineNumber: 556,
+                                                                    columnNumber: 29
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
                                                                     className: "p-4 text-xs font-bold text-white/40",
@@ -2574,8 +2770,8 @@ function AdminPage() {
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/src/app/admin/page.tsx",
-                                                                    lineNumber: 440,
-                                                                    columnNumber: 28
+                                                                    lineNumber: 559,
+                                                                    columnNumber: 29
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
                                                                     className: "p-4",
@@ -2584,19 +2780,19 @@ function AdminPage() {
                                                                         children: p.status
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/src/app/admin/page.tsx",
-                                                                        lineNumber: 442,
+                                                                        lineNumber: 563,
                                                                         columnNumber: 31
                                                                     }, this)
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/admin/page.tsx",
-                                                                    lineNumber: 441,
-                                                                    columnNumber: 28
+                                                                    lineNumber: 562,
+                                                                    columnNumber: 29
                                                                 }, this)
                                                             ]
                                                         }, p.id, true, {
                                                             fileName: "[project]/src/app/admin/page.tsx",
-                                                            lineNumber: 432,
-                                                            columnNumber: 26
+                                                            lineNumber: 541,
+                                                            columnNumber: 27
                                                         }, this)) : transactions.map((t)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("tr", {
                                                             className: "hover:bg-white/5 transition-colors",
                                                             children: [
@@ -2608,8 +2804,8 @@ function AdminPage() {
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/src/app/admin/page.tsx",
-                                                                    lineNumber: 449,
-                                                                    columnNumber: 28
+                                                                    lineNumber: 574,
+                                                                    columnNumber: 29
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
                                                                     className: "p-4",
@@ -2618,13 +2814,13 @@ function AdminPage() {
                                                                         children: t.type
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/src/app/admin/page.tsx",
-                                                                        lineNumber: 451,
+                                                                        lineNumber: 578,
                                                                         columnNumber: 31
                                                                     }, this)
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/admin/page.tsx",
-                                                                    lineNumber: 450,
-                                                                    columnNumber: 28
+                                                                    lineNumber: 577,
+                                                                    columnNumber: 29
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
                                                                     className: "p-4 text-sm font-extrabold text-[#64c883]",
@@ -2634,69 +2830,69 @@ function AdminPage() {
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/src/app/admin/page.tsx",
-                                                                    lineNumber: 453,
-                                                                    columnNumber: 28
+                                                                    lineNumber: 582,
+                                                                    columnNumber: 29
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
                                                                     className: "p-4 text-[10px] font-bold text-gray-400",
                                                                     children: new Date(t.createdAt).toLocaleDateString()
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/admin/page.tsx",
-                                                                    lineNumber: 454,
-                                                                    columnNumber: 28
+                                                                    lineNumber: 585,
+                                                                    columnNumber: 29
                                                                 }, this)
                                                             ]
                                                         }, t.id, true, {
                                                             fileName: "[project]/src/app/admin/page.tsx",
-                                                            lineNumber: 448,
-                                                            columnNumber: 26
+                                                            lineNumber: 570,
+                                                            columnNumber: 27
                                                         }, this))
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/admin/page.tsx",
-                                                    lineNumber: 429,
-                                                    columnNumber: 20
+                                                    lineNumber: 538,
+                                                    columnNumber: 19
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/app/admin/page.tsx",
-                                            lineNumber: 408,
-                                            columnNumber: 18
+                                            lineNumber: 499,
+                                            columnNumber: 17
                                         }, this),
-                                        (activeTab === 'purchases' && purchases.length === 0 || activeTab === 'payments' && transactions.length === 0) && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        (activeTab === "purchases" && purchases.length === 0 || activeTab === "payments" && transactions.length === 0) && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                             className: "text-center py-20 text-gray-400 text-[10px] font-bold uppercase tracking-wider",
                                             children: "No hay datos registrados"
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/admin/page.tsx",
-                                            lineNumber: 461,
-                                            columnNumber: 20
+                                            lineNumber: 594,
+                                            columnNumber: 19
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/app/admin/page.tsx",
-                                    lineNumber: 407,
-                                    columnNumber: 16
+                                    lineNumber: 498,
+                                    columnNumber: 15
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/src/app/admin/page.tsx",
-                                lineNumber: 406,
+                                lineNumber: 497,
                                 columnNumber: 13
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/app/admin/page.tsx",
-                        lineNumber: 308,
+                        lineNumber: 340,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/app/admin/page.tsx",
-                lineNumber: 233,
+                lineNumber: 254,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$Modal$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Modal"], {
                 isOpen: !!selectedUserStats,
                 onClose: ()=>setSelectedUserStats(null),
-                title: `Perfil de Trading: @${selectedUserStats?.username || selectedUserStats?.email?.split('@')[0]}`,
+                title: `Perfil de Trading: @${selectedUserStats?.username || selectedUserStats?.email?.split("@")[0]}`,
                 size: "4xl",
                 children: loadingDetails ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                     className: "py-20 flex justify-center",
@@ -2704,13 +2900,13 @@ function AdminPage() {
                         className: "animate-spin rounded-full h-8 w-8 border-b-2 border-[#64c883]"
                     }, void 0, false, {
                         fileName: "[project]/src/app/admin/page.tsx",
-                        lineNumber: 472,
-                        columnNumber: 55
+                        lineNumber: 613,
+                        columnNumber: 13
                     }, this)
                 }, void 0, false, {
                     fileName: "[project]/src/app/admin/page.tsx",
-                    lineNumber: 472,
-                    columnNumber: 12
+                    lineNumber: 612,
+                    columnNumber: 11
                 }, this) : selectedUserStats && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                     className: "space-y-8 pt-4",
                     children: [
@@ -2725,25 +2921,26 @@ function AdminPage() {
                                             children: "Inversión Total"
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/admin/page.tsx",
-                                            lineNumber: 477,
-                                            columnNumber: 17
+                                            lineNumber: 620,
+                                            columnNumber: 19
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                             className: "text-2xl font-extrabold text-white",
                                             children: [
-                                                "$ ",
+                                                "$",
+                                                " ",
                                                 Number(selectedUserStats.stats.totalInvested || 0).toFixed(0)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/app/admin/page.tsx",
-                                            lineNumber: 478,
-                                            columnNumber: 17
+                                            lineNumber: 623,
+                                            columnNumber: 19
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/app/admin/page.tsx",
-                                    lineNumber: 476,
-                                    columnNumber: 15
+                                    lineNumber: 619,
+                                    columnNumber: 17
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                     className: "p-6 bg-[#0a0a0a] rounded-2xl border border-[#64c883]/10",
@@ -2753,25 +2950,26 @@ function AdminPage() {
                                             children: "Ganancias Reales"
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/admin/page.tsx",
-                                            lineNumber: 481,
-                                            columnNumber: 17
+                                            lineNumber: 631,
+                                            columnNumber: 19
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                             className: "text-2xl font-extrabold text-[#64c883]",
                                             children: [
-                                                "$ ",
+                                                "$",
+                                                " ",
                                                 Number(selectedUserStats.stats.realizedGains || 0).toFixed(0)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/app/admin/page.tsx",
-                                            lineNumber: 482,
-                                            columnNumber: 17
+                                            lineNumber: 634,
+                                            columnNumber: 19
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/app/admin/page.tsx",
-                                    lineNumber: 480,
-                                    columnNumber: 15
+                                    lineNumber: 630,
+                                    columnNumber: 17
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                     className: "p-6 bg-[#0a0a0a] rounded-2xl border border-white/5",
@@ -2781,31 +2979,32 @@ function AdminPage() {
                                             children: "Potencial"
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/admin/page.tsx",
-                                            lineNumber: 485,
-                                            columnNumber: 17
+                                            lineNumber: 642,
+                                            columnNumber: 19
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                             className: "text-2xl font-extrabold text-white",
                                             children: [
-                                                "$ ",
+                                                "$",
+                                                " ",
                                                 Number(selectedUserStats.stats.potentialFutureGains || 0).toFixed(0)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/app/admin/page.tsx",
-                                            lineNumber: 486,
-                                            columnNumber: 17
+                                            lineNumber: 645,
+                                            columnNumber: 19
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/app/admin/page.tsx",
-                                    lineNumber: 484,
-                                    columnNumber: 15
+                                    lineNumber: 641,
+                                    columnNumber: 17
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/app/admin/page.tsx",
-                            lineNumber: 475,
-                            columnNumber: 13
+                            lineNumber: 618,
+                            columnNumber: 15
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                             className: "space-y-4",
@@ -2815,8 +3014,8 @@ function AdminPage() {
                                     children: "Historial de Compras"
                                 }, void 0, false, {
                                     fileName: "[project]/src/app/admin/page.tsx",
-                                    lineNumber: 491,
-                                    columnNumber: 15
+                                    lineNumber: 655,
+                                    columnNumber: 17
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                     className: "max-h-64 overflow-y-auto space-y-3 pr-2",
@@ -2827,26 +3026,26 @@ function AdminPage() {
                                                     className: "flex items-center gap-4",
                                                     children: [
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                            className: `px-2 py-1 text-[9px] font-bold rounded-lg uppercase ${p.side === 'YES' ? 'bg-[#64c883]/10 text-[#64c883]' : 'bg-[#e16464]/10 text-[#e16464]'}`,
+                                                            className: `px-2 py-1 text-[9px] font-bold rounded-lg uppercase ${p.side === "YES" ? "bg-[#64c883]/10 text-[#64c883]" : "bg-[#e16464]/10 text-[#e16464]"}`,
                                                             children: p.side
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/admin/page.tsx",
-                                                            lineNumber: 496,
-                                                            columnNumber: 23
+                                                            lineNumber: 665,
+                                                            columnNumber: 25
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                                             className: "text-sm font-bold text-white",
                                                             children: p.marketName
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/admin/page.tsx",
-                                                            lineNumber: 497,
-                                                            columnNumber: 23
+                                                            lineNumber: 670,
+                                                            columnNumber: 25
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/app/admin/page.tsx",
-                                                    lineNumber: 495,
-                                                    columnNumber: 21
+                                                    lineNumber: 664,
+                                                    columnNumber: 23
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                     className: "text-right",
@@ -2866,55 +3065,55 @@ function AdminPage() {
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/src/app/admin/page.tsx",
-                                                                    lineNumber: 500,
-                                                                    columnNumber: 111
+                                                                    lineNumber: 677,
+                                                                    columnNumber: 27
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/admin/page.tsx",
-                                                            lineNumber: 500,
-                                                            columnNumber: 23
+                                                            lineNumber: 675,
+                                                            columnNumber: 25
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                             className: "text-[9px] font-bold text-white/40 uppercase tracking-wider",
                                                             children: new Date(p.createdAt).toLocaleDateString()
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/admin/page.tsx",
-                                                            lineNumber: 501,
-                                                            columnNumber: 23
+                                                            lineNumber: 681,
+                                                            columnNumber: 25
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/app/admin/page.tsx",
-                                                    lineNumber: 499,
-                                                    columnNumber: 21
+                                                    lineNumber: 674,
+                                                    columnNumber: 23
                                                 }, this)
                                             ]
                                         }, p.id, true, {
                                             fileName: "[project]/src/app/admin/page.tsx",
-                                            lineNumber: 494,
-                                            columnNumber: 19
+                                            lineNumber: 660,
+                                            columnNumber: 21
                                         }, this))
                                 }, void 0, false, {
                                     fileName: "[project]/src/app/admin/page.tsx",
-                                    lineNumber: 492,
-                                    columnNumber: 15
+                                    lineNumber: 658,
+                                    columnNumber: 17
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/app/admin/page.tsx",
-                            lineNumber: 490,
-                            columnNumber: 13
+                            lineNumber: 654,
+                            columnNumber: 15
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/src/app/admin/page.tsx",
-                    lineNumber: 474,
-                    columnNumber: 11
+                    lineNumber: 617,
+                    columnNumber: 13
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/src/app/admin/page.tsx",
-                lineNumber: 470,
+                lineNumber: 605,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$Modal$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Modal"], {
@@ -2928,13 +3127,13 @@ function AdminPage() {
                         className: "animate-spin rounded-full h-8 w-8 border-b-2 border-[#64c883]"
                     }, void 0, false, {
                         fileName: "[project]/src/app/admin/page.tsx",
-                        lineNumber: 513,
-                        columnNumber: 55
+                        lineNumber: 702,
+                        columnNumber: 13
                     }, this)
                 }, void 0, false, {
                     fileName: "[project]/src/app/admin/page.tsx",
-                    lineNumber: 513,
-                    columnNumber: 12
+                    lineNumber: 701,
+                    columnNumber: 11
                 }, this) : selectedMarketStats && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                     className: "space-y-8 pt-4",
                     children: [
@@ -2946,7 +3145,7 @@ function AdminPage() {
                                     children: "Evolución de Probabilidad"
                                 }, void 0, false, {
                                     fileName: "[project]/src/app/admin/page.tsx",
-                                    lineNumber: 517,
+                                    lineNumber: 708,
                                     columnNumber: 17
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$markets$2f$PriceChart$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["PriceChart"], {
@@ -2954,14 +3153,14 @@ function AdminPage() {
                                     height: 180
                                 }, void 0, false, {
                                     fileName: "[project]/src/app/admin/page.tsx",
-                                    lineNumber: 518,
+                                    lineNumber: 711,
                                     columnNumber: 17
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/app/admin/page.tsx",
-                            lineNumber: 516,
-                            columnNumber: 14
+                            lineNumber: 707,
+                            columnNumber: 15
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                             className: "grid grid-cols-2 gap-8",
@@ -2974,8 +3173,8 @@ function AdminPage() {
                                             children: "Liquidación Proyectada"
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/admin/page.tsx",
-                                            lineNumber: 523,
-                                            columnNumber: 20
+                                            lineNumber: 719,
+                                            columnNumber: 19
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                             className: "bg-[#121212] p-6 rounded-2xl border border-white/5 space-y-4",
@@ -2985,28 +3184,33 @@ function AdminPage() {
                                                     children: [
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                                             className: "text-[10px] font-bold text-gray-400 uppercase tracking-wider",
-                                                            children: "Platform (10%)"
-                                                        }, void 0, false, {
+                                                            children: [
+                                                                "WIN (",
+                                                                selectedMarketStats.platformFee ? Number(selectedMarketStats.platformFee) * 100 : 10,
+                                                                "%)"
+                                                            ]
+                                                        }, void 0, true, {
                                                             fileName: "[project]/src/app/admin/page.tsx",
-                                                            lineNumber: 526,
-                                                            columnNumber: 25
+                                                            lineNumber: 724,
+                                                            columnNumber: 23
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                                             className: "text-lg font-extrabold text-white",
                                                             children: [
-                                                                "$ ",
+                                                                "$",
+                                                                " ",
                                                                 Number(selectedMarketStats.simulation.platformCommission || 0).toFixed(2)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/admin/page.tsx",
-                                                            lineNumber: 527,
-                                                            columnNumber: 26
+                                                            lineNumber: 731,
+                                                            columnNumber: 23
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/app/admin/page.tsx",
-                                                    lineNumber: 525,
-                                                    columnNumber: 23
+                                                    lineNumber: 723,
+                                                    columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                     className: "grid grid-cols-2 gap-4",
@@ -3019,25 +3223,26 @@ function AdminPage() {
                                                                     children: "Si Gana SÍ"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/admin/page.tsx",
-                                                                    lineNumber: 531,
-                                                                    columnNumber: 29
+                                                                    lineNumber: 741,
+                                                                    columnNumber: 25
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                                     className: "text-lg font-extrabold text-white",
                                                                     children: [
-                                                                        "x ",
+                                                                        "x",
+                                                                        " ",
                                                                         Number(selectedMarketStats.simulation.ifYesWins.payoutPerDollar || 0).toFixed(2)
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/src/app/admin/page.tsx",
-                                                                    lineNumber: 532,
-                                                                    columnNumber: 29
+                                                                    lineNumber: 744,
+                                                                    columnNumber: 25
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/admin/page.tsx",
-                                                            lineNumber: 530,
-                                                            columnNumber: 26
+                                                            lineNumber: 740,
+                                                            columnNumber: 23
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                             className: "p-4 bg-[#e16464]/5 rounded-xl border border-[#e16464]/10",
@@ -3047,42 +3252,43 @@ function AdminPage() {
                                                                     children: "Si Gana NO"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/admin/page.tsx",
-                                                                    lineNumber: 535,
-                                                                    columnNumber: 29
+                                                                    lineNumber: 753,
+                                                                    columnNumber: 25
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                                     className: "text-lg font-extrabold text-white",
                                                                     children: [
-                                                                        "x ",
+                                                                        "x",
+                                                                        " ",
                                                                         Number(selectedMarketStats.simulation.ifNoWins.payoutPerDollar || 0).toFixed(2)
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/src/app/admin/page.tsx",
-                                                                    lineNumber: 536,
-                                                                    columnNumber: 29
+                                                                    lineNumber: 756,
+                                                                    columnNumber: 25
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/admin/page.tsx",
-                                                            lineNumber: 534,
-                                                            columnNumber: 26
+                                                            lineNumber: 752,
+                                                            columnNumber: 23
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/app/admin/page.tsx",
-                                                    lineNumber: 529,
-                                                    columnNumber: 23
+                                                    lineNumber: 739,
+                                                    columnNumber: 21
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/app/admin/page.tsx",
-                                            lineNumber: 524,
-                                            columnNumber: 20
+                                            lineNumber: 722,
+                                            columnNumber: 19
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/app/admin/page.tsx",
-                                    lineNumber: 522,
+                                    lineNumber: 718,
                                     columnNumber: 17
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3093,8 +3299,8 @@ function AdminPage() {
                                             children: "Distribución del Pool"
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/admin/page.tsx",
-                                            lineNumber: 543,
-                                            columnNumber: 20
+                                            lineNumber: 769,
+                                            columnNumber: 19
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                             className: "grid grid-cols-2 gap-4",
@@ -3107,8 +3313,8 @@ function AdminPage() {
                                                             children: "YES Pool"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/admin/page.tsx",
-                                                            lineNumber: 546,
-                                                            columnNumber: 26
+                                                            lineNumber: 774,
+                                                            columnNumber: 23
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                             className: "text-xl font-extrabold text-[#64c883]",
@@ -3118,14 +3324,14 @@ function AdminPage() {
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/admin/page.tsx",
-                                                            lineNumber: 547,
-                                                            columnNumber: 26
+                                                            lineNumber: 777,
+                                                            columnNumber: 23
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/app/admin/page.tsx",
-                                                    lineNumber: 545,
-                                                    columnNumber: 23
+                                                    lineNumber: 773,
+                                                    columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                     className: "bg-[#121212] p-4 rounded-2xl border border-[#e16464]/10",
@@ -3135,8 +3341,8 @@ function AdminPage() {
                                                             children: "NO Pool"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/admin/page.tsx",
-                                                            lineNumber: 550,
-                                                            columnNumber: 26
+                                                            lineNumber: 782,
+                                                            columnNumber: 23
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                             className: "text-xl font-extrabold text-[#e16464]",
@@ -3146,20 +3352,20 @@ function AdminPage() {
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/admin/page.tsx",
-                                                            lineNumber: 551,
-                                                            columnNumber: 26
+                                                            lineNumber: 785,
+                                                            columnNumber: 23
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/app/admin/page.tsx",
-                                                    lineNumber: 549,
-                                                    columnNumber: 23
+                                                    lineNumber: 781,
+                                                    columnNumber: 21
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/app/admin/page.tsx",
-                                            lineNumber: 544,
-                                            columnNumber: 20
+                                            lineNumber: 772,
+                                            columnNumber: 19
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                             className: "bg-[#64c883] p-6 rounded-2xl text-[#0a0a0a] shadow-xl shadow-[#64c883]/10",
@@ -3169,8 +3375,8 @@ function AdminPage() {
                                                     children: "Volumen Total en Juego"
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/admin/page.tsx",
-                                                    lineNumber: 555,
-                                                    columnNumber: 23
+                                                    lineNumber: 791,
+                                                    columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                     className: "text-3xl font-extrabold",
@@ -3180,26 +3386,618 @@ function AdminPage() {
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/app/admin/page.tsx",
-                                                    lineNumber: 556,
-                                                    columnNumber: 23
+                                                    lineNumber: 794,
+                                                    columnNumber: 21
+                                                }, this),
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                    className: "text-[10px] mt-2 font-bold uppercase tracking-wider opacity-70",
+                                                    children: [
+                                                        "Límite:",
+                                                        " ",
+                                                        selectedMarketStats.maxPool ? `$ ${selectedMarketStats.maxPool.toLocaleString()}` : "Ilimitado"
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/src/app/admin/page.tsx",
+                                                    lineNumber: 797,
+                                                    columnNumber: 21
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/app/admin/page.tsx",
-                                            lineNumber: 554,
-                                            columnNumber: 20
+                                            lineNumber: 790,
+                                            columnNumber: 19
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/app/admin/page.tsx",
-                                    lineNumber: 542,
+                                    lineNumber: 768,
                                     columnNumber: 17
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/app/admin/page.tsx",
-                            lineNumber: 521,
-                            columnNumber: 14
+                            lineNumber: 717,
+                            columnNumber: 15
+                        }, this),
+                        selectedMarketStats.liquidity && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                            className: "grid grid-cols-1 lg:grid-cols-2 gap-6 pt-8 border-t border-white/10",
+                            children: [
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                    className: "bg-[#121212] p-6 rounded-2xl border border-white/5 space-y-4",
+                                    children: [
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                            className: "flex items-center gap-2 mb-2",
+                                            children: [
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h4", {
+                                                    className: "text-[10px] font-bold text-white uppercase tracking-wider",
+                                                    children: "Balance de Liquidez (WIN)"
+                                                }, void 0, false, {
+                                                    fileName: "[project]/src/app/admin/page.tsx",
+                                                    lineNumber: 812,
+                                                    columnNumber: 23
+                                                }, this),
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                    className: "group relative",
+                                                    children: [
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                            className: "cursor-help text-xs text-gray-500",
+                                                            children: "ⓘ"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/admin/page.tsx",
+                                                            lineNumber: 816,
+                                                            columnNumber: 25
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            className: "absolute bottom-full left-0 mb-2 w-64 p-3 bg-[#1a1a1a] text-[10px] text-gray-400 rounded-xl border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50",
+                                                            children: "WIN actúa como Market Maker poniendo un subsidio inicial (Seed Cost). Este balance muestra si ese subsidio se recuperó o si hubo pérdida neta tras pagar premios."
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/admin/page.tsx",
+                                                            lineNumber: 819,
+                                                            columnNumber: 25
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/src/app/admin/page.tsx",
+                                                    lineNumber: 815,
+                                                    columnNumber: 23
+                                                }, this)
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "[project]/src/app/admin/page.tsx",
+                                            lineNumber: 811,
+                                            columnNumber: 21
+                                        }, this),
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                            className: "space-y-3",
+                                            children: [
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                    className: "flex justify-between items-center text-[11px]",
+                                                    children: [
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                            className: "text-gray-500",
+                                                            children: "Liquidez puesta por WIN (b)"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/admin/page.tsx",
+                                                            lineNumber: 830,
+                                                            columnNumber: 25
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                            className: "text-white font-bold",
+                                                            children: [
+                                                                "$",
+                                                                " ",
+                                                                (selectedMarketStats.liquidity.b || 0).toFixed(2)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/src/app/admin/page.tsx",
+                                                            lineNumber: 833,
+                                                            columnNumber: 25
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/src/app/admin/page.tsx",
+                                                    lineNumber: 829,
+                                                    columnNumber: 23
+                                                }, this),
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                    className: "flex justify-between items-center text-[11px]",
+                                                    children: [
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                            className: "text-gray-500",
+                                                            children: "Subsidio Inicial (Seed Cost)"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/admin/page.tsx",
+                                                            lineNumber: 841,
+                                                            columnNumber: 25
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                            className: "text-white font-bold",
+                                                            children: [
+                                                                "$",
+                                                                " ",
+                                                                selectedMarketStats.liquidity.initialSeed.toFixed(2)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/src/app/admin/page.tsx",
+                                                            lineNumber: 844,
+                                                            columnNumber: 25
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/src/app/admin/page.tsx",
+                                                    lineNumber: 840,
+                                                    columnNumber: 23
+                                                }, this),
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                    className: "flex justify-between items-center text-[11px]",
+                                                    children: [
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                            className: "text-gray-500",
+                                                            children: "Inversiones Netas Recibidas"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/admin/page.tsx",
+                                                            lineNumber: 850,
+                                                            columnNumber: 25
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                            className: "text-white font-bold",
+                                                            children: [
+                                                                "$",
+                                                                " ",
+                                                                selectedMarketStats.liquidity.netInvestments.toFixed(2)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/src/app/admin/page.tsx",
+                                                            lineNumber: 853,
+                                                            columnNumber: 25
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/src/app/admin/page.tsx",
+                                                    lineNumber: 849,
+                                                    columnNumber: 23
+                                                }, this),
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                    className: "flex justify-between items-center text-[11px]",
+                                                    children: [
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                            className: "text-gray-500",
+                                                            children: "Premios Pagados (Out)"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/admin/page.tsx",
+                                                            lineNumber: 861,
+                                                            columnNumber: 25
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                            className: "text-[#e16464] font-bold",
+                                                            children: [
+                                                                "- $",
+                                                                " ",
+                                                                selectedMarketStats.liquidity.totalPayouts.toFixed(2)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/src/app/admin/page.tsx",
+                                                            lineNumber: 864,
+                                                            columnNumber: 25
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/src/app/admin/page.tsx",
+                                                    lineNumber: 860,
+                                                    columnNumber: 23
+                                                }, this),
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                    className: "pt-3 border-t border-white/5 flex justify-between items-center",
+                                                    children: [
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                            className: "text-[10px] font-bold text-gray-400 uppercase",
+                                                            children: [
+                                                                "PnL de Liquidez (Neto)",
+                                                                " ",
+                                                                selectedMarketStats.status === "RESOLVED" ? "Final" : "Actual"
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/src/app/admin/page.tsx",
+                                                            lineNumber: 872,
+                                                            columnNumber: 25
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                            className: `text-lg font-extrabold ${selectedMarketStats.liquidity.netProfitLoss >= 0 ? "text-[#64c883]" : "text-[#e16464]"}`,
+                                                            children: [
+                                                                "$",
+                                                                " ",
+                                                                selectedMarketStats.liquidity.netProfitLoss.toFixed(2)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/src/app/admin/page.tsx",
+                                                            lineNumber: 878,
+                                                            columnNumber: 25
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/src/app/admin/page.tsx",
+                                                    lineNumber: 871,
+                                                    columnNumber: 23
+                                                }, this)
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "[project]/src/app/admin/page.tsx",
+                                            lineNumber: 828,
+                                            columnNumber: 21
+                                        }, this)
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "[project]/src/app/admin/page.tsx",
+                                    lineNumber: 810,
+                                    columnNumber: 19
+                                }, this),
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                    className: "bg-[#121212] p-6 rounded-2xl border border-white/5 space-y-4",
+                                    children: [
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h4", {
+                                            className: "text-[10px] font-bold text-white uppercase tracking-wider mb-2",
+                                            children: "¿Qué pasó con la liquidez?"
+                                        }, void 0, false, {
+                                            fileName: "[project]/src/app/admin/page.tsx",
+                                            lineNumber: 891,
+                                            columnNumber: 21
+                                        }, this),
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                            className: "text-[11px] text-gray-400 leading-relaxed space-y-3",
+                                            children: [
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                    children: "Al ser un mercado **LMSR**, WIN garantiza que siempre haya acciones disponibles. Para esto, la plataforma reserva un capital inicial (Seed Cost)."
+                                                }, void 0, false, {
+                                                    fileName: "[project]/src/app/admin/page.tsx",
+                                                    lineNumber: 895,
+                                                    columnNumber: 23
+                                                }, this),
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                    children: "Si el **PnL de Liquidez** es positivo, WIN recuperó su capital y obtuvo una ganancia adicional por el spread del mercado."
+                                                }, void 0, false, {
+                                                    fileName: "[project]/src/app/admin/page.tsx",
+                                                    lineNumber: 900,
+                                                    columnNumber: 23
+                                                }, this),
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                    children: "Si es negativo, WIN pagó más en premios de lo que entró en apuestas, asumiendo el costo de proveer la liquidez inicial."
+                                                }, void 0, false, {
+                                                    fileName: "[project]/src/app/admin/page.tsx",
+                                                    lineNumber: 905,
+                                                    columnNumber: 23
+                                                }, this)
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "[project]/src/app/admin/page.tsx",
+                                            lineNumber: 894,
+                                            columnNumber: 21
+                                        }, this)
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "[project]/src/app/admin/page.tsx",
+                                    lineNumber: 890,
+                                    columnNumber: 19
+                                }, this)
+                            ]
+                        }, void 0, true, {
+                            fileName: "[project]/src/app/admin/page.tsx",
+                            lineNumber: 809,
+                            columnNumber: 17
+                        }, this),
+                        (selectedMarketStats.status === "RESOLVED" || selectedMarketStats.status === "VOIDED") && selectedMarketStats.resolutionReport && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                            className: "space-y-6 pt-8 border-t border-white/10",
+                            children: [
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                    className: "flex items-center justify-between",
+                                    children: [
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
+                                            className: "text-xs font-bold text-[#64c883] uppercase tracking-[0.2em]",
+                                            children: "Reporte de Resolución"
+                                        }, void 0, false, {
+                                            fileName: "[project]/src/app/admin/page.tsx",
+                                            lineNumber: 921,
+                                            columnNumber: 23
+                                        }, this),
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                            className: "px-3 py-1 bg-[#64c883]/10 text-[#64c883] text-[10px] font-bold rounded-lg uppercase tracking-wider",
+                                            children: [
+                                                "Resultado: ",
+                                                selectedMarketStats.outcome
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "[project]/src/app/admin/page.tsx",
+                                            lineNumber: 924,
+                                            columnNumber: 23
+                                        }, this)
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "[project]/src/app/admin/page.tsx",
+                                    lineNumber: 920,
+                                    columnNumber: 21
+                                }, this),
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                    className: "grid grid-cols-1 md:grid-cols-3 gap-6",
+                                    children: [
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                            className: "p-6 bg-[#121212] rounded-2xl border border-white/5",
+                                            children: [
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                    className: "text-[9px] text-gray-400 font-bold uppercase tracking-wider mb-2",
+                                                    children: "Total Pagado a Usuarios"
+                                                }, void 0, false, {
+                                                    fileName: "[project]/src/app/admin/page.tsx",
+                                                    lineNumber: 931,
+                                                    columnNumber: 25
+                                                }, this),
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                    className: "text-2xl font-extrabold text-[#64c883]",
+                                                    children: [
+                                                        "$",
+                                                        " ",
+                                                        Number(selectedMarketStats.resolutionReport.results.totalWinnings || 0).toFixed(2)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/src/app/admin/page.tsx",
+                                                    lineNumber: 934,
+                                                    columnNumber: 25
+                                                }, this),
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                    className: "text-[9px] text-gray-500 mt-1",
+                                                    children: [
+                                                        selectedMarketStats.resolutionReport.results.winners,
+                                                        " ",
+                                                        "ganadores"
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/src/app/admin/page.tsx",
+                                                    lineNumber: 941,
+                                                    columnNumber: 25
+                                                }, this)
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "[project]/src/app/admin/page.tsx",
+                                            lineNumber: 930,
+                                            columnNumber: 23
+                                        }, this),
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                            className: "p-6 bg-[#121212] rounded-2xl border border-white/5",
+                                            children: [
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                    className: "text-[9px] text-gray-400 font-bold uppercase tracking-wider mb-2",
+                                                    children: "Total Perdido por Usuarios"
+                                                }, void 0, false, {
+                                                    fileName: "[project]/src/app/admin/page.tsx",
+                                                    lineNumber: 947,
+                                                    columnNumber: 25
+                                                }, this),
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                    className: "text-2xl font-extrabold text-[#e16464]",
+                                                    children: [
+                                                        "$",
+                                                        " ",
+                                                        Number(selectedMarketStats.resolutionReport.results.totalLosses || 0).toFixed(2)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/src/app/admin/page.tsx",
+                                                    lineNumber: 950,
+                                                    columnNumber: 25
+                                                }, this),
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                    className: "text-[9px] text-gray-500 mt-1",
+                                                    children: [
+                                                        selectedMarketStats.resolutionReport.results.losers,
+                                                        " ",
+                                                        "perdedores"
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/src/app/admin/page.tsx",
+                                                    lineNumber: 957,
+                                                    columnNumber: 25
+                                                }, this)
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "[project]/src/app/admin/page.tsx",
+                                            lineNumber: 946,
+                                            columnNumber: 23
+                                        }, this),
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                            className: "p-6 bg-[#64c883]/10 rounded-2xl border border-[#64c883]/20",
+                                            children: [
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                    className: "text-[9px] text-[#64c883] font-bold uppercase tracking-wider mb-2",
+                                                    children: "Comisión Final WIN"
+                                                }, void 0, false, {
+                                                    fileName: "[project]/src/app/admin/page.tsx",
+                                                    lineNumber: 963,
+                                                    columnNumber: 25
+                                                }, this),
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                    className: "text-2xl font-extrabold text-white",
+                                                    children: [
+                                                        "$",
+                                                        " ",
+                                                        Number(selectedMarketStats.resolutionReport.fees.total || 0).toFixed(2)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/src/app/admin/page.tsx",
+                                                    lineNumber: 966,
+                                                    columnNumber: 25
+                                                }, this),
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                    className: "text-[9px] text-gray-400 mt-1",
+                                                    children: "Primaria + Secundaria"
+                                                }, void 0, false, {
+                                                    fileName: "[project]/src/app/admin/page.tsx",
+                                                    lineNumber: 973,
+                                                    columnNumber: 25
+                                                }, this)
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "[project]/src/app/admin/page.tsx",
+                                            lineNumber: 962,
+                                            columnNumber: 23
+                                        }, this)
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "[project]/src/app/admin/page.tsx",
+                                    lineNumber: 929,
+                                    columnNumber: 21
+                                }, this),
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                    className: "bg-[#0a0a0a] border border-white/5 rounded-2xl overflow-hidden",
+                                    children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("table", {
+                                        className: "w-full text-left",
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("thead", {
+                                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("tr", {
+                                                    className: "bg-[#171717] border-b border-white/5",
+                                                    children: [
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
+                                                            className: "p-4 text-[9px] font-bold text-gray-400 uppercase tracking-wider",
+                                                            children: "Usuario"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/admin/page.tsx",
+                                                            lineNumber: 983,
+                                                            columnNumber: 29
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
+                                                            className: "p-4 text-[9px] font-bold text-gray-400 uppercase tracking-wider",
+                                                            children: "Lado"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/admin/page.tsx",
+                                                            lineNumber: 986,
+                                                            columnNumber: 29
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
+                                                            className: "p-4 text-[9px] font-bold text-gray-400 uppercase tracking-wider",
+                                                            children: "Inversión"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/admin/page.tsx",
+                                                            lineNumber: 989,
+                                                            columnNumber: 29
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
+                                                            className: "p-4 text-[9px] font-bold text-gray-400 uppercase tracking-wider",
+                                                            children: "Pago Final"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/admin/page.tsx",
+                                                            lineNumber: 992,
+                                                            columnNumber: 29
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
+                                                            className: "p-4 text-[9px] font-bold text-gray-400 uppercase tracking-wider",
+                                                            children: "Resultado"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/app/admin/page.tsx",
+                                                            lineNumber: 995,
+                                                            columnNumber: 29
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/src/app/admin/page.tsx",
+                                                    lineNumber: 982,
+                                                    columnNumber: 27
+                                                }, this)
+                                            }, void 0, false, {
+                                                fileName: "[project]/src/app/admin/page.tsx",
+                                                lineNumber: 981,
+                                                columnNumber: 25
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("tbody", {
+                                                className: "divide-y divide-white/5",
+                                                children: selectedMarketStats.resolutionReport.positions.map((pos)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("tr", {
+                                                        className: "hover:bg-white/5",
+                                                        children: [
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
+                                                                className: "p-4 text-xs font-bold text-white",
+                                                                children: [
+                                                                    "@",
+                                                                    pos.currentOwner
+                                                                ]
+                                                            }, void 0, true, {
+                                                                fileName: "[project]/src/app/admin/page.tsx",
+                                                                lineNumber: 1004,
+                                                                columnNumber: 33
+                                                            }, this),
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
+                                                                className: "p-4",
+                                                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                    className: `px-2 py-0.5 text-[9px] font-bold rounded-full uppercase ${pos.side === "YES" ? "text-[#64c883]" : "text-[#e16464]"}`,
+                                                                    children: pos.side
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/admin/page.tsx",
+                                                                    lineNumber: 1008,
+                                                                    columnNumber: 35
+                                                                }, this)
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/src/app/admin/page.tsx",
+                                                                lineNumber: 1007,
+                                                                columnNumber: 33
+                                                            }, this),
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
+                                                                className: "p-4 text-sm font-bold text-white/60",
+                                                                children: [
+                                                                    "$ ",
+                                                                    pos.amount.toFixed(2)
+                                                                ]
+                                                            }, void 0, true, {
+                                                                fileName: "[project]/src/app/admin/page.tsx",
+                                                                lineNumber: 1018,
+                                                                columnNumber: 33
+                                                            }, this),
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
+                                                                className: `p-4 text-sm font-extrabold ${pos.payout > 0 ? "text-[#64c883]" : "text-gray-500"}`,
+                                                                children: [
+                                                                    "$ ",
+                                                                    pos.payout.toFixed(2)
+                                                                ]
+                                                            }, void 0, true, {
+                                                                fileName: "[project]/src/app/admin/page.tsx",
+                                                                lineNumber: 1021,
+                                                                columnNumber: 33
+                                                            }, this),
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
+                                                                className: "p-4",
+                                                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                    className: `text-[9px] font-bold uppercase px-2 py-0.5 rounded-full ${pos.status === "WON" ? "bg-[#64c883]/10 text-[#64c883]" : pos.status === "LOST" ? "bg-white/5 text-gray-500" : "bg-yellow-500/10 text-yellow-500"}`,
+                                                                    children: pos.status
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/app/admin/page.tsx",
+                                                                    lineNumber: 1031,
+                                                                    columnNumber: 35
+                                                                }, this)
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/src/app/admin/page.tsx",
+                                                                lineNumber: 1030,
+                                                                columnNumber: 33
+                                                            }, this)
+                                                        ]
+                                                    }, pos.id, true, {
+                                                        fileName: "[project]/src/app/admin/page.tsx",
+                                                        lineNumber: 1003,
+                                                        columnNumber: 31
+                                                    }, this))
+                                            }, void 0, false, {
+                                                fileName: "[project]/src/app/admin/page.tsx",
+                                                lineNumber: 1000,
+                                                columnNumber: 25
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/src/app/admin/page.tsx",
+                                        lineNumber: 980,
+                                        columnNumber: 23
+                                    }, this)
+                                }, void 0, false, {
+                                    fileName: "[project]/src/app/admin/page.tsx",
+                                    lineNumber: 979,
+                                    columnNumber: 21
+                                }, this)
+                            ]
+                        }, void 0, true, {
+                            fileName: "[project]/src/app/admin/page.tsx",
+                            lineNumber: 919,
+                            columnNumber: 19
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                             className: "space-y-4",
@@ -3209,7 +4007,7 @@ function AdminPage() {
                                     children: "Historial de Operaciones"
                                 }, void 0, false, {
                                     fileName: "[project]/src/app/admin/page.tsx",
-                                    lineNumber: 563,
+                                    lineNumber: 1054,
                                     columnNumber: 17
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3226,51 +4024,51 @@ function AdminPage() {
                                                             children: "Usuario"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/admin/page.tsx",
-                                                            lineNumber: 568,
-                                                            columnNumber: 26
+                                                            lineNumber: 1061,
+                                                            columnNumber: 25
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
                                                             className: "p-4 text-[9px] font-bold text-gray-400 uppercase tracking-wider",
                                                             children: "Lado"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/admin/page.tsx",
-                                                            lineNumber: 569,
-                                                            columnNumber: 26
+                                                            lineNumber: 1064,
+                                                            columnNumber: 25
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
                                                             className: "p-4 text-[9px] font-bold text-gray-400 uppercase tracking-wider",
                                                             children: "Monto"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/admin/page.tsx",
-                                                            lineNumber: 570,
-                                                            columnNumber: 26
+                                                            lineNumber: 1067,
+                                                            columnNumber: 25
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
                                                             className: "p-4 text-[9px] font-bold text-gray-400 uppercase tracking-wider",
                                                             children: "Prob."
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/admin/page.tsx",
-                                                            lineNumber: 571,
-                                                            columnNumber: 26
+                                                            lineNumber: 1070,
+                                                            columnNumber: 25
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
                                                             className: "p-4 text-[9px] font-bold text-gray-400 uppercase tracking-wider",
                                                             children: "Fecha"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/admin/page.tsx",
-                                                            lineNumber: 572,
-                                                            columnNumber: 26
+                                                            lineNumber: 1073,
+                                                            columnNumber: 25
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/app/admin/page.tsx",
-                                                    lineNumber: 567,
-                                                    columnNumber: 24
+                                                    lineNumber: 1060,
+                                                    columnNumber: 23
                                                 }, this)
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/admin/page.tsx",
-                                                lineNumber: 566,
-                                                columnNumber: 22
+                                                lineNumber: 1059,
+                                                columnNumber: 21
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("tbody", {
                                                 className: "divide-y divide-white/5",
@@ -3281,13 +4079,13 @@ function AdminPage() {
                                                         children: "No hay operaciones registradas"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/app/admin/page.tsx",
-                                                        lineNumber: 577,
-                                                        columnNumber: 31
+                                                        lineNumber: 1081,
+                                                        columnNumber: 27
                                                     }, this)
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/admin/page.tsx",
-                                                    lineNumber: 577,
-                                                    columnNumber: 27
+                                                    lineNumber: 1080,
+                                                    columnNumber: 25
                                                 }, this) : selectedMarketStats.purchases.map((p)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("tr", {
                                                         className: "hover:bg-white/5 transition-colors",
                                                         children: [
@@ -3299,22 +4097,22 @@ function AdminPage() {
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/src/app/admin/page.tsx",
-                                                                lineNumber: 580,
+                                                                lineNumber: 1094,
                                                                 columnNumber: 29
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
                                                                 className: "p-4",
                                                                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                                    className: `px-2 py-0.5 text-[9px] font-bold rounded-full uppercase tracking-wider ${p.side === 'YES' ? 'bg-[#64c883]/10 text-[#64c883]' : 'bg-[#e16464]/10 text-[#e16464]'}`,
+                                                                    className: `px-2 py-0.5 text-[9px] font-bold rounded-full uppercase tracking-wider ${p.side === "YES" ? "bg-[#64c883]/10 text-[#64c883]" : "bg-[#e16464]/10 text-[#e16464]"}`,
                                                                     children: p.side
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/admin/page.tsx",
-                                                                    lineNumber: 582,
-                                                                    columnNumber: 32
+                                                                    lineNumber: 1098,
+                                                                    columnNumber: 31
                                                                 }, this)
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/app/admin/page.tsx",
-                                                                lineNumber: 581,
+                                                                lineNumber: 1097,
                                                                 columnNumber: 29
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -3325,7 +4123,7 @@ function AdminPage() {
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/src/app/admin/page.tsx",
-                                                                lineNumber: 586,
+                                                                lineNumber: 1104,
                                                                 columnNumber: 29
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -3336,7 +4134,7 @@ function AdminPage() {
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/src/app/admin/page.tsx",
-                                                                lineNumber: 587,
+                                                                lineNumber: 1107,
                                                                 columnNumber: 29
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -3344,46 +4142,46 @@ function AdminPage() {
                                                                 children: new Date(p.createdAt).toLocaleDateString()
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/app/admin/page.tsx",
-                                                                lineNumber: 588,
+                                                                lineNumber: 1110,
                                                                 columnNumber: 29
                                                             }, this)
                                                         ]
                                                     }, p.id, true, {
                                                         fileName: "[project]/src/app/admin/page.tsx",
-                                                        lineNumber: 579,
+                                                        lineNumber: 1090,
                                                         columnNumber: 27
                                                     }, this))
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/admin/page.tsx",
-                                                lineNumber: 575,
-                                                columnNumber: 22
+                                                lineNumber: 1078,
+                                                columnNumber: 21
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/app/admin/page.tsx",
-                                        lineNumber: 565,
-                                        columnNumber: 20
+                                        lineNumber: 1058,
+                                        columnNumber: 19
                                     }, this)
                                 }, void 0, false, {
                                     fileName: "[project]/src/app/admin/page.tsx",
-                                    lineNumber: 564,
+                                    lineNumber: 1057,
                                     columnNumber: 17
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/app/admin/page.tsx",
-                            lineNumber: 562,
-                            columnNumber: 14
+                            lineNumber: 1053,
+                            columnNumber: 15
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/src/app/admin/page.tsx",
-                    lineNumber: 515,
-                    columnNumber: 11
+                    lineNumber: 706,
+                    columnNumber: 13
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/src/app/admin/page.tsx",
-                lineNumber: 511,
+                lineNumber: 694,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$Modal$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Modal"], {
@@ -3404,7 +4202,7 @@ function AdminPage() {
                                             children: "Pregunta del Mercado"
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/admin/page.tsx",
-                                            lineNumber: 605,
+                                            lineNumber: 1134,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -3417,13 +4215,13 @@ function AdminPage() {
                                             placeholder: "¿Ej: Argentina ganará el mundial?"
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/admin/page.tsx",
-                                            lineNumber: 606,
+                                            lineNumber: 1137,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/app/admin/page.tsx",
-                                    lineNumber: 604,
+                                    lineNumber: 1133,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3436,7 +4234,7 @@ function AdminPage() {
                                                     children: "Fecha Resolución"
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/admin/page.tsx",
-                                                    lineNumber: 615,
+                                                    lineNumber: 1148,
                                                     columnNumber: 17
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -3449,13 +4247,13 @@ function AdminPage() {
                                                         })
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/admin/page.tsx",
-                                                    lineNumber: 616,
+                                                    lineNumber: 1151,
                                                     columnNumber: 17
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/app/admin/page.tsx",
-                                            lineNumber: 614,
+                                            lineNumber: 1147,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3465,7 +4263,7 @@ function AdminPage() {
                                                     children: "Límite Pool ($)"
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/admin/page.tsx",
-                                                    lineNumber: 624,
+                                                    lineNumber: 1164,
                                                     columnNumber: 17
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -3475,22 +4273,23 @@ function AdminPage() {
                                                     onChange: (e)=>setNewMarket({
                                                             ...newMarket,
                                                             maxPool: e.target.value
-                                                        })
+                                                        }),
+                                                    placeholder: "Ilimitado"
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/admin/page.tsx",
-                                                    lineNumber: 625,
+                                                    lineNumber: 1167,
                                                     columnNumber: 17
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/app/admin/page.tsx",
-                                            lineNumber: 623,
+                                            lineNumber: 1163,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/app/admin/page.tsx",
-                                    lineNumber: 613,
+                                    lineNumber: 1146,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3503,8 +4302,8 @@ function AdminPage() {
                                                     children: "Liquidez (b)"
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/admin/page.tsx",
-                                                    lineNumber: 635,
-                                                    columnNumber: 18
+                                                    lineNumber: 1180,
+                                                    columnNumber: 17
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
                                                     type: "number",
@@ -3517,22 +4316,22 @@ function AdminPage() {
                                                     placeholder: "100"
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/admin/page.tsx",
-                                                    lineNumber: 636,
-                                                    columnNumber: 18
+                                                    lineNumber: 1183,
+                                                    columnNumber: 17
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                                     className: "text-[9px] text-gray-500 px-1 mt-1",
                                                     children: "Mayor b = Menos volatilidad"
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/admin/page.tsx",
-                                                    lineNumber: 643,
-                                                    columnNumber: 18
+                                                    lineNumber: 1192,
+                                                    columnNumber: 17
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/app/admin/page.tsx",
-                                            lineNumber: 634,
-                                            columnNumber: 16
+                                            lineNumber: 1179,
+                                            columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                             children: [
@@ -3541,8 +4340,8 @@ function AdminPage() {
                                                     children: "CAP Transacción ($)"
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/admin/page.tsx",
-                                                    lineNumber: 646,
-                                                    columnNumber: 18
+                                                    lineNumber: 1197,
+                                                    columnNumber: 17
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
                                                     type: "number",
@@ -3552,17 +4351,17 @@ function AdminPage() {
                                                             ...newMarket,
                                                             maxBetAmount: e.target.value
                                                         }),
-                                                    placeholder: "Global"
+                                                    placeholder: "Ilimitado"
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/admin/page.tsx",
-                                                    lineNumber: 647,
-                                                    columnNumber: 18
+                                                    lineNumber: 1200,
+                                                    columnNumber: 17
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/app/admin/page.tsx",
-                                            lineNumber: 645,
-                                            columnNumber: 16
+                                            lineNumber: 1196,
+                                            columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                             children: [
@@ -3571,8 +4370,8 @@ function AdminPage() {
                                                     children: "CAP Variación p (%)"
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/admin/page.tsx",
-                                                    lineNumber: 656,
-                                                    columnNumber: 18
+                                                    lineNumber: 1211,
+                                                    columnNumber: 17
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
                                                     type: "number",
@@ -3586,45 +4385,45 @@ function AdminPage() {
                                                     step: "0.1"
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/admin/page.tsx",
-                                                    lineNumber: 657,
-                                                    columnNumber: 18
+                                                    lineNumber: 1214,
+                                                    columnNumber: 17
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/app/admin/page.tsx",
-                                            lineNumber: 655,
-                                            columnNumber: 16
+                                            lineNumber: 1210,
+                                            columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/app/admin/page.tsx",
-                                    lineNumber: 633,
+                                    lineNumber: 1178,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/app/admin/page.tsx",
-                            lineNumber: 603,
+                            lineNumber: 1132,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                             onClick: handleCreate,
                             className: "w-full h-16 bg-[#64c883] text-[#0a0a0a] text-xs font-bold uppercase tracking-[0.1em] rounded-2xl transition-all hover:scale-[1.02] shadow-xl shadow-[#64c883]/10",
-                            children: creating ? 'Creando...' : 'Lanzar Mercado'
+                            children: creating ? "Creando..." : "Lanzar Mercado"
                         }, void 0, false, {
                             fileName: "[project]/src/app/admin/page.tsx",
-                            lineNumber: 668,
+                            lineNumber: 1230,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/src/app/admin/page.tsx",
-                    lineNumber: 602,
+                    lineNumber: 1131,
                     columnNumber: 9
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/src/app/admin/page.tsx",
-                lineNumber: 601,
+                lineNumber: 1126,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$Modal$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Modal"], {
@@ -3642,8 +4441,8 @@ function AdminPage() {
                                     children: showResolveModal.question
                                 }, void 0, false, {
                                     fileName: "[project]/src/app/admin/page.tsx",
-                                    lineNumber: 681,
-                                    columnNumber: 16
+                                    lineNumber: 1247,
+                                    columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                     className: "flex justify-center gap-6 text-[10px] font-bold uppercase tracking-wider text-gray-400",
@@ -3655,8 +4454,8 @@ function AdminPage() {
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/app/admin/page.tsx",
-                                            lineNumber: 683,
-                                            columnNumber: 19
+                                            lineNumber: 1251,
+                                            columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                             children: [
@@ -3665,76 +4464,76 @@ function AdminPage() {
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/app/admin/page.tsx",
-                                            lineNumber: 684,
-                                            columnNumber: 19
+                                            lineNumber: 1254,
+                                            columnNumber: 17
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/app/admin/page.tsx",
-                                    lineNumber: 682,
-                                    columnNumber: 16
+                                    lineNumber: 1250,
+                                    columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/app/admin/page.tsx",
-                            lineNumber: 680,
+                            lineNumber: 1246,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                             className: "grid grid-cols-3 gap-4",
                             children: [
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                    onClick: ()=>handleResolve('YES'),
+                                    onClick: ()=>handleResolve("YES"),
                                     className: "h-16 bg-[#64c883] text-[#0a0a0a] text-[10px] font-bold uppercase tracking-wider rounded-2xl transition-all hover:scale-[1.05]",
                                     children: "SÍ Gana"
                                 }, void 0, false, {
                                     fileName: "[project]/src/app/admin/page.tsx",
-                                    lineNumber: 688,
+                                    lineNumber: 1260,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                    onClick: ()=>handleResolve('NO'),
+                                    onClick: ()=>handleResolve("NO"),
                                     className: "h-16 bg-[#e16464] text-[#0a0a0a] text-[10px] font-bold uppercase tracking-wider rounded-2xl transition-all hover:scale-[1.05]",
                                     children: "NO Gana"
                                 }, void 0, false, {
                                     fileName: "[project]/src/app/admin/page.tsx",
-                                    lineNumber: 694,
+                                    lineNumber: 1266,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                    onClick: ()=>handleResolve('VOID'),
+                                    onClick: ()=>handleResolve("VOID"),
                                     className: "h-16 bg-white/5 text-gray-400 text-[10px] font-bold uppercase tracking-wider rounded-2xl transition-all hover:bg-white/10",
                                     children: "Anular"
                                 }, void 0, false, {
                                     fileName: "[project]/src/app/admin/page.tsx",
-                                    lineNumber: 700,
+                                    lineNumber: 1272,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/app/admin/page.tsx",
-                            lineNumber: 687,
+                            lineNumber: 1259,
                             columnNumber: 13
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/src/app/admin/page.tsx",
-                    lineNumber: 679,
+                    lineNumber: 1245,
                     columnNumber: 11
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/src/app/admin/page.tsx",
-                lineNumber: 677,
+                lineNumber: 1239,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/src/app/admin/page.tsx",
-        lineNumber: 232,
+        lineNumber: 253,
         columnNumber: 5
     }, this);
 }
-_s(AdminPage, "RLUYisLwNBIMLy4lhSa15BiAfqo=", false, function() {
+_s(AdminPage, "+X+adrpqf4wV9U57yyAd+ePTWLE=", false, function() {
     return [
         __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useRouter"],
         __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$contexts$2f$UserContext$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useUser"]
@@ -3745,12 +4544,12 @@ function Page() {
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$contexts$2f$UserContext$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["UserProvider"], {
         children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(AdminPage, {}, void 0, false, {
             fileName: "[project]/src/app/admin/page.tsx",
-            lineNumber: 717,
+            lineNumber: 1289,
             columnNumber: 7
         }, this)
     }, void 0, false, {
         fileName: "[project]/src/app/admin/page.tsx",
-        lineNumber: 716,
+        lineNumber: 1288,
         columnNumber: 5
     }, this);
 }

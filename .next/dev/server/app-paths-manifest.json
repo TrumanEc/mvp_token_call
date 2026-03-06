@@ -1,6 +1,17 @@
 {
+  "/admin/page": "app/admin/page.js",
+  "/api/admin/markets/[id]/lmsr-logs/route": "app/api/admin/markets/[id]/lmsr-logs/route.js",
+  "/api/admin/markets/[id]/stats/route": "app/api/admin/markets/[id]/stats/route.js",
   "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
+  "/api/markets/[id]/price-quote/route": "app/api/markets/[id]/price-quote/route.js",
+  "/api/markets/[id]/route": "app/api/markets/[id]/route.js",
   "/api/markets/route": "app/api/markets/route.js",
+  "/api/positions/route": "app/api/positions/route.js",
+  "/api/users/[id]/route": "app/api/users/[id]/route.js",
+  "/api/users/route": "app/api/users/route.js",
+  "/login/page": "app/login/page.js",
+  "/markets/[id]/page": "app/markets/[id]/page.js",
   "/markets/page": "app/markets/page.js",
-  "/page": "app/page.js"
+  "/page": "app/page.js",
+  "/positions/page": "app/positions/page.js"
 }

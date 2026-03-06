@@ -605,7 +605,7 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/server/route-modules/app-page/vendored/ssr/react.js [app-ssr] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$Modal$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/ui/Modal.tsx [app-ssr] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$positions$2f$PositionHistory$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/components/positions/PositionHistory.tsx [app-ssr] (ecmascript)");
-'use client';
+"use client";
 ;
 ;
 ;
@@ -615,42 +615,42 @@ function PositionCard({ position, userId, onSell }) {
     const [sellShares, setSellShares] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(position.shares.toFixed(2));
     const [askPrice, setAskPrice] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(position.fairValue.toFixed(2));
     const [loading, setLoading] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(false);
-    const [error, setError] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])('');
+    const [error, setError] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])("");
     const profit = position.fairValue - position.amount;
-    const profitPct = position.amount > 0 ? ((position.fairValue - position.amount) / position.amount * 100).toFixed(1) : '0.0';
+    const profitPct = position.amount > 0 ? ((position.fairValue - position.amount) / position.amount * 100).toFixed(1) : "0.0";
     const sellSharesNum = parseFloat(sellShares) || 0;
     // Proportional Fair Value based on shares being sold
     const proportionalFairValue = sellSharesNum / position.shares * position.fairValue;
     const handleSell = async ()=>{
-        setError('');
+        setError("");
         setLoading(true);
         try {
             const sharesToSell = parseFloat(sellShares);
             const priceToAsk = parseFloat(askPrice);
             if (sharesToSell <= 0 || sharesToSell > position.shares) {
-                throw new Error('Cantidad de acciones inválida');
+                throw new Error("Cantidad de acciones inválida");
             }
             // Check if selling full position (approx)
             const isFull = Math.abs(sharesToSell - position.shares) < 0.01;
             const res = await fetch(`/api/positions/${position.id}/list`, {
-                method: 'POST',
+                method: "POST",
                 headers: {
-                    'Content-Type': 'application/json'
+                    "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
                     userId,
                     askPrice: priceToAsk,
-                    amount: isFull ? undefined : sharesToSell // Backend expects 'amount' as shares for partial
+                    amount: isFull ? undefined : sharesToSell
                 })
             });
             const data = await res.json();
             if (!res.ok) {
-                throw new Error(data.error || 'Error al listar posición');
+                throw new Error(data.error || "Error al listar posición");
             }
             setShowSellModal(false);
             onSell();
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Error desconocido');
+            setError(e instanceof Error ? e.message : "Error desconocido");
         } finally{
             setLoading(false);
         }
@@ -680,14 +680,14 @@ function PositionCard({ position, userId, onSell }) {
                                                 children: new Date(position.createdAt).toLocaleDateString()
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                                lineNumber: 104,
+                                                lineNumber: 110,
                                                 columnNumber: 15
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                 className: "w-1 h-1 rounded-full bg-white/10"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                                lineNumber: 107,
+                                                lineNumber: 113,
                                                 columnNumber: 15
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -698,8 +698,8 @@ function PositionCard({ position, userId, onSell }) {
                                                         children: "Avg Cost:"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                                        lineNumber: 109,
-                                                        columnNumber: 18
+                                                        lineNumber: 115,
+                                                        columnNumber: 17
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                                         className: "text-[10px] font-bold text-[#64c883] uppercase tracking-wider",
@@ -709,19 +709,19 @@ function PositionCard({ position, userId, onSell }) {
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                                        lineNumber: 112,
-                                                        columnNumber: 18
+                                                        lineNumber: 118,
+                                                        columnNumber: 17
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                                lineNumber: 108,
+                                                lineNumber: 114,
                                                 columnNumber: 15
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                        lineNumber: 103,
+                                        lineNumber: 109,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h4", {
@@ -729,34 +729,34 @@ function PositionCard({ position, userId, onSell }) {
                                         children: position.market.question
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                        lineNumber: 117,
+                                        lineNumber: 123,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                lineNumber: 102,
+                                lineNumber: 108,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                 className: "flex gap-2 shrink-0",
                                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                    className: `px-3 py-1 text-[10px] font-bold rounded-full uppercase tracking-wider ${position.side === 'YES' ? 'bg-[#64c883]/10 text-[#64c883]' : 'bg-[#e16464]/10 text-[#e16464]'}`,
+                                    className: `px-3 py-1 text-[10px] font-bold rounded-full uppercase tracking-wider ${position.side === "YES" ? "bg-[#64c883]/10 text-[#64c883]" : "bg-[#e16464]/10 text-[#e16464]"}`,
                                     children: position.side
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                    lineNumber: 122,
+                                    lineNumber: 128,
                                     columnNumber: 13
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                lineNumber: 121,
+                                lineNumber: 127,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/positions/PositionCard.tsx",
-                        lineNumber: 101,
+                        lineNumber: 107,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -770,7 +770,7 @@ function PositionCard({ position, userId, onSell }) {
                                         children: "Acciones"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                        lineNumber: 132,
+                                        lineNumber: 142,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -778,7 +778,7 @@ function PositionCard({ position, userId, onSell }) {
                                         children: position.shares.toFixed(2)
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                        lineNumber: 133,
+                                        lineNumber: 145,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -786,13 +786,13 @@ function PositionCard({ position, userId, onSell }) {
                                         children: "Tokens Acumulados"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                        lineNumber: 134,
+                                        lineNumber: 148,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                lineNumber: 131,
+                                lineNumber: 141,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -803,7 +803,7 @@ function PositionCard({ position, userId, onSell }) {
                                         children: "Valor de Mercado"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                        lineNumber: 137,
+                                        lineNumber: 153,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -814,7 +814,7 @@ function PositionCard({ position, userId, onSell }) {
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                        lineNumber: 138,
+                                        lineNumber: 156,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -824,21 +824,21 @@ function PositionCard({ position, userId, onSell }) {
                                                 className: "w-1.5 h-1.5 rounded-full bg-[#64c883] animate-pulse"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                                lineNumber: 140,
-                                                columnNumber: 16
+                                                lineNumber: 160,
+                                                columnNumber: 15
                                             }, this),
                                             "@",
                                             position.currentPrice.toFixed(3)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                        lineNumber: 139,
+                                        lineNumber: 159,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                lineNumber: 136,
+                                lineNumber: 152,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -846,38 +846,94 @@ function PositionCard({ position, userId, onSell }) {
                                 children: [
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                         className: "text-[10px] font-bold text-gray-400 uppercase tracking-wider",
-                                        children: "Costo Ponderado"
+                                        children: "Inversión Total"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                        lineNumber: 145,
-                                        columnNumber: 14
+                                        lineNumber: 165,
+                                        columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                         className: "text-xl font-extrabold text-white",
                                         children: [
-                                            "$ ",
-                                            position.amount.toFixed(2)
+                                            "$",
+                                            " ",
+                                            position.amount.toLocaleString(undefined, {
+                                                minimumFractionDigits: 2
+                                            })
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                        lineNumber: 146,
-                                        columnNumber: 14
+                                        lineNumber: 168,
+                                        columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                        className: "text-[9px] font-bold text-gray-500 uppercase",
+                                        className: "text-[9px] font-bold text-gray-500 uppercase flex flex-col gap-0.5",
                                         children: [
-                                            "Avg: $",
-                                            position.purchasePrice.toFixed(3)
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                className: "flex justify-between",
+                                                children: [
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                        children: "Neta:"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/src/components/positions/PositionCard.tsx",
+                                                        lineNumber: 176,
+                                                        columnNumber: 17
+                                                    }, this),
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                        className: "text-white/60",
+                                                        children: [
+                                                            "$",
+                                                            " ",
+                                                            (position.amount - (position.totalFees || 0)).toFixed(2)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "[project]/src/components/positions/PositionCard.tsx",
+                                                        lineNumber: 177,
+                                                        columnNumber: 17
+                                                    }, this)
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/src/components/positions/PositionCard.tsx",
+                                                lineNumber: 175,
+                                                columnNumber: 15
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                className: "flex justify-between",
+                                                children: [
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                        children: "Comisión:"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/src/components/positions/PositionCard.tsx",
+                                                        lineNumber: 185,
+                                                        columnNumber: 17
+                                                    }, this),
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                        className: "text-[#e16464]/60",
+                                                        children: [
+                                                            "$ ",
+                                                            (position.totalFees || 0).toFixed(2)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "[project]/src/components/positions/PositionCard.tsx",
+                                                        lineNumber: 186,
+                                                        columnNumber: 17
+                                                    }, this)
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/src/components/positions/PositionCard.tsx",
+                                                lineNumber: 184,
+                                                columnNumber: 15
+                                            }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                        lineNumber: 147,
-                                        columnNumber: 14
+                                        lineNumber: 174,
+                                        columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                lineNumber: 144,
+                                lineNumber: 164,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -888,42 +944,42 @@ function PositionCard({ position, userId, onSell }) {
                                         children: "Resultado P&L"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                        lineNumber: 150,
+                                        lineNumber: 193,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                        className: `text-xl font-extrabold ${parseFloat(profitPct) >= 0 ? 'text-[#64c883]' : 'text-[#e16464]'}`,
+                                        className: `text-xl font-extrabold ${parseFloat(profitPct) >= 0 ? "text-[#64c883]" : "text-[#e16464]"}`,
                                         children: [
-                                            parseFloat(profitPct) >= 0 ? '+' : '',
+                                            parseFloat(profitPct) >= 0 ? "+" : "",
                                             profitPct,
                                             "%"
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                        lineNumber: 151,
+                                        lineNumber: 196,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                        className: `text-[9px] font-bold uppercase ${parseFloat(profitPct) >= 0 ? 'text-[#64c883]/60' : 'text-[#e16464]/60'}`,
+                                        className: `text-[9px] font-bold uppercase ${parseFloat(profitPct) >= 0 ? "text-[#64c883]/60" : "text-[#e16464]/60"}`,
                                         children: [
                                             "$ ",
                                             profit.toFixed(2)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                        lineNumber: 154,
+                                        lineNumber: 202,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                lineNumber: 149,
+                                lineNumber: 192,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/positions/PositionCard.tsx",
-                        lineNumber: 130,
+                        lineNumber: 140,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -940,8 +996,8 @@ function PositionCard({ position, userId, onSell }) {
                                                 children: "Punto de Equilibrio"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                                lineNumber: 164,
-                                                columnNumber: 18
+                                                lineNumber: 214,
+                                                columnNumber: 15
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                                 className: "text-[11px] font-bold text-white",
@@ -954,20 +1010,20 @@ function PositionCard({ position, userId, onSell }) {
                                                         children: "/ share"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                                        lineNumber: 165,
-                                                        columnNumber: 107
+                                                        lineNumber: 219,
+                                                        columnNumber: 17
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                                lineNumber: 165,
-                                                columnNumber: 18
+                                                lineNumber: 217,
+                                                columnNumber: 15
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                        lineNumber: 163,
-                                        columnNumber: 15
+                                        lineNumber: 213,
+                                        columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                         className: "text-right flex flex-col",
@@ -977,8 +1033,8 @@ function PositionCard({ position, userId, onSell }) {
                                                 children: "Probabilidad Actual"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                                lineNumber: 168,
-                                                columnNumber: 18
+                                                lineNumber: 223,
+                                                columnNumber: 15
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                                 className: "text-[11px] font-bold text-[#64c883]",
@@ -988,52 +1044,52 @@ function PositionCard({ position, userId, onSell }) {
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                                lineNumber: 169,
-                                                columnNumber: 18
+                                                lineNumber: 226,
+                                                columnNumber: 15
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                        lineNumber: 167,
-                                        columnNumber: 15
+                                        lineNumber: 222,
+                                        columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                lineNumber: 162,
-                                columnNumber: 12
+                                lineNumber: 212,
+                                columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                 className: "h-1.5 w-full bg-white/5 rounded-full overflow-hidden flex",
                                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                    className: `h-full transition-all duration-1000 ${position.side === 'YES' ? 'bg-[#64c883]' : 'bg-[#e16464]'}`,
+                                    className: `h-full transition-all duration-1000 ${position.side === "YES" ? "bg-[#64c883]" : "bg-[#e16464]"}`,
                                     style: {
                                         width: `${position.currentPrice * 100}%`
                                     }
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                    lineNumber: 174,
-                                    columnNumber: 15
+                                    lineNumber: 233,
+                                    columnNumber: 13
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                lineNumber: 173,
-                                columnNumber: 12
+                                lineNumber: 232,
+                                columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/positions/PositionCard.tsx",
-                        lineNumber: 161,
+                        lineNumber: 211,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$positions$2f$PositionHistory$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["PositionHistory"], {
                         history: position.history
                     }, void 0, false, {
                         fileName: "[project]/src/components/positions/PositionCard.tsx",
-                        lineNumber: 182,
+                        lineNumber: 241,
                         columnNumber: 9
                     }, this),
-                    position.status === 'ACTIVE' && position.market.status === 'ACTIVE' && !position.isForSale && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                    position.status === "ACTIVE" && position.market.status === "ACTIVE" && !position.isForSale && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                         className: "mt-8",
                         children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                             onClick: ()=>setShowSellModal(true),
@@ -1041,13 +1097,13 @@ function PositionCard({ position, userId, onSell }) {
                             children: "Vender en Marketplace"
                         }, void 0, false, {
                             fileName: "[project]/src/components/positions/PositionCard.tsx",
-                            lineNumber: 187,
-                            columnNumber: 13
+                            lineNumber: 247,
+                            columnNumber: 15
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/src/components/positions/PositionCard.tsx",
-                        lineNumber: 186,
-                        columnNumber: 11
+                        lineNumber: 246,
+                        columnNumber: 13
                     }, this),
                     position.isForSale && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                         className: "mt-8 h-12 flex items-center justify-center rounded-xl bg-white/5 border border-white/10",
@@ -1056,18 +1112,18 @@ function PositionCard({ position, userId, onSell }) {
                             children: "En venta en Marketplace"
                         }, void 0, false, {
                             fileName: "[project]/src/components/positions/PositionCard.tsx",
-                            lineNumber: 198,
+                            lineNumber: 258,
                             columnNumber: 13
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/src/components/positions/PositionCard.tsx",
-                        lineNumber: 197,
+                        lineNumber: 257,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/components/positions/PositionCard.tsx",
-                lineNumber: 100,
+                lineNumber: 106,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$Modal$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Modal"], {
@@ -1087,7 +1143,7 @@ function PositionCard({ position, userId, onSell }) {
                                             children: "Acciones Disp."
                                         }, void 0, false, {
                                             fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                            lineNumber: 207,
+                                            lineNumber: 273,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1095,13 +1151,13 @@ function PositionCard({ position, userId, onSell }) {
                                             children: position.shares.toFixed(2)
                                         }, void 0, false, {
                                             fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                            lineNumber: 208,
+                                            lineNumber: 276,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                    lineNumber: 206,
+                                    lineNumber: 272,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1112,7 +1168,7 @@ function PositionCard({ position, userId, onSell }) {
                                             children: "Fair Value"
                                         }, void 0, false, {
                                             fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                            lineNumber: 211,
+                                            lineNumber: 281,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1123,19 +1179,19 @@ function PositionCard({ position, userId, onSell }) {
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                            lineNumber: 212,
+                                            lineNumber: 284,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                    lineNumber: 210,
+                                    lineNumber: 280,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/components/positions/PositionCard.tsx",
-                            lineNumber: 205,
+                            lineNumber: 271,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1146,7 +1202,7 @@ function PositionCard({ position, userId, onSell }) {
                                     children: "Acciones a vender"
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                    lineNumber: 217,
+                                    lineNumber: 291,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1159,7 +1215,7 @@ function PositionCard({ position, userId, onSell }) {
                                             className: "w-full h-14 bg-[#0a0a0a] border border-[#272727] rounded-xl px-4 text-white font-bold text-lg outline-none transition-all focus:border-[#64c883] focus:ring-1 focus:ring-[#64c883]/20"
                                         }, void 0, false, {
                                             fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                            lineNumber: 219,
+                                            lineNumber: 295,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1167,19 +1223,19 @@ function PositionCard({ position, userId, onSell }) {
                                             children: "Shares"
                                         }, void 0, false, {
                                             fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                            lineNumber: 225,
+                                            lineNumber: 301,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                    lineNumber: 218,
+                                    lineNumber: 294,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/components/positions/PositionCard.tsx",
-                            lineNumber: 216,
+                            lineNumber: 290,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1198,12 +1254,12 @@ function PositionCard({ position, userId, onSell }) {
                                     ]
                                 }, pct, true, {
                                     fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                    lineNumber: 231,
+                                    lineNumber: 309,
                                     columnNumber: 15
                                 }, this))
                         }, void 0, false, {
                             fileName: "[project]/src/components/positions/PositionCard.tsx",
-                            lineNumber: 229,
+                            lineNumber: 307,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1214,7 +1270,7 @@ function PositionCard({ position, userId, onSell }) {
                                     children: "Precio Total de Venta ($)"
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                    lineNumber: 242,
+                                    lineNumber: 324,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1227,7 +1283,7 @@ function PositionCard({ position, userId, onSell }) {
                                             className: "w-full h-14 bg-[#121212] border border-[#272727] rounded-xl px-4 text-white font-bold text-lg outline-none transition-all focus:border-[#64c883] focus:ring-1 focus:ring-[#64c883]/20"
                                         }, void 0, false, {
                                             fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                            lineNumber: 244,
+                                            lineNumber: 328,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1235,13 +1291,13 @@ function PositionCard({ position, userId, onSell }) {
                                             children: "$"
                                         }, void 0, false, {
                                             fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                            lineNumber: 250,
+                                            lineNumber: 334,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                    lineNumber: 243,
+                                    lineNumber: 327,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1252,13 +1308,13 @@ function PositionCard({ position, userId, onSell }) {
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                    lineNumber: 252,
+                                    lineNumber: 338,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/components/positions/PositionCard.tsx",
-                            lineNumber: 241,
+                            lineNumber: 323,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1271,30 +1327,31 @@ function PositionCard({ position, userId, onSell }) {
                                         children: "Ganancia/Pérdida (Est.)"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                        lineNumber: 264,
-                                        columnNumber: 16
+                                        lineNumber: 350,
+                                        columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                        className: `text-base font-extrabold ${parseFloat(askPrice || '0') - sellSharesNum / position.shares * position.amount >= 0 ? 'text-[#64c883]' : 'text-[#e16464]'}`,
+                                        className: `text-base font-extrabold ${parseFloat(askPrice || "0") - sellSharesNum / position.shares * position.amount >= 0 ? "text-[#64c883]" : "text-[#e16464]"}`,
                                         children: [
-                                            parseFloat(askPrice || '0') - sellSharesNum / position.shares * position.amount >= 0 ? '+' : '',
-                                            "$ ",
-                                            (parseFloat(askPrice || '0') - sellSharesNum / position.shares * position.amount).toFixed(2)
+                                            parseFloat(askPrice || "0") - sellSharesNum / position.shares * position.amount >= 0 ? "+" : "",
+                                            "$",
+                                            " ",
+                                            (parseFloat(askPrice || "0") - sellSharesNum / position.shares * position.amount).toFixed(2)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                        lineNumber: 265,
-                                        columnNumber: 16
+                                        lineNumber: 353,
+                                        columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                lineNumber: 258,
+                                lineNumber: 344,
                                 columnNumber: 13
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/src/components/positions/PositionCard.tsx",
-                            lineNumber: 257,
+                            lineNumber: 343,
                             columnNumber: 11
                         }, this),
                         error && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1302,8 +1359,8 @@ function PositionCard({ position, userId, onSell }) {
                             children: error
                         }, void 0, false, {
                             fileName: "[project]/src/components/positions/PositionCard.tsx",
-                            lineNumber: 272,
-                            columnNumber: 21
+                            lineNumber: 371,
+                            columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                             className: "flex gap-3 pt-2",
@@ -1314,34 +1371,34 @@ function PositionCard({ position, userId, onSell }) {
                                     children: "Cancelar"
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                    lineNumber: 275,
+                                    lineNumber: 377,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                                     onClick: handleSell,
                                     disabled: loading,
                                     className: "flex-1 h-16 rounded-2xl bg-[#64c883] text-[#0a0a0a] text-[11px] font-bold uppercase tracking-wider transition-all hover:scale-[1.02] shadow-xl shadow-[#64c883]/10",
-                                    children: loading ? 'Procesando...' : `Listar Venta`
+                                    children: loading ? "Procesando..." : `Listar Venta`
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/positions/PositionCard.tsx",
-                                    lineNumber: 281,
+                                    lineNumber: 383,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/components/positions/PositionCard.tsx",
-                            lineNumber: 274,
+                            lineNumber: 376,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/src/components/positions/PositionCard.tsx",
-                    lineNumber: 204,
+                    lineNumber: 270,
                     columnNumber: 9
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/src/components/positions/PositionCard.tsx",
-                lineNumber: 203,
+                lineNumber: 265,
                 columnNumber: 7
             }, this)
         ]

@@ -98,7 +98,7 @@ class LmsrService {
    * Cost = C(new) - C(old)
    */ getCostToBuy(qYes, qNo, b, side, deltaShares) {
         const before = this.costFunction(qYes, qNo, b);
-        const after = side === 'YES' ? this.costFunction(qYes + deltaShares, qNo, b) : this.costFunction(qYes, qNo + deltaShares, b);
+        const after = side === "YES" ? this.costFunction(qYes + deltaShares, qNo, b) : this.costFunction(qYes, qNo + deltaShares, b);
         return after - before;
     }
     /**
@@ -106,8 +106,7 @@ class LmsrService {
    * Uses binary search as the inverse of costFunction is not easily solvable analytically for delta
    */ getSharesToBuy(qYes, qNo, b, side, amount, tolerance = 1e-6) {
         let low = 0;
-        let high = amount * 10 // Heuristic upper bound, usually price < 1 so shares > amount
-        ;
+        let high = amount * 10; // Heuristic upper bound, usually price < 1 so shares > amount
         // Binary search for 100 iterations (sufficient precision)
         for(let i = 0; i < 100; i++){
             const mid = (low + high) / 2;
@@ -126,20 +125,19 @@ class LmsrService {
     /**
    * Calcula el monto máximo permitido para una transacción
    * dado un límite de price impact en porcentaje
-   */ getMaxAmountForPriceImpact(qYes, qNo, b, side, maxImpactPercent// ej: 5 = no mover más de 5%
-    ) {
+   */ getMaxAmountForPriceImpact(qYes, qNo, b, side, maxImpactPercent) {
         const { pYes, pNo } = this.getPrice(qYes, qNo, b);
-        const currentPrice = side === 'YES' ? pYes : pNo;
+        const currentPrice = side === "YES" ? pYes : pNo;
         const maxPrice = Math.min(currentPrice + maxImpactPercent / 100, 0.99);
         // Buscar binariamente cuántos shares llevan el precio hasta maxPrice
         let low = 0;
         let high = b * 20;
         for(let i = 0; i < 100; i++){
             const mid = (low + high) / 2;
-            const newQYes = side === 'YES' ? qYes + mid : qYes;
-            const newQNo = side === 'NO' ? qNo + mid : qNo;
+            const newQYes = side === "YES" ? qYes + mid : qYes;
+            const newQNo = side === "NO" ? qNo + mid : qNo;
             const { pYes: pAfter, pNo: pNoAfter } = this.getPrice(newQYes, newQNo, b);
-            const priceAfter = side === 'YES' ? pAfter : pNoAfter;
+            const priceAfter = side === "YES" ? pAfter : pNoAfter;
             if (priceAfter < maxPrice) low = mid;
             else high = mid;
         }
@@ -150,8 +148,8 @@ class LmsrService {
    * Valida una transacción contra todos los límites configurados.
    * Devuelve el monto máximo permitido y la razón si fue limitado.
    */ validateBetAmount(amount, qYes, qNo, b, side, maxBetAmount, maxPriceImpact) {
-        // 1. CAP fijo
-        if (amount > maxBetAmount) {
+        // 1. CAP fijo (Add 1 cent tolerance for float precision)
+        if (maxBetAmount && amount > maxBetAmount + 0.01) {
             return {
                 allowed: false,
                 maxAllowed: maxBetAmount,
@@ -161,10 +159,10 @@ class LmsrService {
         // 2. CAP dinámico por price impact (si está configurado)
         if (maxPriceImpact) {
             const maxByImpact = this.getMaxAmountForPriceImpact(qYes, qNo, b, side, maxPriceImpact);
-            if (amount > maxByImpact) {
+            if (amount > maxByImpact + 0.01) {
                 return {
                     allowed: false,
-                    maxAllowed: Math.min(maxBetAmount, maxByImpact),
+                    maxAllowed: maxBetAmount ? Math.min(maxBetAmount, maxByImpact) : maxByImpact,
                     reason: `Esta compra movería el precio más del ${maxPriceImpact}% permitido`
                 };
             }
@@ -205,7 +203,9 @@ class LmsrService {
 
 __turbopack_context__.s([
     "GET",
-    ()=>GET
+    ()=>GET,
+    "dynamic",
+    ()=>dynamic
 ]);
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/server.js [app-route] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$prisma$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/lib/prisma.ts [app-route] (ecmascript)");
@@ -213,6 +213,7 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$lmsr$2e$s
 ;
 ;
 ;
+const dynamic = "force-dynamic";
 async function GET(request, { params }) {
     const { id } = await params;
     try {
@@ -231,19 +232,19 @@ async function GET(request, { params }) {
                         }
                     },
                     orderBy: {
-                        createdAt: 'desc'
+                        createdAt: "desc"
                     }
                 },
                 lmsrSnapshots: {
                     orderBy: {
-                        createdAt: 'asc'
-                    } // Oldest first for chart
+                        createdAt: "asc"
+                    }
                 }
             }
         });
         if (!market) {
             return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
-                error: 'Market not found'
+                error: "Market not found"
             }, {
                 status: 404
             });
@@ -271,6 +272,13 @@ async function GET(request, { params }) {
         // If I buy YES at 0.60, payout is $1. So multiplier is 1 / 0.60 = 1.66x
         const payoutYes = prices.pYes > 0 ? 1 / prices.pYes : 0;
         const payoutNo = prices.pNo > 0 ? 1 / prices.pNo : 0;
+        // Commission Calculation
+        const platformFeeRate = market.platformFee ? Number(market.platformFee) : 0.1;
+        const platformCommission = market.positions.reduce((acc, p)=>{
+            // Calculate fee based on the currently set platform fee rate
+            const fee = p.amount.toNumber() * platformFeeRate;
+            return acc + fee;
+        }, 0);
         const stats = {
             // Basic Info
             id: market.id,
@@ -286,12 +294,13 @@ async function GET(request, { params }) {
             qNo: market.qNo,
             seedCost: market.seedCost,
             currentPrices: prices,
+            platformFee: market.platformFee,
             // Lists
             purchases,
             priceHistory,
             // Simulation
             simulation: {
-                platformCommission: 0,
+                platformCommission,
                 ifYesWins: {
                     payoutPerDollar: payoutYes
                 },
@@ -302,9 +311,9 @@ async function GET(request, { params }) {
         };
         return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json(stats);
     } catch (error) {
-        console.error('Error fetching admin market stats:', error);
+        console.error("Error fetching admin market stats:", error);
         return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
-            error: 'Internal Server Error'
+            error: "Internal Server Error"
         }, {
             status: 500
         });
