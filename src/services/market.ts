@@ -65,7 +65,7 @@ export class MarketService {
       ...market,
       yesPool: market.yesPool.toNumber(),
       noPool: market.noPool.toNumber(),
-      maxPool: market.maxPool.toNumber(),
+      maxPool: market.maxPool?.toNumber() ?? null,
       odds, // Overwrite legacy odds with LMSR odds
       positions: (market as any).positions.map((p: any) => ({
         ...p,
