@@ -51,8 +51,10 @@ export async function GET(
         return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
       }
 
-      feeAmount = amount * platformFeeRate;
-      const netAmount = amount - feeAmount;
+      // Inclusive fee calculation: Total = Net * (1 + platformFeeRate)
+      // Net = Total / (1 + platformFeeRate)
+      const netAmount = amount / (1 + platformFeeRate);
+      feeAmount = amount - netAmount;
 
       // Calculate shares for amount
       shares = lmsrService.getSharesToBuy(
@@ -79,7 +81,8 @@ export async function GET(
         side,
         shares,
       );
-      totalCost = netCost / (1 - platformFeeRate);
+      // Inclusive fee: Total = Net * (1 + Rate)
+      totalCost = netCost * (1 + platformFeeRate);
       feeAmount = totalCost - netCost;
     } else {
       return NextResponse.json(
@@ -88,7 +91,7 @@ export async function GET(
       );
     }
 
-    const avgPrice = shares > 0 ? totalCost / shares : 0;
+    const avgPrice = shares > 0 ? (totalCost - feeAmount) / shares : 0;
 
     // Validate bounds for the requested amount (explicit limits only)
     const maxBetAmount = market.maxBetAmount ?? null;
@@ -114,12 +117,12 @@ export async function GET(
       shares,
       totalCost,
       avgPrice,
+      feeAmount,
+      platformFeeRate,
       newProbabilities: {
         yes: newPrices.pYes,
         no: newPrices.pNo,
       },
-      feeAmount,
-      platformFeeRate,
       priceImpact: 0, // TODO: Calculate price impact %
       maxAllowedAmount: validation.maxAllowed,
       capReason: validation.reason || null,

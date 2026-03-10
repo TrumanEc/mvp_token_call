@@ -187,8 +187,8 @@ class LmsrService {
         return {
             qYes,
             qNo,
-            pYes: parseFloat((pYes * 100).toFixed(4)),
-            pNo: parseFloat((pNo * 100).toFixed(4)),
+            pYes,
+            pNo,
             costAccumulated: cost,
             maxLoss,
             liquidityRemaining: maxLoss - cost + maxLoss,
@@ -261,8 +261,10 @@ async function GET(request, { params }) {
                     status: 400
                 });
             }
-            feeAmount = amount * platformFeeRate;
-            const netAmount = amount - feeAmount;
+            // Inclusive fee calculation: Total = Net * (1 + platformFeeRate)
+            // Net = Total / (1 + platformFeeRate)
+            const netAmount = amount / (1 + platformFeeRate);
+            feeAmount = amount - netAmount;
             // Calculate shares for amount
             shares = lmsrService.getSharesToBuy(market.qYes, market.qNo, market.b, side, netAmount);
             totalCost = amount; // User pays the full amount
@@ -277,7 +279,8 @@ async function GET(request, { params }) {
             }
             // Calculate net cost to pool for these shares
             const netCost = lmsrService.getCostToBuy(market.qYes, market.qNo, market.b, side, shares);
-            totalCost = netCost / (1 - platformFeeRate);
+            // Inclusive fee: Total = Net * (1 + Rate)
+            totalCost = netCost * (1 + platformFeeRate);
             feeAmount = totalCost - netCost;
         } else {
             return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
@@ -286,7 +289,7 @@ async function GET(request, { params }) {
                 status: 400
             });
         }
-        const avgPrice = shares > 0 ? totalCost / shares : 0;
+        const avgPrice = shares > 0 ? (totalCost - feeAmount) / shares : 0;
         // Validate bounds for the requested amount (explicit limits only)
         const maxBetAmount = market.maxBetAmount ?? null;
         const maxPriceImpact = market.maxPriceImpact ?? null;
@@ -300,12 +303,12 @@ async function GET(request, { params }) {
             shares,
             totalCost,
             avgPrice,
+            feeAmount,
+            platformFeeRate,
             newProbabilities: {
                 yes: newPrices.pYes,
                 no: newPrices.pNo
             },
-            feeAmount,
-            platformFeeRate,
             priceImpact: 0,
             maxAllowedAmount: validation.maxAllowed,
             capReason: validation.reason || null,

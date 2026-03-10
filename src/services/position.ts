@@ -59,12 +59,13 @@ export class PositionService {
         market.b,
       );
 
-      // Apply platform fee from market config
       const platformFeeRate = market.platformFee
         ? Number(market.platformFee)
         : 0.1;
-      const feeAmount = amount.toNumber() * platformFeeRate;
-      const netAmount = amount.toNumber() - feeAmount;
+      // Inclusive fee calculation: Total = Net * (1 + platformFeeRate)
+      // Net = Total / (1 + platformFeeRate)
+      const netAmount = amount.toNumber() / (1 + platformFeeRate);
+      const feeAmount = amount.toNumber() - netAmount;
 
       // Calculate shares to buy
       const shares = lmsrService.getSharesToBuy(

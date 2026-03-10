@@ -34,8 +34,10 @@ export function LmsrCalculator() {
 
   if (amount > 0 && b > 0) {
     const feeRate = parseFloat(platformFeeRate) / 100 || 0;
-    const feeAmount = amount * feeRate;
-    const netAmount = amount - feeAmount;
+    // Inclusive fee: Total = Net * (1 + platformFeeRate)
+    // Net = Total / (1 + platformFeeRate)
+    const netAmount = Number(amount) / (1 + feeRate);
+    const feeAmount = Number(amount) - netAmount;
 
     let low = 0;
     let high = netAmount * 2; // Upper bound guess
@@ -102,7 +104,7 @@ export function LmsrCalculator() {
 
     simResult = {
       shares,
-      avgPrice: shares > 0 ? amount / shares : 0,
+      avgPrice: shares > 0 ? netAmount / shares : 0,
       newPrices,
       priceImpact,
       wouldExceedCap,
@@ -311,7 +313,7 @@ export function LmsrCalculator() {
               <div className="flex justify-between">
                 <span className="text-gray-400">Precio Promedio:</span>
                 <span className="text-white font-bold">
-                  ${simResult.avgPrice.toFixed(3)}
+                  ${simResult.avgPrice.toFixed(4)}
                 </span>
               </div>
               <div className="flex justify-between pt-2 border-t border-white/5 mt-2">

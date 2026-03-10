@@ -29,9 +29,9 @@ export function PredictionCard({
     newProbabilities: { yes: number; no: number };
     feeAmount?: number;
     platformFeeRate?: number;
-    maxAllowedAmount?: number;
-    capReason?: string | null;
-    wouldExceedCap?: boolean;
+    maxAllowedAmount: number;
+    capReason: string | null;
+    wouldExceedCap: boolean;
   } | null>(null);
 
   const yesOdds = market.odds.yesOdds;
@@ -78,11 +78,16 @@ export function PredictionCard({
   // Use quoted values or fallback to current market price for estimation
   const currentPrice =
     (side === "YES" ? market.odds.yesOdds : market.odds.noOdds) / 100;
-  const estimatedShares = quote ? quote.shares : amountNum / currentPrice;
+  const netAmount = amountNum - (quote?.feeAmount || 0);
+  const estimatedShares = quote
+    ? quote.shares
+    : netAmount > 0
+      ? netAmount / currentPrice
+      : 0;
   // In LMSR, return is $1 per share. So potential return value = shares.
   const potentialReturnValue = estimatedShares;
-  const potentialProfit = potentialReturnValue - amountNum;
-  const roi = amountNum > 0 ? (potentialProfit / amountNum) * 100 : 0;
+  const potentialProfit = potentialReturnValue - netAmount;
+  const roi = netAmount > 0 ? (potentialProfit / netAmount) * 100 : 0;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -229,7 +234,7 @@ export function PredictionCard({
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
           <div className="flex justify-between text-[11px] font-bold text-gray-500 uppercase tracking-wider px-1">
-            <span>Monto a invertir</span>
+            <span>MONTO A INVERTIR</span>
             <span>Saldo: ${userBalance.toFixed(2)}</span>
           </div>
           <div className="relative group">
@@ -249,14 +254,23 @@ export function PredictionCard({
         {amountNum > 0 && (
           <div className="space-y-2">
             {quote?.feeAmount !== undefined && quote.feeAmount > 0 && (
-              <div className="flex justify-between items-center px-4 py-3 bg-[#0d0d0d]/50 rounded-xl border border-white/5">
-                <span className="text-xs text-gray-400">
-                  Comisión WIN ({(quote.platformFeeRate! * 100).toFixed(0)}%)
-                </span>
-                <span className="text-sm font-bold text-[#e16464]">
-                  - ${quote.feeAmount.toFixed(2)}
-                </span>
-              </div>
+              <>
+                <div className="flex justify-between items-center px-4 py-3 bg-[#0d0d0d]/50 rounded-xl border border-white/5">
+                  <span className="text-xs text-gray-400">
+                    Comisión WIN (
+                    {((quote.platformFeeRate ?? 0.1) * 100).toFixed(0)}%)
+                  </span>
+                  <span className="text-sm font-bold text-[#e16464]">
+                    - ${quote.feeAmount.toFixed(2)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center px-4 py-3 bg-[#0d0d0d]/50 rounded-xl border border-white/5">
+                  <span className="text-xs text-gray-400">Inversión Neta</span>
+                  <span className="text-sm font-bold text-white">
+                    ${(amountNum - quote.feeAmount).toFixed(2)}
+                  </span>
+                </div>
+              </>
             )}
             <div className="flex justify-between items-center px-4 py-3 bg-[#0d0d0d]/50 rounded-xl border border-white/5">
               <span className="text-xs text-gray-400">Acciones Estimadas</span>
@@ -269,7 +283,7 @@ export function PredictionCard({
               <span className="text-sm font-bold text-white">
                 {quoteLoading
                   ? "..."
-                  : `$${(quote ? quote.avgPrice : currentPrice).toFixed(3)}`}
+                  : `$${(quote ? quote.avgPrice : currentPrice).toFixed(4)}`}
               </span>
             </div>
             {quote && (
@@ -277,11 +291,14 @@ export function PredictionCard({
                 <span className="text-xs text-gray-400">
                   Nuevo Precio del Mercado
                 </span>
-                <span className="text-sm font-bold text-white">
-                  {quoteLoading
-                    ? "..."
-                    : `$${(side === "YES" ? quote.newProbabilities.yes : quote.newProbabilities.no).toFixed(2)}`}
-                </span>
+                <div className="flex gap-3">
+                  <span className="text-sm font-bold text-[#64c883]">
+                    Y ${quote.newProbabilities.yes.toFixed(2)}
+                  </span>
+                  <span className="text-sm font-bold text-[#e16464]">
+                    N ${quote.newProbabilities.no.toFixed(2)}
+                  </span>
+                </div>
               </div>
             )}
             <div className="flex justify-between items-center px-4 py-4 bg-[#64c883]/5 rounded-xl border border-[#64c883]/10">

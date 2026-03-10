@@ -234,16 +234,56 @@ function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
                     Límite de mercado
                   </div>
                 </div>
-                {/* Max Payout (worst case) */}
+                {/* Max Bet Amount */}
                 <div className="bg-[#111] border border-white/5 rounded-xl p-3">
-                  <div className="text-[9px] font-bold text-yellow-500 uppercase tracking-wider">
-                    Max Payout
+                  <div className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">
+                    CAP Pago ($)
                   </div>
                   <div className="text-lg font-extrabold text-white mt-1">
-                    $ {Math.max(market.qYes || 0, market.qNo || 0).toFixed(2)}
+                    {market.maxBetAmount
+                      ? `$ ${market.maxBetAmount.toLocaleString()}`
+                      : "Ilimitado"}
                   </div>
                   <div className="text-[9px] text-gray-600 mt-0.5">
-                    Peor caso: max(qYes, qNo) × $1
+                    Límite por transacción
+                  </div>
+                </div>
+                {/* Max Price Impact */}
+                <div className="bg-[#111] border border-white/5 rounded-xl p-3">
+                  <div className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">
+                    CAP Impacto (%)
+                  </div>
+                  <div className="text-lg font-extrabold text-white mt-1">
+                    {market.maxPriceImpact
+                      ? `${market.maxPriceImpact}%`
+                      : "Ilimitado"}
+                  </div>
+                  <div className="text-[9px] text-gray-600 mt-0.5">
+                    Impacto por transacción
+                  </div>
+                </div>
+                {/* Max Payout (YES Outcome) */}
+                <div className="bg-[#111] border border-white/5 rounded-xl p-3">
+                  <div className="text-[9px] font-bold text-yellow-500 uppercase tracking-wider">
+                    Max Payout (YES Outcome)
+                  </div>
+                  <div className="text-lg font-extrabold text-white mt-1">
+                    $ {(market.qYes || 0).toFixed(2)}
+                  </div>
+                  <div className="text-[9px] text-gray-600 mt-0.5">
+                    Payout si el settlement es YES
+                  </div>
+                </div>
+                {/* Max Payout (NO Outcome) */}
+                <div className="bg-[#111] border border-white/5 rounded-xl p-3">
+                  <div className="text-[9px] font-bold text-yellow-500 uppercase tracking-wider">
+                    Max Payout (NO Outcome)
+                  </div>
+                  <div className="text-lg font-extrabold text-white mt-1">
+                    $ {(market.qNo || 0).toFixed(2)}
+                  </div>
+                  <div className="text-[9px] text-gray-600 mt-0.5">
+                    Payout si el settlement es NO
                   </div>
                 </div>
                 {/* Collected Fees */}
@@ -259,18 +299,13 @@ function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
                     volumen
                   </div>
                 </div>
-                {/* Platform PnL Estimate */}
+                {/* PnL YES Outcome */}
                 <div className="bg-[#111] border border-white/5 rounded-xl p-3">
                   <div className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">
-                    PnL Estimado
+                    PnL WIN (YES Outcome)
                   </div>
                   {(() => {
-                    const collected =
-                      totalVolume * (1 - (market.platformFee || 0.1));
-                    const maxPayout = Math.max(
-                      market.qYes || 0,
-                      market.qNo || 0,
-                    );
+                    const maxPayout = market.qYes || 0;
                     const pnl = totalVolume - maxPayout;
                     return (
                       <>
@@ -280,7 +315,29 @@ function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
                           {pnl >= 0 ? "+" : ""}${pnl.toFixed(2)}
                         </div>
                         <div className="text-[9px] text-gray-600 mt-0.5">
-                          Recaudado − peor payout
+                          PnL si el settlement es YES
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+                {/* PnL NO Outcome */}
+                <div className="bg-[#111] border border-white/5 rounded-xl p-3">
+                  <div className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">
+                    PnL WIN (NO Outcome)
+                  </div>
+                  {(() => {
+                    const maxPayout = market.qNo || 0;
+                    const pnl = totalVolume - maxPayout;
+                    return (
+                      <>
+                        <div
+                          className={`text-lg font-extrabold mt-1 ${pnl >= 0 ? "text-[#64c883]" : "text-[#e16464]"}`}
+                        >
+                          {pnl >= 0 ? "+" : ""}${pnl.toFixed(2)}
+                        </div>
+                        <div className="text-[9px] text-gray-600 mt-0.5">
+                          PnL si el settlement es NO
                         </div>
                       </>
                     );

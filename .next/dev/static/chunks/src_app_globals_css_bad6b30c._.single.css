@@ -570,10 +570,6 @@
     z-index: 50;
   }
 
-  .col-span-1 {
-    grid-column: span 1 / span 1;
-  }
-
   .mx-auto {
     margin-inline: auto;
   }
@@ -1456,16 +1452,6 @@
   @supports (color: color-mix(in lab, red, red)) {
     .bg-white\/10 {
       background-color: color-mix(in oklab, var(--color-white) 10%, transparent);
-    }
-  }
-
-  .bg-white\/20 {
-    background-color: #fff3;
-  }
-
-  @supports (color: color-mix(in lab, red, red)) {
-    .bg-white\/20 {
-      background-color: color-mix(in oklab, var(--color-white) 20%, transparent);
     }
   }
 
@@ -2529,12 +2515,6 @@
   }
 
   @media (min-width: 48rem) {
-    .md\:col-span-3 {
-      grid-column: span 3 / span 3;
-    }
-  }
-
-  @media (min-width: 48rem) {
     .md\:block {
       display: block;
     }
@@ -2599,12 +2579,6 @@
   @media (min-width: 48rem) {
     .md\:text-\[40px\] {
       font-size: 40px;
-    }
-  }
-
-  @media (min-width: 64rem) {
-    .lg\:col-span-1 {
-      grid-column: span 1 / span 1;
     }
   }
 

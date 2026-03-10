@@ -272,7 +272,7 @@ class MarketService {
             ...market,
             yesPool: market.yesPool.toNumber(),
             noPool: market.noPool.toNumber(),
-            maxPool: market.maxPool.toNumber(),
+            maxPool: market.maxPool?.toNumber() ?? null,
             odds,
             positions: market.positions.map((p)=>({
                     ...p,
