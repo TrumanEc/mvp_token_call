@@ -15,7 +15,9 @@ function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { user, loading, refreshBalance } = useUser();
   const [market, setMarket] = useState<any>(null);
   const [loadingMarket, setLoadingMarket] = useState(true);
-  const [sellingPositionId, setSellingPositionId] = useState<string | null>(null);
+  const [sellingPositionId, setSellingPositionId] = useState<string | null>(
+    null,
+  );
 
   const fetchMarket = () => {
     fetch(`/api/markets/${id}`)
@@ -48,7 +50,7 @@ function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
     );
   }
 
-  if (!market) {
+  if (!market || market.error) {
     return (
       <Shell>
         <div className="text-center py-12 text-gray-500">
@@ -349,117 +351,122 @@ function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
               </div>
             </details>
 
-            {/* Active Positions */}
-            {market.positions.length > 0 && (
+            {/* Active Positions - other users only (own positions shown in right column) */}
+            {market.positions.filter((p: any) => p.currentOwner.id !== user.id)
+              .length > 0 && (
               <div className="space-y-6 pt-8 border-t border-white/5">
                 <h2 className="text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400">
-                  Posiciones Activas ({market.positions.length})
+                  Posiciones Activas (
+                  {
+                    market.positions.filter(
+                      (p: any) => p.currentOwner.id !== user.id,
+                    ).length
+                  }
+                  )
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {market.positions.map((pos: any) => (
-                    <div key={pos.id} className={`bg-[#121212] border border-white/5 rounded-2xl p-4 flex flex-col gap-4 group transition-all ${pos.shares === 0 ? "opacity-50 grayscale" : "hover:border-white/10"}`}>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <div
-                            className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs ${
-                              pos.side === "YES"
-                                ? "bg-[#64c883]/10 text-[#64c883]"
-                                : "bg-[#e16464]/10 text-[#e16464]"
-                            }`}
-                          >
-                            {pos.side}
-                          </div>
-                          <div>
-                            <div className="text-sm font-bold text-white group-hover:text-[#64c883] transition-colors flex items-center gap-2">
-                              {pos.currentOwner.username
-                                ? `@${pos.currentOwner.username}`
-                                : pos.currentOwner.email?.split("@")[0] ||
-                                  "Usuario"}
-                              {pos.shares === 0 && (
-                                <span className="text-[8px] bg-gray-500/20 text-gray-400 px-1.5 py-0.5 rounded uppercase tracking-wider">
-                                  Vendida
-                                </span>
-                              )}
+                  {market.positions
+                    .filter((p: any) => p.currentOwner.id !== user.id)
+                    .map((pos: any) => (
+                      <div
+                        key={pos.id}
+                        className={`bg-[#121212] border border-white/5 rounded-2xl p-4 flex flex-col gap-4 group transition-all ${pos.shares === 0 ? "opacity-50 grayscale" : "hover:border-white/10"}`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <div
+                              className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs ${
+                                pos.side === "YES"
+                                  ? "bg-[#64c883]/10 text-[#64c883]"
+                                  : "bg-[#e16464]/10 text-[#e16464]"
+                              }`}
+                            >
+                              {pos.side}
                             </div>
-                            <div className="flex items-center gap-2 mt-0.5">
-                              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                                {new Date(pos.createdAt).toLocaleDateString()}
+                            <div>
+                              <div className="text-sm font-bold text-white group-hover:text-[#64c883] transition-colors flex items-center gap-2">
+                                {pos.currentOwner.username
+                                  ? `@${pos.currentOwner.username}`
+                                  : pos.currentOwner.email?.split("@")[0] ||
+                                    "Usuario"}
+                                {pos.shares === 0 && (
+                                  <span className="text-[8px] bg-gray-500/20 text-gray-400 px-1.5 py-0.5 rounded uppercase tracking-wider">
+                                    Vendida
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                                  {new Date(pos.createdAt).toLocaleDateString()}
+                                </span>
+                                {pos.isForSale && (
+                                  <span className="bg-blue-500/20 text-blue-400 text-[8px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
+                                    En Venta
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-right flex flex-col items-end">
+                            <div
+                              className={`text-base font-bold flex items-baseline justify-end gap-1 ${pos.shares === 0 ? "text-gray-500 line-through" : "text-white"}`}
+                            >
+                              <span>
+                                {pos.shares > 0
+                                  ? pos.shares.toFixed(2)
+                                  : "0.00"}
                               </span>
-                              {pos.isForSale && (
-                                <span className="bg-blue-500/20 text-blue-400 text-[8px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
-                                  En Venta
-                                </span>
-                              )}
+                              <span className="text-[10px] text-gray-400 font-normal uppercase ml-1">
+                                {pos.shares === 0 ? "(Sold)" : "sh"}
+                              </span>
                             </div>
-                          </div>
-                        </div>
-                        <div className="text-right flex flex-col items-end">
-                          <div className={`text-base font-bold flex items-baseline justify-end gap-1 ${pos.shares === 0 ? "text-gray-500 line-through" : "text-white"}`}>
-                            <span>{pos.shares > 0 ? pos.shares.toFixed(2) : "0.00"}</span>
-                            <span className="text-[10px] text-gray-400 font-normal uppercase line-through-none ml-1">
-                              {pos.shares === 0 ? "(Sold)" : "sh"}
-                            </span>
-                          </div>
-                          <div className="text-[11px] font-bold text-[#64c883] mt-0.5">
-                            ${pos.amount ? pos.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "0.00"} <span className="text-gray-500 font-normal text-[9px] ml-0.5">inv. original</span>
-                          </div>
-                          <div className="text-[9px] font-bold text-gray-400 uppercase mt-1">
-                            Avg. original ${(pos.shares > 0 && pos.amount > 0 ? (pos.amount / pos.shares) : (pos.purchasePrice || 0)).toFixed(2)} c/u
+                            <div className="text-[11px] font-bold text-[#64c883] mt-0.5">
+                              $
+                              {pos.amount
+                                ? pos.amount.toLocaleString(undefined, {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2,
+                                  })
+                                : "0.00"}{" "}
+                              <span className="text-gray-500 font-normal text-[9px] ml-0.5">
+                                inv. original
+                              </span>
+                            </div>
+                            <div className="text-[9px] font-bold text-gray-400 uppercase mt-1">
+                              Avg. original $
+                              {(pos.shares > 0 && pos.amount > 0
+                                ? pos.amount / pos.shares
+                                : pos.purchasePrice || 0
+                              ).toFixed(2)}{" "}
+                              c/u
+                            </div>
                           </div>
                         </div>
                       </div>
-
-                      {user && user.id === pos.currentOwner.id && !pos.isForSale && pos.shares > 0 && (
-                        <div>
-                          {sellingPositionId === pos.id ? (
-                            <SellPositionForm
-                              marketId={market.id}
-                              userId={user.id}
-                              positionId={pos.id}
-                              maxShares={pos.shares}
-                              side={pos.side}
-                              onSuccess={() => {
-                                setSellingPositionId(null);
-                                handleTransactionSuccess();
-                              }}
-                              onCancel={() => setSellingPositionId(null)}
-                            />
-                          ) : (
-                            <button
-                              onClick={() => setSellingPositionId(pos.id)}
-                              className="w-full mt-2 py-2 border border-white/10 rounded-lg text-[10px] font-bold uppercase text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
-                            >
-                              Vender Shares (Limit)
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                    ))}
                 </div>
               </div>
             )}
-            
+
             {/* Orderbook Depth Display */}
             <div className="pt-8 border-t border-white/5 space-y-6">
-               <h2 className="text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400">
-                  Profundidad del Mercado (Orderbook Limit)
-               </h2>
-               <OrderbookDisplay orders={market.orders || []} />
+              <h2 className="text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400">
+                Profundidad del Mercado (Orderbook Limit)
+              </h2>
+              <OrderbookDisplay orders={market.orders || []} />
             </div>
           </div>
 
-          {/* Right Column: Prediction Interaction (Yes/No Buttons + Form) */}
-          <div className="sticky top-24">
+          {/* Right Column: Prediction Interaction + My Positions */}
+          <div className="sticky top-24 space-y-6">
             <PredictionCard
               market={market}
               userId={user.id}
               userBalance={user.balance}
               onSuccess={handleTransactionSuccess}
             />
-
-            <div className="mt-8 space-y-4">
-              <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-wider text-gray-400 border-t border-white/5 pt-6">
+            <div className="space-y-4 pt-2 ">
+              <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-wider text-gray-400 border-t border-white/5 pt-4">
                 <span>Resolución</span>
                 <span className="text-gray-300">
                   {new Date(market.resolutionDate).toLocaleDateString()}
@@ -470,6 +477,146 @@ function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
                 <span className="text-gray-300">WIN</span>
               </div>
             </div>
+            {/* My positions in this market */}
+            <div className="border-t border-white/5" />
+
+            {market.positions.filter((p: any) => p.currentOwner.id === user.id)
+              .length > 0 && (
+              <div className="space-y-3">
+                <h2 className="text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400">
+                  Mis Posiciones
+                </h2>
+                <div className="space-y-3">
+                  {market.positions
+                    .filter((p: any) => p.currentOwner.id === user.id)
+                    .map((pos: any) => (
+                      <div
+                        key={pos.id}
+                        className={`bg-[#121212] border rounded-2xl p-4 flex flex-col gap-3 transition-all ${
+                          pos.shares === 0
+                            ? "opacity-40 grayscale border-white/5"
+                            : "border-white/10 hover:border-white/20"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div
+                              className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-[10px] ${
+                                pos.side === "YES"
+                                  ? "bg-[#64c883]/15 text-[#64c883]"
+                                  : "bg-[#e16464]/15 text-[#e16464]"
+                              }`}
+                            >
+                              {pos.side}
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                                  {new Date(pos.createdAt).toLocaleDateString()}
+                                </span>
+                                {pos.shares === 0 && (
+                                  <span className="text-[8px] bg-gray-500/20 text-gray-400 px-1.5 py-0.5 rounded uppercase tracking-wider">
+                                    Vendida
+                                  </span>
+                                )}
+                                {pos.isForSale && pos.shares > 0 && (
+                                  <span className="bg-blue-500/20 text-blue-400 text-[8px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
+                                    En Venta
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div
+                              className={`text-sm font-bold ${pos.shares === 0 ? "text-gray-500 line-through" : "text-white"}`}
+                            >
+                              {pos.shares > 0 ? pos.shares.toFixed(2) : "0.00"}
+                              <span className="text-[10px] text-gray-500 ml-1 font-normal">
+                                {pos.shares === 0 ? "(Sold)" : "sh"}
+                              </span>
+                            </div>
+                            <div className="text-[11px] text-[#64c883] font-bold">
+                              $
+                              {pos.amount
+                                ? pos.amount.toLocaleString(undefined, {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2,
+                                  })
+                                : "0.00"}
+                              <span className="text-gray-500 font-normal text-[9px] ml-1">
+                                inv.
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Stats row */}
+                        {pos.shares > 0 && (
+                          <div className="grid grid-cols-3 gap-2 pt-2 border-t border-white/5">
+                            <div className="text-center">
+                              <div className="text-[9px] text-gray-500 uppercase tracking-wider">
+                                Precio comp.
+                              </div>
+                              <div className="text-xs font-bold text-white mt-0.5">
+                                $
+                                {(pos.shares > 0 && pos.amount > 0
+                                  ? pos.amount / pos.shares
+                                  : pos.purchasePrice || 0
+                                ).toFixed(4)}
+                              </div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-[9px] text-gray-500 uppercase tracking-wider">
+                                Valor Mkt.
+                              </div>
+                              <div className="text-xs font-bold text-white mt-0.5">
+                                ${(pos.fairValue || 0).toFixed(2)}
+                              </div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-[9px] text-gray-500 uppercase tracking-wider">
+                                Retorno
+                              </div>
+                              <div
+                                className={`text-xs font-bold mt-0.5 ${pos.shares > 0 ? "text-[#64c883]" : "text-gray-500"}`}
+                              >
+                                ${pos.shares.toFixed(2)}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {!pos.isForSale && pos.shares > 0 && (
+                          <div>
+                            {sellingPositionId === pos.id ? (
+                              <SellPositionForm
+                                marketId={market.id}
+                                userId={user.id}
+                                positionId={pos.id}
+                                maxShares={pos.shares}
+                                side={pos.side}
+                                onSuccess={() => {
+                                  setSellingPositionId(null);
+                                  handleTransactionSuccess();
+                                }}
+                                onCancel={() => setSellingPositionId(null)}
+                              />
+                            ) : (
+                              <button
+                                onClick={() => setSellingPositionId(pos.id)}
+                                className="w-full py-1.5 border border-orange-500/40 rounded-lg text-[9px] font-bold uppercase text-orange-400 hover:text-white hover:bg-orange-500/20 hover:border-orange-500/60 transition-all"
+                              >
+                                Vender Shares (Limit)
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

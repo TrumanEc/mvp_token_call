@@ -71,7 +71,7 @@ export class LmsrService {
     tolerance: number = 1e-6,
   ): number {
     let low = 0;
-    let high = amount * 10; // Heuristic upper bound, usually price < 1 so shares > amount
+    let high = amount * 10000; // Heuristic upper bound, assuming lowest possible price is around 0.0001
 
     // Binary search for 100 iterations (sufficient precision)
     for (let i = 0; i < 100; i++) {
