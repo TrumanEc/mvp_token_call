@@ -38,6 +38,7 @@ export class MarketService {
       where: { id },
       include: {
         positions: {
+          where: { shares: { gt: 0 } },
           include: {
             currentOwner: { select: { id: true, username: true } },
           },
