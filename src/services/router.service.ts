@@ -81,7 +81,8 @@ export class RouterService {
         let bestAsk = askIndex < asks.length ? asks[askIndex] : null;
 
         // Caso A: El LMSR está por debajo o igual al precio del OrderBook (O no hay Asks)
-        if (!bestAsk || lmsrSpotPrice < bestAsk.pricePerShare) {
+        // Usamos una tolerancia de 0.0001 para evitar loops infinitos por precisión flotante
+        if (!bestAsk || lmsrSpotPrice < bestAsk.pricePerShare - 0.0001) {
           // Si el LMSR es más barato, averiguamos cuánto podemos bombearle de liquidez
           // antes de que su precio iguale el precio del orderbook (o si ya nos gastamos el balance restante).
           let safeBudgetToLMSR = remainingBudget;
@@ -297,8 +298,8 @@ export class RouterService {
             lmsrShares: lmsrSharesCollected,
             obShares: obSharesCollected,
             path: executionPath
-         }
+        }
       };
-    });
+    }, { maxWait: 15000, timeout: 30000 });
   }
 }
