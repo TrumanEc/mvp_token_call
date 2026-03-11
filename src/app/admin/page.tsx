@@ -18,7 +18,7 @@ function AdminPage() {
   const [creating, setCreating] = useState(false);
   const [resolving, setResolving] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    "markets" | "users" | "purchases" | "payments" | "simulator"
+    "markets" | "users" | "purchases" | "payments" | "simulator" | "router_logs"
   >("markets");
   const [users, setUsers] = useState<any[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
@@ -26,6 +26,8 @@ function AdminPage() {
   const [loadingPurchases, setLoadingPurchases] = useState(false);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loadingTransactions, setLoadingTransactions] = useState(false);
+  const [routerLogs, setRouterLogs] = useState<any[]>([]);
+  const [loadingRouterLogs, setLoadingRouterLogs] = useState(false);
   const [showCreateUserModal, setShowCreateUserModal] = useState(false);
   const [newUser, setNewUser] = useState({ username: "", email: "" });
   const [selectedMarketId, setSelectedMarketId] = useState<string>("");
@@ -101,6 +103,20 @@ function AdminPage() {
     }
   };
 
+  const fetchRouterLogs = async (marketId?: string) => {
+    setLoadingRouterLogs(true);
+    try {
+      const url = marketId
+        ? `/api/admin/router-logs?marketId=${marketId}`
+        : "/api/admin/router-logs";
+      const res = await fetch(url);
+      const data = await res.json();
+      setRouterLogs(data);
+    } finally {
+      setLoadingRouterLogs(false);
+    }
+  };
+
   const fetchUserDetails = async (userId: string) => {
     setLoadingDetails(true);
     try {
@@ -140,6 +156,7 @@ function AdminPage() {
   useEffect(() => {
     if (activeTab === "purchases") fetchPurchases(selectedMarketId);
     if (activeTab === "payments") fetchTransactions(selectedMarketId);
+    if (activeTab === "router_logs") fetchRouterLogs(selectedMarketId);
   }, [activeTab, selectedMarketId]);
 
   const handleCreate = async () => {
@@ -269,6 +286,7 @@ function AdminPage() {
               { id: "users", label: "Usuarios" },
               { id: "purchases", label: "Compras" },
               { id: "payments", label: "Pagos" },
+              { id: "router_logs", label: "Router" },
               { id: "simulator", label: "Simulador" },
             ].map((tab) => (
               <button
@@ -300,10 +318,12 @@ function AdminPage() {
                   ? "Historial de Compras"
                   : activeTab === "payments"
                     ? "Historial de Pagos"
-                    : "Simulador LMSR"}
+                    : activeTab === "router_logs"
+                      ? "Auditoría Híbrida (Best Buy Router)"
+                      : "Simulador LMSR"}
           </h2>
           <div className="flex items-center gap-4">
-            {(activeTab === "purchases" || activeTab === "payments") && (
+            {(activeTab === "purchases" || activeTab === "payments" || activeTab === "router_logs") && (
               <select
                 className="bg-[#0a0a0a] text-white text-[10px] font-bold uppercase tracking-[0.1em] px-4 py-2 border border-white/5 rounded-xl outline-none focus:border-[#64c883] transition-all"
                 value={selectedMarketId}
@@ -492,8 +512,8 @@ function AdminPage() {
               </div>
             ))}
 
-          {/* Table-based views for Purchases & Payments updated to Dark Theme */}
-          {(activeTab === "purchases" || activeTab === "payments") && (
+          {/* Table-based views for Purchases & Payments & RouterLogs updated to Dark Theme */}
+          {(activeTab === "purchases" || activeTab === "payments" || activeTab === "router_logs") && (
             <div className="bg-[#121212] border border-white/5 rounded-3xl overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
@@ -517,7 +537,7 @@ function AdminPage() {
                             Estado
                           </th>
                         </>
-                      ) : (
+                      ) : activeTab === "payments" ? (
                         <>
                           <th className="p-4 text-[9px] font-bold text-gray-400 uppercase tracking-[0.1em]">
                             Usuario
@@ -531,6 +551,14 @@ function AdminPage() {
                           <th className="p-4 text-[9px] font-bold text-gray-400 uppercase tracking-[0.1em]">
                             Fecha
                           </th>
+                        </>
+                      ) : (
+                        <>
+                          <th className="p-4 text-[9px] font-bold text-gray-400 uppercase tracking-[0.1em]">Side</th>
+                          <th className="p-4 text-[9px] font-bold text-gray-400 uppercase tracking-[0.1em]">Trader</th>
+                          <th className="p-4 text-[9px] font-bold text-gray-400 uppercase tracking-[0.1em]">Resultado</th>
+                          <th className="p-4 text-[9px] font-bold text-gray-400 uppercase tracking-[0.1em]">Routing Path</th>
+                          <th className="p-4 text-[9px] font-bold text-gray-400 uppercase tracking-[0.1em]">Fecha</th>
                         </>
                       )}
                     </tr>
@@ -566,7 +594,8 @@ function AdminPage() {
                             </td>
                           </tr>
                         ))
-                      : transactions.map((t) => (
+                      : activeTab === "payments"
+                      ? transactions.map((t) => (
                           <tr
                             key={t.id}
                             className="hover:bg-white/5 transition-colors"
@@ -586,11 +615,52 @@ function AdminPage() {
                               {new Date(t.createdAt).toLocaleDateString()}
                             </td>
                           </tr>
-                        ))}
+                        ))
+                      : routerLogs.map((log) => (
+                          <tr
+                            key={log.id}
+                            className="hover:bg-white/5 transition-colors group cursor-pointer"
+                            onClick={() => {
+                               // Can add expansion logic here later if wanted
+                            }}
+                          >
+                             <td className="p-4">
+                                <span className={`px-2 py-0.5 text-[9px] font-bold rounded-full uppercase tracking-wider ${log.side === "YES" ? "bg-[#64c883]/10 text-[#64c883]" : "bg-[#e16464]/10 text-[#e16464]"}`}>
+                                   {log.side}
+                                </span>
+                             </td>
+                             <td className="p-4 text-xs font-bold text-white/70">
+                                @{log.user?.username || 'Sistema'}
+                             </td>
+                             <td className="p-4 text-[10px] font-bold text-white">
+                                {log.executionSummary && (log.executionSummary as any).spent && (
+                                   <div className="flex flex-col gap-1">
+                                      <span className="text-gray-400">Presupuesto/Gasto: <span className="text-white">${(log.executionSummary as any).spent?.toFixed(2) || 0}</span></span>
+                                      <span className="text-gray-400">Shares Obt: <span className="text-white">${(log.executionSummary as any).sharesCollected?.toFixed(2) || 0}</span></span>
+                                   </div>
+                                )}
+                             </td>
+                             <td className="p-4">
+                               {log.executionSummary && (log.executionSummary as any).path && (
+                                  <div className="flex flex-col gap-1 max-h-24 overflow-y-auto w-72 pr-2">
+                                     {((log.executionSummary as any).path as any[]).map((step, idx) => (
+                                        <div key={idx} className="flex justify-between items-center text-[9px] font-bold text-gray-500 bg-[#0a0a0a] border border-white/5 p-1 rounded">
+                                            <span>${(step as any).invertido?.toFixed(2)} {"->"} {(step as any).shares?.toFixed(1)}sh (Prom. ${(step as any).precioPromedio?.toFixed(2)})</span>
+                                        </div>
+                                     ))}
+                                  </div>
+                               )}
+                             </td>
+                             <td className="p-4 text-[10px] font-bold text-gray-400">
+                               {new Date(log.timestamp).toLocaleString()}
+                             </td>
+                          </tr>
+                      ))}
                   </tbody>
                 </table>
                 {((activeTab === "purchases" && purchases.length === 0) ||
-                  (activeTab === "payments" && transactions.length === 0)) && (
+                  (activeTab === "payments" && transactions.length === 0) ||
+                  (activeTab === "router_logs" && routerLogs.length === 0)) && (
                   <div className="text-center py-20 text-gray-400 text-[10px] font-bold uppercase tracking-wider">
                     No hay datos registrados
                   </div>
