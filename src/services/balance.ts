@@ -1,7 +1,7 @@
 import { Decimal } from '@prisma/client/runtime/library'
 import { PrismaClient } from '@prisma/client'
 
-export type TransactionType = 'BET_PLACED' | 'BET_REFUNDED' | 'PAYOUT_RECEIVED' | 'POSITION_PURCHASED' | 'POSITION_SOLD' | 'DEPOSIT' | 'WITHDRAWAL'
+export type TransactionType = 'BET_PLACED' | 'BET_REFUNDED' | 'PAYOUT_RECEIVED' | 'POSITION_PURCHASED' | 'POSITION_SOLD' | 'DEPOSIT' | 'WITHDRAWAL' | 'LIMIT_ORDER_PLACED' | 'LIMIT_ORDER_CANCELLED'
 
 type TxClient = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>
 

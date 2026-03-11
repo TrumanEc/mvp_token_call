@@ -239,7 +239,31 @@ export class PositionService {
       orderBy: { createdAt: "desc" },
     });
 
+    // Fetch open/partial sell orders the user has in the orderbook
+    const openSellOrders = await prisma.order.findMany({
+      where: {
+        userId,
+        type: "SELL",
+        status: { in: ["OPEN", "PARTIAL"] },
+        ...(marketId && { marketId }),
+      },
+    });
+
+    // Index by marketId + side for quick lookup
+    const obMap: Record<string, { shares: number; revenue: number; avgPrice: number }> = {};
+    for (const o of openSellOrders) {
+      const k = `${o.marketId}__${o.side}`;
+      if (!obMap[k]) obMap[k] = { shares: 0, revenue: 0, avgPrice: 0 };
+      obMap[k].shares += o.remainingShares;
+      obMap[k].revenue += o.remainingShares * o.pricePerShare;
+    }
+    for (const k of Object.keys(obMap)) {
+      const e = obMap[k];
+      e.avgPrice = e.shares > 0 ? e.revenue / e.shares : 0;
+    }
+
     const groups: Record<string, any> = {};
+
 
     for (const p of rawPositions) {
       // Group active positions by marketId only. Resolved remain separate.
@@ -357,6 +381,9 @@ export class PositionService {
       const ifYesWinsPnL = ifYesWinsPayout - totalInvested;
       const ifNoWinsPnL = ifNoWinsPayout - totalInvested;
 
+      const obYes = obMap[`${g.marketId}__YES`] || { shares: 0, revenue: 0, avgPrice: 0 };
+      const obNo  = obMap[`${g.marketId}__NO`]  || { shares: 0, revenue: 0, avgPrice: 0 };
+
       return {
         ...g,
         yes: {
@@ -369,6 +396,11 @@ export class PositionService {
           pnl: yesPnL,
           roi: yesROI,
           prob: probYes.toNumber(),
+          openOrders: {
+            pendingShares: obYes.shares,
+            expectedRevenue: obYes.revenue,
+            avgListPrice: obYes.avgPrice,
+          },
         },
         no: {
           ...g.no,
@@ -380,7 +412,13 @@ export class PositionService {
           pnl: noPnL,
           roi: noROI,
           prob: probNo.toNumber(),
+          openOrders: {
+            pendingShares: obNo.shares,
+            expectedRevenue: obNo.revenue,
+            avgListPrice: obNo.avgPrice,
+          },
         },
+
         amount: totalInvested,
         fairValue: totalFairValue,
         totalPnL,

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Modal } from "@/components/ui/Modal";
 
 interface PositionCardProps {
@@ -24,7 +25,11 @@ export function PositionCard({ position, userId, onSell }: PositionCardProps) {
   // Active positions are consolidated.
   const isActive = position.status === "ACTIVE";
 
-  const renderRow = (label: string, data: any, colorClass: string) => (
+  const ob = { yes: yes.openOrders || { pendingShares: 0, expectedRevenue: 0, avgListPrice: 0 }, no: no.openOrders || { pendingShares: 0, expectedRevenue: 0, avgListPrice: 0 } };
+  const totalObRevenue = ob.yes.expectedRevenue + ob.no.expectedRevenue;
+  const totalObShares = ob.yes.pendingShares + ob.no.pendingShares;
+
+  const renderRow = (label: string, data: any, colorClass: string, obData: { pendingShares: number; expectedRevenue: number; avgListPrice: number }) => (
     <tr className="border-b border-white/5 last:border-0 h-14 group/row">
       <td
         className={`pl-4 text-[10px] font-bold uppercase tracking-wider ${colorClass}`}
@@ -66,6 +71,21 @@ export function PositionCard({ position, userId, onSell }: PositionCardProps) {
       </td>
       <td className="text-center text-xs font-bold text-white/40">
         {data.shares > 0 ? `$${data.avgPrice.toFixed(4)}` : "-"}
+      </td>
+      {/* OB Pending */}
+      <td className="text-center">
+        {obData.pendingShares > 0 ? (
+          <div className="flex flex-col items-center">
+            <span className="text-xs font-bold text-blue-400">
+              {obData.pendingShares.toLocaleString(undefined, { maximumFractionDigits: 2 })} sh
+            </span>
+            <span className="text-[9px] text-blue-300/60">
+              +${obData.expectedRevenue.toFixed(2)}
+            </span>
+          </div>
+        ) : (
+          <span className="text-white/20 text-xs">-</span>
+        )}
       </td>
       <td className={`pr-4 text-right text-xs font-extrabold ${colorClass}`}>
         {(data.prob * 100).toFixed(1)}%
@@ -137,12 +157,15 @@ export function PositionCard({ position, userId, onSell }: PositionCardProps) {
                 <th className="text-center">P&L</th>
                 <th className="text-center">ROI</th>
                 <th className="text-center">BREAKEVEN</th>
+                <th className="text-center">
+                  <span className="text-blue-400">EN OB</span>
+                </th>
                 <th className="pr-4 text-right">PROB.</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5 bg-[#0a0a0a]/40 rounded-2xl overflow-hidden border border-white/5">
-              {renderRow("YES", yes, "text-[#64c883]")}
-              {renderRow("NO", no, "text-[#e16464]")}
+              {renderRow("YES", yes, "text-[#64c883]", ob.yes)}
+              {renderRow("NO", no, "text-[#e16464]", ob.no)}
 
               {/* TOTAL ROW */}
               <tr className="h-14 bg-white/[0.03]">
@@ -181,6 +204,17 @@ export function PositionCard({ position, userId, onSell }: PositionCardProps) {
                   {position.totalROI.toFixed(1)}%
                 </td>
                 <td></td>
+                {/* OB total pending */}
+                <td className="text-center">
+                  {totalObShares > 0 ? (
+                    <div className="flex flex-col items-center">
+                      <span className="text-xs font-bold text-blue-400">
+                        {totalObShares.toLocaleString(undefined, { maximumFractionDigits: 2 })} sh
+                      </span>
+                      <span className="text-[9px] text-blue-300/60">+${totalObRevenue.toFixed(2)}</span>
+                    </div>
+                  ) : null}
+                </td>
                 <td></td>
               </tr>
             </tbody>
@@ -188,7 +222,53 @@ export function PositionCard({ position, userId, onSell }: PositionCardProps) {
         </div>
       </div>
 
+      {/* OB Pending Banner */}
+      {totalObShares > 0 && (
+        <div className="mx-6 md:mx-8 mb-4 flex items-center justify-between gap-4 rounded-xl bg-blue-500/10 border border-blue-500/20 px-4 py-3">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+            <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">
+              Órdenes Pendientes en Order Book
+            </span>
+            <span className="text-[10px] text-gray-500">
+              — si alguien compra tus shares recibirás:
+            </span>
+          </div>
+          <div className="flex items-center gap-4">
+            {ob.yes.pendingShares > 0 && (
+              <div className="text-right">
+                <span className="text-[9px] text-gray-500 uppercase">YES</span>
+                <div className="text-sm font-extrabold text-blue-300">
+                  +${ob.yes.expectedRevenue.toFixed(2)}
+                </div>
+                <div className="text-[9px] text-gray-500">
+                  {ob.yes.pendingShares.toFixed(2)} sh @ ${ob.yes.avgListPrice.toFixed(4)}
+                </div>
+              </div>
+            )}
+            {ob.no.pendingShares > 0 && (
+              <div className="text-right">
+                <span className="text-[9px] text-gray-500 uppercase">NO</span>
+                <div className="text-sm font-extrabold text-blue-300">
+                  +${ob.no.expectedRevenue.toFixed(2)}
+                </div>
+                <div className="text-[9px] text-gray-500">
+                  {ob.no.pendingShares.toFixed(2)} sh @ ${ob.no.avgListPrice.toFixed(4)}
+                </div>
+              </div>
+            )}
+            <div className="text-right border-l border-blue-500/20 pl-4">
+              <span className="text-[9px] text-gray-500 uppercase">Total</span>
+              <div className="text-sm font-extrabold text-blue-300">
+                +${totalObRevenue.toFixed(2)}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Footer Scenarios & Actions */}
+
       <div className="px-8 md:px-10 py-6 flex flex-wrap gap-4 items-center justify-between border-t border-white/5 bg-white/[0.01]">
         <div className="flex flex-col md:flex-row gap-4 md:gap-8">
           <div className="flex items-center gap-3">
@@ -231,13 +311,12 @@ export function PositionCard({ position, userId, onSell }: PositionCardProps) {
           </div>
         </div>
 
-        <button
-          onClick={() => {}}
-          className="px-8 py-3 rounded-xl bg-white/5 border border-white/10 text-[10px] font-extrabold text-white/40 uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all disabled:opacity-50"
-          disabled
+        <Link
+          href={`/markets/${position.marketId}?tab=sell`}
+          className="px-8 py-3 rounded-xl bg-orange-500/10 border border-orange-500/30 text-[10px] font-extrabold text-orange-400 uppercase tracking-widest hover:bg-orange-500/20 hover:border-orange-500/50 hover:text-orange-300 transition-all"
         >
           VENDER
-        </button>
+        </Link>
       </div>
     </div>
   );

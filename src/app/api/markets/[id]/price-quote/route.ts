@@ -38,14 +38,17 @@ export async function GET(
 
     let shares = 0;
     let totalCost = 0;
+    let lmsrShares = 0;
+    let obShares = 0;
 
     const platformFeeRate = market.platformFee
       ? Number(market.platformFee)
       : 0.1;
     let feeAmount = 0;
+    let newQYes = market.qYes;
+    let newQNo = market.qNo;
+    let newPrices = { pYes: 0, pNo: 0 };
 
-    // Scenario 1: User wants to spend X amount (e.g. $10)
-    // Inclusive fee: If user spends 10, totalCost is 10, fee is 1, net is 9.
     if (amountStr && !sharesStr) {
       totalCost = parseFloat(amountStr);
       if (isNaN(totalCost) || totalCost <= 0) {
@@ -55,23 +58,23 @@ export async function GET(
       feeAmount = totalCost * platformFeeRate;
       const netAmount = totalCost - feeAmount;
 
-      // Calculate shares for net amount
-      shares = lmsrService.getSharesToBuy(
-        market.qYes,
-        market.qNo,
-        market.b,
+      const { RouterService } = await import("@/services/router.service");
+      const sim = await RouterService.simulateMarketBuy({
+        marketId: id,
         side,
-        netAmount,
-      );
-    }
-    // Scenario 2: User wants to buy Y shares (e.g. 10 shares)
-    else if (sharesStr) {
+        budget: netAmount,
+      });
+
+      shares = sim.sharesCollected;
+      lmsrShares = sim.lmsrShares;
+      obShares = sim.obShares;
+      newPrices = { pYes: sim.newProbabilities.yes, pNo: sim.newProbabilities.no };
+    } else if (sharesStr) {
       shares = parseFloat(sharesStr);
       if (isNaN(shares) || shares <= 0) {
         return NextResponse.json({ error: "Invalid shares" }, { status: 400 });
       }
 
-      // Cost to buy these shares in the pool (NET COST)
       const netCost = lmsrService.getCostToBuy(
         market.qYes,
         market.qNo,
@@ -79,10 +82,14 @@ export async function GET(
         side,
         shares,
       );
-      // If WIN takes 10% of total, then netCost = 90% of total.
-      // E.g. 9 = 0.9 * Total => Total = 9 / 0.9 = 10.
       totalCost = netCost / (1 - platformFeeRate);
       feeAmount = totalCost - netCost;
+      
+      newQYes = side === "YES" ? market.qYes + shares : market.qYes;
+      newQNo = side === "NO" ? market.qNo + shares : market.qNo;
+      newPrices = lmsrService.getPrice(newQYes, newQNo, market.b);
+      lmsrShares = shares; 
+      obShares = 0;
     } else {
       return NextResponse.json(
         { error: "Must provide either amount or shares" },
@@ -90,17 +97,13 @@ export async function GET(
       );
     }
 
-    // avgPrice is based on Net Amount (the price per share in the pool)
     const avgPrice = shares > 0 ? (totalCost - feeAmount) / shares : 0;
-
-    // Validate bounds for the requested net investment
     const maxBetAmount = market.maxBetAmount ?? null;
     const maxPriceImpact = market.maxPriceImpact ?? null;
-
     const netInvestment = totalCost - feeAmount;
 
     const validation = lmsrService.validateBetAmount(
-      netInvestment, // Validate against the net investment amount
+      netInvestment, 
       market.qYes,
       market.qNo,
       market.b,
@@ -109,14 +112,11 @@ export async function GET(
       maxPriceImpact,
     );
 
-    // Calculate new probabilities (post-trade state simulation)
-    const newQYes = side === "YES" ? market.qYes + shares : market.qYes;
-    const newQNo = side === "NO" ? market.qNo + shares : market.qNo;
-    const newPrices = lmsrService.getPrice(newQYes, newQNo, market.b);
-
     return NextResponse.json({
       side,
       shares,
+      lmsrShares,
+      obShares,
       totalCost,
       avgPrice,
       feeAmount,

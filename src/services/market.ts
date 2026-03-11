@@ -47,6 +47,11 @@ export class MarketService {
           orderBy: { createdAt: "desc" },
           take: 100,
         },
+        orders: {
+          where: { status: { in: ["OPEN", "PARTIAL"] } },
+          orderBy: { pricePerShare: "asc" },
+          include: { user: { select: { id: true, username: true } } }
+        }
       },
     });
 
@@ -60,12 +65,12 @@ export class MarketService {
       yesOdds: prices.pYes * 100,
       noOdds: prices.pNo * 100,
     };
-
     return {
       ...market,
       yesPool: market.yesPool.toNumber(),
       noPool: market.noPool.toNumber(),
       maxPool: market.maxPool?.toNumber() ?? null,
+      orders: (market as any).orders || [],
       odds, // Overwrite legacy odds with LMSR odds
       positions: (market as any).positions.map((p: any) => ({
         ...p,

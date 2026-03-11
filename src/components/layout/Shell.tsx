@@ -16,7 +16,6 @@ export function Shell({ children }: ShellProps) {
 
   const navigation = [
     { name: 'Mercados', href: '/markets' },
-    { name: 'Marketplace', href: '/marketplace' },
     { name: 'Mis Posiciones', href: '/positions' },
   ]
 
