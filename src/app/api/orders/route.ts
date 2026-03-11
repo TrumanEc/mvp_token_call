@@ -11,7 +11,8 @@ export async function POST(request: NextRequest) {
       amount,       // Para MARKET o LIMIT_BUY ($ a gastar)
       shares,       // Para LIMIT_SELL (cantidad de shares a vender)
       pricePerShare, // Requerido para LIMIT
-      executionType // 'MARKET' | 'LIMIT_BUY' | 'LIMIT_SELL'
+      executionType, // 'MARKET' | 'LIMIT_BUY' | 'LIMIT_SELL'
+      positionId    // Requerido para LIMIT_SELL
     } = await request.json()
 
     if (!marketId || !userId || !executionType) {
@@ -54,7 +55,6 @@ export async function POST(request: NextRequest) {
 
     // -- 3. VENTA LÍMITE (Limit Sell)
     if (executionType === 'LIMIT_SELL') {
-      const { positionId } = await request.json(); // Requerido en caso de SELL
       if (!positionId) return NextResponse.json({ error: 'positionId es requerido para vender' }, { status: 400 });
       if (!shares || shares <= 0) return NextResponse.json({ error: 'Cantidad de shares inválida' }, { status: 400 });
       if (!pricePerShare || pricePerShare <= 0 || pricePerShare >= 1) return NextResponse.json({ error: 'Precio límite inválido' }, { status: 400 })
