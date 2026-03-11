@@ -1187,6 +1187,132 @@ function AdminPage() {
                   </table>
                 </div>
               </div>
+
+              {/* ── MERCADO SECUNDARIO ── */}
+              {selectedMarketStats.secondaryMarket && (
+                <div className="space-y-6 pt-2">
+                  <div className="flex items-center gap-3">
+                    <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.1em]">
+                      Mercado Secundario (P2P / Order Book)
+                    </h3>
+                    <div className="flex-1 h-[1px] bg-white/5" />
+                    <span className="text-[9px] font-bold text-blue-400 uppercase tracking-wider bg-blue-500/10 px-2 py-0.5 rounded-full">
+                      P2P
+                    </span>
+                  </div>
+
+                  {/* KPI summary */}
+                  {(() => {
+                    const sm = selectedMarketStats.secondaryMarket.summary;
+                    return (
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div className="bg-[#121212] border border-white/5 rounded-2xl p-4">
+                          <div className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">Vol. P2P Ejecutado</div>
+                          <div className="text-xl font-extrabold text-white mt-1">${sm.totalP2PVolumeExecuted.toFixed(2)}</div>
+                          <div className="text-[9px] text-gray-600 mt-0.5">{sm.p2pTradeCount} trades completados</div>
+                        </div>
+                        <div className="bg-[#121212] border border-white/5 rounded-2xl p-4">
+                          <div className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">Shares P2P</div>
+                          <div className="text-xl font-extrabold text-white mt-1">{sm.totalP2PSharesExecuted.toFixed(2)}</div>
+                          <div className="text-[9px] text-gray-600 mt-0.5">Precio prom: ${sm.avgP2PPrice.toFixed(4)}</div>
+                        </div>
+                        <div className="bg-[#121212] border border-blue-500/10 rounded-2xl p-4">
+                          <div className="text-[9px] font-bold text-blue-400 uppercase tracking-wider">Órdenes Abiertas</div>
+                          <div className="text-xl font-extrabold text-white mt-1">{sm.openOrderCount}</div>
+                          <div className="text-[9px] text-gray-600 mt-0.5">{sm.totalOpenShares.toFixed(2)} sh en el libro</div>
+                        </div>
+                        <div className="bg-[#121212] border border-blue-500/10 rounded-2xl p-4">
+                          <div className="text-[9px] font-bold text-blue-400 uppercase tracking-wider">Val. en el Libro</div>
+                          <div className="text-xl font-extrabold text-white mt-1">${sm.totalOpenOrderValue.toFixed(2)}</div>
+                          <div className="text-[9px] text-gray-600 mt-0.5">si se ejecutan todas</div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Open orders table */}
+                  <div className="space-y-2">
+                    <h4 className="text-[9px] font-bold text-blue-400 uppercase tracking-[0.1em]">
+                      📂 Órdenes Abiertas en el Libro
+                    </h4>
+                    <div className="bg-[#121212] border border-white/5 rounded-2xl overflow-hidden">
+                      <table className="w-full text-left">
+                        <thead>
+                          <tr className="bg-[#171717] border-b border-white/5">
+                            {["Usuario","Lado","Shares","Fills","Pendientes","Precio/sh","Val. Pend.","Estado","Fecha"].map((h) => (
+                              <th key={h} className="p-3 text-[9px] font-bold text-gray-400 uppercase tracking-wider whitespace-nowrap">{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-white/5">
+                          {selectedMarketStats.secondaryMarket.openOrders.length === 0 ? (
+                            <tr><td colSpan={9} className="p-8 text-center text-[10px] font-bold text-white/20 uppercase">No hay órdenes abiertas</td></tr>
+                          ) : (
+                            selectedMarketStats.secondaryMarket.openOrders.map((o: any) => (
+                              <tr key={o.id} className="hover:bg-white/5 transition-colors">
+                                <td className="p-3 text-xs font-bold text-white">@{o.username}</td>
+                                <td className="p-3">
+                                  <span className={`px-2 py-0.5 text-[9px] font-bold rounded-full uppercase ${o.side === "YES" ? "bg-[#64c883]/10 text-[#64c883]" : "bg-[#e16464]/10 text-[#e16464]"}`}>{o.side}</span>
+                                </td>
+                                <td className="p-3 text-xs font-bold text-white">{o.initialShares.toFixed(2)}</td>
+                                <td className="p-3 text-xs font-bold text-[#64c883]">{o.filledShares.toFixed(2)}</td>
+                                <td className="p-3 text-xs font-bold text-blue-400">{o.remainingShares.toFixed(2)}</td>
+                                <td className="p-3 text-xs font-bold text-white">${o.pricePerShare.toFixed(4)}</td>
+                                <td className="p-3 text-xs font-bold text-white">${(o.remainingShares * o.pricePerShare).toFixed(2)}</td>
+                                <td className="p-3">
+                                  <span className={`px-2 py-0.5 text-[9px] font-bold rounded-full uppercase ${o.status === "PARTIAL" ? "bg-yellow-500/10 text-yellow-400" : "bg-blue-500/10 text-blue-400"}`}>{o.status}</span>
+                                </td>
+                                <td className="p-3 text-[10px] font-bold text-gray-400">{new Date(o.createdAt).toLocaleDateString()}</td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* P2P fills table */}
+                  <div className="space-y-2">
+                    <h4 className="text-[9px] font-bold text-[#64c883] uppercase tracking-[0.1em]">
+                      ✅ Compras con Porción P2P Ejecutada (Hybrid Router)
+                    </h4>
+                    <div className="bg-[#121212] border border-white/5 rounded-2xl overflow-hidden">
+                      <table className="w-full text-left">
+                        <thead>
+                          <tr className="bg-[#171717] border-b border-white/5">
+                            {["Comprador","Lado","Sh P2P","$ P2P","Precio P2P","Sh LMSR","$ LMSR","Total Inv.","Precio Final","Fecha"].map((h) => (
+                              <th key={h} className="p-3 text-[9px] font-bold text-gray-400 uppercase tracking-wider whitespace-nowrap">{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-white/5">
+                          {selectedMarketStats.secondaryMarket.obFills.length === 0 ? (
+                            <tr><td colSpan={10} className="p-8 text-center text-[10px] font-bold text-white/20 uppercase">No hay compras P2P ejecutadas aún</td></tr>
+                          ) : (
+                            selectedMarketStats.secondaryMarket.obFills.map((f: any) => (
+                              <tr key={f.id} className="hover:bg-white/5 transition-colors">
+                                <td className="p-3 text-xs font-bold text-white">@{f.username}</td>
+                                <td className="p-3">
+                                  <span className={`px-2 py-0.5 text-[9px] font-bold rounded-full uppercase ${f.side === "YES" ? "bg-[#64c883]/10 text-[#64c883]" : "bg-[#e16464]/10 text-[#e16464]"}`}>{f.side}</span>
+                                </td>
+                                <td className="p-3 text-xs font-bold text-blue-300">{f.obShares.toFixed(2)}</td>
+                                <td className="p-3 text-xs font-bold text-blue-300">${f.obAmount.toFixed(2)}</td>
+                                <td className="p-3 text-xs text-blue-400">${f.obAvgPrice.toFixed(4)}</td>
+                                <td className="p-3 text-xs font-bold text-purple-300">{f.lmsrShares.toFixed(2)}</td>
+                                <td className="p-3 text-xs font-bold text-purple-300">${f.lmsrAmount.toFixed(2)}</td>
+                                <td className="p-3 text-sm font-extrabold text-white">${f.totalAmount.toFixed(2)}</td>
+                                <td className="p-3 text-xs font-bold text-[#64c883]">${f.finalAvgPrice.toFixed(4)}</td>
+                                <td className="p-3 text-[10px] font-bold text-gray-400 whitespace-nowrap">{new Date(f.timestamp).toLocaleDateString()}</td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
+
             </div>
           )
         )}

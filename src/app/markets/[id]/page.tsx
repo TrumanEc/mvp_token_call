@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect, use, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { UserProvider, useUser } from "@/contexts/UserContext";
 import { Shell } from "@/components/layout/Shell";
@@ -8,6 +8,7 @@ import { PriceChart } from "@/components/markets/PriceChart";
 import { PredictionCard } from "@/components/markets/PredictionCard";
 import { OrderbookDisplay } from "@/components/markets/OrderbookDisplay";
 import { SellPositionForm } from "@/components/markets/SellPositionForm";
+import { getMarketVisual } from "@/lib/market-visual";
 
 function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -61,21 +62,38 @@ function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
   }
 
   const totalVolume = market.yesPool + market.noPool;
+  const visual = getMarketVisual(market.id, market.question);
 
   return (
     <Shell>
       <div className="max-w-[1200px] mx-auto pt-4 px-4">
-        {/* Top Header: Question */}
-        <div className="mb-12">
-          <button
-            onClick={() => router.back()}
-            className="text-gray-400 hover:text-white text-xs font-bold uppercase tracking-wider mb-6 block transition-colors"
-          >
-            ← Volver
-          </button>
-          <h1 className="text-[32px] md:text-[40px] font-bold text-white leading-tight lg:max-w-3xl">
-            {market.question}
-          </h1>
+
+        {/* Hero banner */}
+        <div
+          className="relative rounded-3xl overflow-hidden mb-10 h-48 flex items-end"
+          style={{ background: visual.gradient }}
+        >
+          {/* Decorative blobs */}
+          <div className="absolute -top-10 -right-10 w-64 h-64 rounded-full opacity-20 blur-3xl" style={{ background: visual.to }} />
+          <div className="absolute -bottom-8 -left-8 w-48 h-48 rounded-full opacity-15 blur-2xl" style={{ background: visual.to }} />
+
+          {/* Emoji centered */}
+          <span className="absolute top-1/2 right-10 -translate-y-1/2 text-[80px] opacity-30 select-none drop-shadow-2xl" aria-hidden>
+            {visual.emoji}
+          </span>
+
+          {/* Content overlay */}
+          <div className="relative z-10 p-8 w-full">
+            <button
+              onClick={() => router.back()}
+              className="text-white/60 hover:text-white text-[10px] font-bold uppercase tracking-wider mb-3 block transition-colors"
+            >
+              ← Volver
+            </button>
+            <h1 className="text-2xl md:text-3xl font-extrabold text-white leading-tight lg:max-w-2xl drop-shadow">
+              {market.question}
+            </h1>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-12 items-start">
@@ -459,12 +477,14 @@ function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
 
           {/* Right Column: Prediction Interaction + My Positions */}
           <div className="sticky top-24 space-y-6">
-            <PredictionCard
-              market={market}
-              userId={user.id}
-              userBalance={user.balance}
-              onSuccess={handleTransactionSuccess}
-            />
+            <Suspense fallback={null}>
+              <PredictionCard
+                market={market}
+                userId={user.id}
+                userBalance={user.balance}
+                onSuccess={handleTransactionSuccess}
+              />
+            </Suspense>
             <div className="space-y-4 pt-2 ">
               <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-wider text-gray-400 border-t border-white/5 pt-4">
                 <span>Resolución</span>

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
@@ -455,7 +456,9 @@ function SellForm({ market, userId, onSuccess }: SellFormProps) {
 export function PredictionCard({
   market, userId, userBalance, onSuccess,
 }: PredictionCardProps) {
-  const [mode, setMode] = useState<"BUY" | "SELL">("BUY");
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get("tab") === "sell" ? "SELL" : "BUY";
+  const [mode, setMode] = useState<"BUY" | "SELL">(initialTab);
 
   const yesOdds = market.odds.yesOdds;
   const totalVolume = market.yesPool + market.noPool;

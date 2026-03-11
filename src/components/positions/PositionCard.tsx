@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Modal } from "@/components/ui/Modal";
 
 interface PositionCardProps {
@@ -310,13 +311,12 @@ export function PositionCard({ position, userId, onSell }: PositionCardProps) {
           </div>
         </div>
 
-        <button
-          onClick={() => {}}
-          className="px-8 py-3 rounded-xl bg-white/5 border border-white/10 text-[10px] font-extrabold text-white/40 uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all disabled:opacity-50"
-          disabled
+        <Link
+          href={`/markets/${position.marketId}?tab=sell`}
+          className="px-8 py-3 rounded-xl bg-orange-500/10 border border-orange-500/30 text-[10px] font-extrabold text-orange-400 uppercase tracking-widest hover:bg-orange-500/20 hover:border-orange-500/50 hover:text-orange-300 transition-all"
         >
           VENDER
-        </button>
+        </Link>
       </div>
     </div>
   );
