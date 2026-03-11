@@ -357,7 +357,7 @@ function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {market.positions.map((pos: any) => (
-                    <div key={pos.id} className="bg-[#121212] border border-white/5 rounded-2xl p-4 flex flex-col gap-4 group hover:border-white/10 transition-all">
+                    <div key={pos.id} className={`bg-[#121212] border border-white/5 rounded-2xl p-4 flex flex-col gap-4 group transition-all ${pos.shares === 0 ? "opacity-50 grayscale" : "hover:border-white/10"}`}>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
                           <div
@@ -370,11 +370,16 @@ function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
                             {pos.side}
                           </div>
                           <div>
-                            <div className="text-sm font-bold text-white group-hover:text-[#64c883] transition-colors">
+                            <div className="text-sm font-bold text-white group-hover:text-[#64c883] transition-colors flex items-center gap-2">
                               {pos.currentOwner.username
                                 ? `@${pos.currentOwner.username}`
                                 : pos.currentOwner.email?.split("@")[0] ||
                                   "Usuario"}
+                              {pos.shares === 0 && (
+                                <span className="text-[8px] bg-gray-500/20 text-gray-400 px-1.5 py-0.5 rounded uppercase tracking-wider">
+                                  Vendida
+                                </span>
+                              )}
                             </div>
                             <div className="flex items-center gap-2 mt-0.5">
                               <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
@@ -389,15 +394,17 @@ function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
                           </div>
                         </div>
                         <div className="text-right flex flex-col items-end">
-                          <div className="text-base font-bold text-white flex items-baseline justify-end gap-1">
-                            <span>{pos.shares ? pos.shares.toFixed(2) : "0.00"}</span>
-                            <span className="text-[10px] text-gray-400 font-normal uppercase">sh</span>
+                          <div className={`text-base font-bold flex items-baseline justify-end gap-1 ${pos.shares === 0 ? "text-gray-500 line-through" : "text-white"}`}>
+                            <span>{pos.shares > 0 ? pos.shares.toFixed(2) : "0.00"}</span>
+                            <span className="text-[10px] text-gray-400 font-normal uppercase line-through-none ml-1">
+                              {pos.shares === 0 ? "(Sold)" : "sh"}
+                            </span>
                           </div>
                           <div className="text-[11px] font-bold text-[#64c883] mt-0.5">
-                            ${pos.amount ? pos.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "0.00"} <span className="text-gray-500 font-normal text-[9px] ml-0.5">inv.</span>
+                            ${pos.amount ? pos.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "0.00"} <span className="text-gray-500 font-normal text-[9px] ml-0.5">inv. original</span>
                           </div>
                           <div className="text-[9px] font-bold text-gray-400 uppercase mt-1">
-                            Avg. ${(pos.shares > 0 && pos.amount > 0 ? (pos.amount / pos.shares) : (pos.purchasePrice || 0)).toFixed(2)} c/u
+                            Avg. original ${(pos.shares > 0 && pos.amount > 0 ? (pos.amount / pos.shares) : (pos.purchasePrice || 0)).toFixed(2)} c/u
                           </div>
                         </div>
                       </div>
