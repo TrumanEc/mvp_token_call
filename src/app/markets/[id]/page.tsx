@@ -6,6 +6,7 @@ import { UserProvider, useUser } from "@/contexts/UserContext";
 import { Shell } from "@/components/layout/Shell";
 import { PriceChart } from "@/components/markets/PriceChart";
 import { PredictionCard } from "@/components/markets/PredictionCard";
+import { OrderbookDisplay } from "@/components/markets/OrderbookDisplay";
 
 function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -395,6 +396,14 @@ function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
                 </div>
               </div>
             )}
+            
+            {/* Orderbook Depth Display */}
+            <div className="pt-8 border-t border-white/5 space-y-6">
+               <h2 className="text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400">
+                  Profundidad del Mercado (Orderbook Limit)
+               </h2>
+               <OrderbookDisplay orders={market.orders || []} />
+            </div>
           </div>
 
           {/* Right Column: Prediction Interaction (Yes/No Buttons + Form) */}

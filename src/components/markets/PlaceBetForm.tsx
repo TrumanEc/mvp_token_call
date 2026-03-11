@@ -24,8 +24,11 @@ export function PlaceBetForm({
   odds,
   onSuccess,
 }: PlaceBetFormProps) {
+  const [orderType, setOrderType] = useState<"MARKET" | "LIMIT">("MARKET");
   const [side, setSide] = useState<"YES" | "NO">("YES");
   const [amount, setAmount] = useState("");
+  const [limitPrice, setLimitPrice] = useState("");
+  
   const [loading, setLoading] = useState(false);
   const [quoteLoading, setQuoteLoading] = useState(false);
   const [error, setError] = useState("");
@@ -43,11 +46,12 @@ export function PlaceBetForm({
   } | null>(null);
 
   const amountNum = parseFloat(amount) || 0;
+  const limitPriceNum = parseFloat(limitPrice) || 0;
 
-  // Debounce fetching quote
+  // Debounce fetching quote (Only for Market or when initial preview needed)
   useEffect(() => {
     const fetchQuote = async () => {
-      if (amountNum <= 0) {
+      if (amountNum <= 0 || orderType === "LIMIT") {
         setQuote(null);
         return;
       }
@@ -72,7 +76,7 @@ export function PlaceBetForm({
 
     const timer = setTimeout(fetchQuote, 500);
     return () => clearTimeout(timer);
-  }, [amountNum, side, marketId]);
+  }, [amountNum, side, marketId, orderType]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,23 +91,38 @@ export function PlaceBetForm({
       setError("Saldo insuficiente");
       return;
     }
+    
+    if (orderType === "LIMIT" && (limitPriceNum <= 0 || limitPriceNum >= 1)) {
+      setError("El precio límite debe estar entre $0.01 y $0.99");
+      return;
+    }
 
     setLoading(true);
 
     try {
-      const res = await fetch("/api/positions", {
+      const payload = {
+        marketId,
+        userId,
+        side,
+        amount: amountNum,
+        executionType: orderType === "MARKET" ? "MARKET" : "LIMIT_BUY",
+        ...(orderType === "LIMIT" && { pricePerShare: limitPriceNum }),
+      };
+
+      const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ marketId, userId, side, amount: amountNum }),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || "Error al crear posición");
+        throw new Error(data.error || "Error enviando orden");
       }
 
       setAmount("");
+      setLimitPrice("");
       setQuote(null);
       onSuccess();
     } catch (e) {
@@ -113,50 +132,61 @@ export function PlaceBetForm({
     }
   };
 
-  // Use quoted shares for potential return, or fallback to estimate
-  // In LMSR, Potential Return = Shares * $1
-  const potentialReturn = quote ? quote.shares : 0;
-  // Quote avgPrice is per share.
-  const avgPrice = quote
-    ? quote.avgPrice
-    : side === "YES"
-      ? odds.yesOdds / 100
-      : odds.noOdds / 100;
+  // Limit orders simple calculation
+  const limitEstimatedShares = limitPriceNum > 0 ? (amountNum / limitPriceNum) : 0;
+  
+  const potentialReturn = orderType === "MARKET"
+    ? (quote ? quote.shares : 0)
+    : limitEstimatedShares;
 
-  // Calculate ROI based on net investment (inclusive fee: Net = Total / 1.1)
-  const netAmountForRoi = quote
-    ? quote.totalCost - (quote.feeAmount || 0)
-    : amountNum / 1.1;
-  const roi = ((potentialReturn - netAmountForRoi) / netAmountForRoi) * 100;
-
-  // Manual fallback for shares if quote is missing
-  const estimatedShares = quote ? quote.shares : amountNum / 1.1 / avgPrice;
-  // PlaceBetForm doesn't seem to show ROI in UI yet, but we'll prepare the variables.
+  const avgPrice = orderType === "MARKET"
+    ? (quote ? quote.avgPrice : (side === "YES" ? odds.yesOdds / 100 : odds.noOdds / 100))
+    : limitPriceNum;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Type Selector Tabs */}
+      <div className="flex p-0.5 bg-gray-100 rounded-lg shadow-inner ring-1 ring-gray-200/50">
+        <button
+          type="button"
+          onClick={() => { setOrderType("MARKET"); setError(""); }}
+          className={`flex-1 py-1.5 text-sm font-semibold rounded-md transition-all duration-200 ease-out ${
+            orderType === "MARKET"
+              ? "bg-white text-gray-900 shadow-sm ring-1 ring-gray-200/50"
+              : "text-gray-500 hover:text-gray-700 hover:bg-gray-200/50"
+          }`}
+        >
+          Market
+        </button>
+        <button
+          type="button"
+          onClick={() => { setOrderType("LIMIT"); setError(""); }}
+          className={`flex-1 py-1.5 text-sm font-semibold rounded-md transition-all duration-200 ease-out ${
+            orderType === "LIMIT"
+              ? "bg-white text-gray-900 shadow-sm ring-1 ring-gray-200/50"
+              : "text-gray-500 hover:text-gray-700 hover:bg-gray-200/50"
+          }`}
+        >
+          Limit
+        </button>
+      </div>
+
       <div className="grid grid-cols-2 gap-3">
         <button
           type="button"
           onClick={() => setSide("YES")}
           className={`p-4 rounded-lg border-2 transition-all ${
             side === "YES"
-              ? "border-green-500 bg-green-50 text-green-700"
+              ? "border-green-500 bg-green-50/50 text-green-700 shadow-sm"
               : "border-gray-200 hover:border-green-300"
           }`}
         >
           <div className="text-2xl font-bold">
-            {quote
-              ? (quote.newProbabilities.yes * 100).toFixed(1)
-              : odds.yesOdds.toFixed(1)}
-            %
+            {orderType === "MARKET" && quote ? (quote.newProbabilities.yes * 100).toFixed(1) : odds.yesOdds.toFixed(1)}%
           </div>
           <div className="text-sm font-medium">YES</div>
           <div className="text-xs opacity-75">
-            Price: $
-            {(quote ? quote.newProbabilities.yes : odds.yesOdds / 100).toFixed(
-              2,
-            )}
+            Spot: ${(odds.yesOdds / 100).toFixed(2)}
           </div>
         </button>
 
@@ -165,71 +195,82 @@ export function PlaceBetForm({
           onClick={() => setSide("NO")}
           className={`p-4 rounded-lg border-2 transition-all ${
             side === "NO"
-              ? "border-red-500 bg-red-50 text-red-700"
+              ? "border-red-500 bg-red-50/50 text-red-700 shadow-sm"
               : "border-gray-200 hover:border-red-300"
           }`}
         >
           <div className="text-2xl font-bold">
-            {quote
-              ? (quote.newProbabilities.no * 100).toFixed(1)
-              : odds.noOdds.toFixed(1)}
-            %
+            {orderType === "MARKET" && quote ? (quote.newProbabilities.no * 100).toFixed(1) : odds.noOdds.toFixed(1)}%
           </div>
           <div className="text-sm font-medium">NO</div>
           <div className="text-xs opacity-75">
-            Price: $
-            {(quote ? quote.newProbabilities.no : odds.noOdds / 100).toFixed(2)}
+            Spot: ${(odds.noOdds / 100).toFixed(2)}
           </div>
         </button>
       </div>
 
-      <Input
-        type="number"
-        label="Monto a invertir ($)"
-        placeholder="100"
-        value={amount}
-        onChange={(e) => setAmount(e.target.value)}
-        min="1"
-        max={userBalance}
-      />
+      <div className="space-y-3">
+        <Input
+          type="number"
+          label={orderType === "MARKET" ? "Monto a invertir ($)" : "Dinero a gastar ($)"}
+          placeholder="100"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          min="1"
+          max={userBalance}
+          step="0.01"
+        />
 
-      <div className="space-y-2 text-sm text-gray-600 bg-gray-50 p-3 rounded-md">
+        {orderType === "LIMIT" && (
+          <div className="animate-in slide-in-from-top-2 fade-in duration-200">
+             <Input
+                type="number"
+                label="Precio límite por share ($)"
+                placeholder="0.50"
+                value={limitPrice}
+                onChange={(e) => setLimitPrice(e.target.value)}
+                min="0.01"
+                max="0.99"
+                step="0.01"
+              />
+          </div>
+        )}
+      </div>
+
+      <div className="space-y-2 text-sm text-gray-600 bg-gray-50 p-4 rounded-xl border border-gray-100 shadow-inner">
         <div className="flex justify-between">
-          <span>Tu saldo:</span>
-          <span className="font-medium">${userBalance.toFixed(2)}</span>
+          <span className="text-gray-500">Tu saldo líquido:</span>
+          <span className="font-medium text-gray-900">${userBalance.toFixed(2)}</span>
         </div>
-        <div className="flex justify-between">
-          <span>Costo Promedio:</span>
-          <span className="font-medium">
-            {quoteLoading ? "Calculando..." : `$${avgPrice.toFixed(4)}`}
+        <div className="flex justify-between pb-1 border-b border-gray-200 border-dashed">
+          <span className="text-gray-500">{orderType === "MARKET" ? "Costo Promedio:" : "Precio Fijo:"}</span>
+          <span className="font-medium text-gray-900">
+            {orderType === "MARKET" && quoteLoading ? "Calculando..." : `$${(avgPrice || 0).toFixed(4)}`}
           </span>
         </div>
-        <div className="flex justify-between text-base border-t pt-2 mt-2">
-          <span className="font-semibold text-gray-800">
-            Acciones Estimadas:
+        
+        <div className="flex justify-between text-base pt-1">
+          <span className="font-medium text-gray-700">
+            {orderType === "MARKET" ? "Shares Estimados:" : "Shares a Comprar:"}
           </span>
           <span className="font-bold text-gray-900">
-            {quoteLoading ? "..." : quote?.shares.toFixed(2) || "0.00"}
+            {orderType === "MARKET" && quoteLoading ? "..." : (potentialReturn || 0).toFixed(2)}
           </span>
         </div>
         <div className="flex justify-between text-base">
-          <span className="font-semibold text-green-700">
-            Retorno Potencial:
-          </span>
-          <span className="font-bold text-green-700">
-            {quoteLoading ? "..." : `$${potentialReturn.toFixed(2)}`}
+          <span className="font-semibold text-green-600">Retorno Potencial:</span>
+          <span className="font-bold text-green-600">
+            {orderType === "MARKET" && quoteLoading ? "..." : `$${(potentialReturn || 0).toFixed(2)}`}
           </span>
         </div>
       </div>
 
-      {quote?.wouldExceedCap && (
+      {orderType === "MARKET" && quote?.wouldExceedCap && (
         <div className="bg-orange-50 border border-orange-200 p-3 rounded-md text-orange-800 text-sm">
           <p className="font-semibold mb-1">⚠️ Límite excedido</p>
           <p>{quote.capReason}</p>
           <p className="mt-1">
-            Puedes comprar hasta{" "}
-            <strong>${quote.maxAllowedAmount.toFixed(2)}</strong> por el
-            momento.
+            Puedes comprar hasta <strong>${quote.maxAllowedAmount.toFixed(2)}</strong>
           </p>
           <button
             type="button"
@@ -241,18 +282,22 @@ export function PlaceBetForm({
         </div>
       )}
 
-      {error && <p className="text-red-500 text-sm">{error}</p>}
+      {error && <p className="text-red-500 text-sm font-medium animate-in fade-in">{error}</p>}
 
       <Button
         type="submit"
         variant={side === "YES" ? "success" : "danger"}
-        className="w-full"
-        loading={loading || quoteLoading}
+        className={`w-full text-base font-semibold py-6 shadow-sm hover:shadow-md transition-all ${orderType === "LIMIT" ? "bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500 text-white" : ""}`}
+        loading={loading || (orderType === "MARKET" && quoteLoading)}
         disabled={
-          loading || quoteLoading || amountNum <= 0 || !!quote?.wouldExceedCap
+          loading || 
+          (orderType === "MARKET" && quoteLoading) || 
+          amountNum <= 0 || 
+          (orderType === "MARKET" && !!quote?.wouldExceedCap) ||
+          (orderType === "LIMIT" && (limitPriceNum <= 0 || limitPriceNum >= 1))
         }
       >
-        Comprar {side}
+        {orderType === "MARKET" ? `Comprar ${side} al Mercado` : `Colocar Orden Limit en ${side}`}
       </Button>
     </form>
   );
