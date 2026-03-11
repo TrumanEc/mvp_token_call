@@ -302,4 +302,120 @@ export class RouterService {
       };
     }, { maxWait: 15000, timeout: 30000 });
   }
+
+  /**
+   * Simula la ejecución del "Best Buy" sin afectar la base de datos.
+   * Útil para cotizar (price quotes) antes de confirmar.
+   */
+  static async simulateMarketBuy(data: {
+    marketId: string;
+    side: "YES" | "NO";
+    budget: number; // Monto neto total disponible para gastar en acciones
+  }) {
+    const budgetNum = data.budget;
+    if (budgetNum <= 0) throw new Error("Monto a comprar debe ser positivo.");
+
+    const market = await prisma.market.findUnique({
+      where: { id: data.marketId },
+      select: { id: true, qYes: true, qNo: true, b: true, status: true },
+    });
+
+    if (!market || market.status !== "ACTIVE") {
+      throw new Error("El mercado no está activo");
+    }
+
+    const lmsrService = new LmsrService();
+    let remainingBudget = budgetNum;
+
+    // Tracking
+    let lmsrSharesCollected = 0;
+    let lmsrBudgetSpent = 0;
+    let obSharesCollected = 0;
+    let obBudgetSpent = 0;
+    
+    let currentQYes = market.qYes;
+    let currentQNo = market.qNo;
+
+    // Obtener Orderbook sin bloquear DB
+    const asks = await prisma.order.findMany({
+      where: {
+        marketId: data.marketId,
+        type: OrderType.SELL,
+        side: data.side,
+        status: { in: ["OPEN", "PARTIAL"] }
+      },
+      orderBy: { pricePerShare: "asc" }
+    });
+
+    // Clonar asks para mutarlos en memoria
+    const clonedAsks = asks.map(a => ({ ...a }));
+    let askIndex = 0;
+
+    while (remainingBudget > 0.0001) {
+      const { pYes, pNo } = lmsrService.getPrice(currentQYes, currentQNo, market.b);
+      const lmsrSpotPrice = data.side === "YES" ? pYes : pNo;
+
+      let bestAsk = askIndex < clonedAsks.length ? clonedAsks[askIndex] : null;
+
+      if (!bestAsk || lmsrSpotPrice < bestAsk.pricePerShare - 0.0001) {
+        let safeBudgetToLMSR = remainingBudget;
+        
+        if (bestAsk) {
+          const budgetToReachTarget = lmsrService.getCostToReachTargetPrice(
+            currentQYes, currentQNo, market.b, data.side, bestAsk.pricePerShare
+          );
+          
+          if (budgetToReachTarget > 0 && budgetToReachTarget <= remainingBudget) {
+            safeBudgetToLMSR = budgetToReachTarget;
+          }
+        }
+
+        const sharesGenerados = lmsrService.getSharesToBuy(currentQYes, currentQNo, market.b, data.side, safeBudgetToLMSR);
+        
+        if (sharesGenerados > 0 && safeBudgetToLMSR > 0.0001) {
+           lmsrSharesCollected += sharesGenerados;
+           lmsrBudgetSpent += safeBudgetToLMSR;
+           remainingBudget -= safeBudgetToLMSR;
+           
+           if (data.side === "YES") currentQYes += sharesGenerados;
+           else currentQNo += sharesGenerados;
+        } else {
+           break;
+        }
+      } else {
+        const costToClearAsk = bestAsk.remainingShares * bestAsk.pricePerShare;
+        let spentOnAsk = 0;
+        let sharesBought = 0;
+
+        if (remainingBudget >= costToClearAsk) {
+          spentOnAsk = costToClearAsk;
+          sharesBought = bestAsk.remainingShares;
+          bestAsk.remainingShares = 0;
+          askIndex++;
+        } else {
+          spentOnAsk = remainingBudget;
+          sharesBought = remainingBudget / bestAsk.pricePerShare;
+          bestAsk.remainingShares -= sharesBought;
+        }
+
+        obBudgetSpent += spentOnAsk;
+        obSharesCollected += sharesBought;
+        remainingBudget -= spentOnAsk;
+      }
+    }
+
+    const realSpentBudget = budgetNum - remainingBudget;
+    const totalSharesCollected = lmsrSharesCollected + obSharesCollected;
+    const avgPriceOverall = realSpentBudget > 0 ? (realSpentBudget / totalSharesCollected) : 0;
+    const newPrices = lmsrService.getPrice(currentQYes, currentQNo, market.b);
+
+    return {
+       spent: realSpentBudget,
+       sharesCollected: totalSharesCollected,
+       averagePrice: avgPriceOverall,
+       lmsrShares: lmsrSharesCollected,
+       obShares: obSharesCollected,
+       newProbabilities: { yes: newPrices.pYes, no: newPrices.pNo }
+    };
+  }
 }

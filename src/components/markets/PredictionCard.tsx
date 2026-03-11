@@ -32,6 +32,8 @@ export function PredictionCard({
     maxAllowedAmount: number;
     capReason: string | null;
     wouldExceedCap: boolean;
+    lmsrShares?: number;
+    obShares?: number;
   } | null>(null);
 
   const yesOdds = market.odds.yesOdds;
@@ -284,11 +286,48 @@ export function PredictionCard({
                 </div>
               </>
             )}
-            <div className="flex justify-between items-center px-4 py-3 bg-[#0d0d0d]/50 rounded-xl border border-white/5">
-              <span className="text-xs text-gray-400">Acciones Estimadas</span>
-              <span className="text-sm font-bold text-white">
-                {quoteLoading ? "..." : estimatedShares.toFixed(2)}
-              </span>
+            <div className="flex flex-col px-4 py-3 bg-[#0d0d0d]/50 rounded-xl border border-white/5 space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-400">Acciones Estimadas</span>
+                <span className="text-sm font-bold text-white">
+                  {quoteLoading ? "..." : estimatedShares.toFixed(2)}
+                </span>
+              </div>
+              
+              {!quoteLoading && quote && (quote.lmsrShares || 0) + (quote.obShares || 0) > 0 && (
+                <div className="pt-1">
+                  <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden flex">
+                    {/* OB percentage (P2P implies orderbook) */}
+                    {(quote.obShares || 0) > 0 && (
+                       <div 
+                         style={{ width: `${(quote.obShares! / quote.shares) * 100}%` }} 
+                         className="h-full bg-blue-500" 
+                       />
+                    )}
+                    {/* LMSR percentage */}
+                    {(quote.lmsrShares || 0) > 0 && (
+                       <div 
+                         style={{ width: `${(quote.lmsrShares! / quote.shares) * 100}%` }} 
+                         className="h-full bg-purple-500" 
+                       />
+                    )}
+                  </div>
+                  <div className="flex justify-between mt-1.5 text-[9px] font-bold uppercase tracking-wider">
+                    {/* Only show OB tag if there are OB shares */}
+                    {(quote.obShares || 0) > 0 ? (
+                      <span className="text-blue-400">P2P: {((quote.obShares! / quote.shares) * 100).toFixed(0)}%</span>
+                    ) : (
+                      <span /> // spacer
+                    )}
+                     {/* Only show WIN (LMSR) tag if there are LMSR shares */}
+                    {(quote.lmsrShares || 0) > 0 ? (
+                      <span className="text-purple-400">WIN: {((quote.lmsrShares! / quote.shares) * 100).toFixed(0)}%</span>
+                     ) : (
+                      <span />
+                     )}
+                  </div>
+                </div>
+              )}
             </div>
             <div className="flex justify-between items-center px-4 py-3 bg-[#0d0d0d]/50 rounded-xl border border-white/5">
               <span className="text-xs text-gray-400">Precio Promedio</span>
