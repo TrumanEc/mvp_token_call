@@ -93,6 +93,45 @@ export class LmsrService {
   }
 
   /**
+   * Calcula cuánto capital ($) se necesita invertir para llevar el precio marginal
+   * (probabilidad instantánea) del LMSR hasta un `targetPrice` específico.
+   * Usado por el Router Híbrido para no exceder el precio del Orderbook.
+   */
+  getCostToReachTargetPrice(
+    qYes: number,
+    qNo: number,
+    b: number,
+    side: "YES" | "NO",
+    targetPrice: number,
+  ): number {
+    const { pYes, pNo } = this.getPrice(qYes, qNo, b);
+    const currentPrice = side === "YES" ? pYes : pNo;
+
+    // Si el LMSR ya está más caro o igual al Orderbook (targetPrice), cuesta $0 (no minteamos)
+    if (currentPrice >= targetPrice) {
+      return 0;
+    }
+
+    let lowShares = 0;
+    let highShares = b * 20; 
+
+    // Búsqueda binaria de shares necesarios para alcanzar targetPrice
+    for (let i = 0; i < 100; i++) {
+       const midShares = (lowShares + highShares) / 2;
+       const tempQYes = side === "YES" ? qYes + midShares : qYes;
+       const tempQNo = side === "NO" ? qNo + midShares : qNo;
+       const { pYes: newPYes, pNo: newPNo } = this.getPrice(tempQYes, tempQNo, b);
+       const priceAfter = side === "YES" ? newPYes : newPNo;
+       
+       if (priceAfter < targetPrice) lowShares = midShares;
+       else highShares = midShares;
+    }
+    
+    const optimalShares = (lowShares + highShares) / 2;
+    return this.getCostToBuy(qYes, qNo, b, side, optimalShares);
+  }
+
+  /**
    * Calcula el monto máximo permitido para una transacción
    * dado un límite de price impact en porcentaje
    */

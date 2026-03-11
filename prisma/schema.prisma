@@ -9,22 +9,24 @@ datasource db {
 }
 
 model User {
-  id                String               @id @default(cuid())
+  id                String                 @id @default(cuid())
   name              String?
-  username          String?              @unique
-  email             String?              @unique
+  username          String?                @unique
+  email             String?                @unique
   emailVerified     DateTime?
   image             String?
-  role              String               @default("USER")
-  balance           Decimal              @default(1000.00)
-  createdAt         DateTime             @default(now())
-  updatedAt         DateTime             @updatedAt
-  purchases         MarketplaceListing[] @relation("BuyerListings")
-  sellListings      MarketplaceListing[] @relation("SellerListings")
-  currentPositions  Position[]           @relation("CurrentOwner")
-  originalPositions Position[]           @relation("OriginalOwner")
-  transfersTo       PositionTransfer[]   @relation("TransfersTo")
-  transfersFrom     PositionTransfer[]   @relation("TransfersFrom")
+  role              String                 @default("USER")
+  balance           Decimal                @default(1000.00)
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+  purchases         MarketplaceListing[]   @relation("BuyerListings")
+  sellListings      MarketplaceListing[]   @relation("SellerListings")
+  orders            Order[]                @relation("UserOrders")
+  routerLogs        MarketRouterAuditLog[] @relation("UserRouterLogs")
+  currentPositions  Position[]             @relation("CurrentOwner")
+  originalPositions Position[]             @relation("OriginalOwner")
+  transfersTo       PositionTransfer[]     @relation("TransfersTo")
+  transfersFrom     PositionTransfer[]     @relation("TransfersFrom")
   transactions      Transaction[]
   accounts          Account[]
   sessions          Session[]
@@ -33,29 +35,31 @@ model User {
 }
 
 model Market {
-  id             String               @id @default(cuid())
+  id             String                 @id @default(cuid())
   playerName     String?
   question       String
   description    String?
-  status         String               @default("DRAFT")
+  status         String                 @default("DRAFT")
   outcome        String?
-  b              Float                @default(100.0)
-  qYes           Float                @default(0)
-  qNo            Float                @default(0)
-  seedCost       Float                @default(0)
-  yesPool        Decimal              @default(0)
-  noPool         Decimal              @default(0)
+  b              Float                  @default(100.0)
+  qYes           Float                  @default(0)
+  qNo            Float                  @default(0)
+  seedCost       Float                  @default(0)
+  yesPool        Decimal                @default(0)
+  noPool         Decimal                @default(0)
   maxPool        Decimal?
-  platformFee    Decimal              @default(0.10)
+  platformFee    Decimal                @default(0.10)
   resolutionDate DateTime
   resolvedAt     DateTime?
-  createdAt      DateTime             @default(now())
-  updatedAt      DateTime             @updatedAt
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
   maxBetAmount   Float?
   maxPriceImpact Float?
   lmsrSnapshots  LmsrSnapshot[]
   history        MarketHistory[]
   listings       MarketplaceListing[]
+  orders         Order[]
+  routerLogs     MarketRouterAuditLog[]
   positions      Position[]
 
   @@index([status])
@@ -81,6 +85,7 @@ model Position {
   purchasePrice      Decimal             @default(0)
   lastTransferredAt  DateTime?
   listing            MarketplaceListing?
+  orders             Order[]
   currentOwner       User                @relation("CurrentOwner", fields: [currentOwnerId], references: [id])
   originalOwner      User                @relation("OriginalOwner", fields: [originalOwnerId], references: [id])
   market             Market              @relation(fields: [marketId], references: [id], onDelete: Cascade)
@@ -116,6 +121,66 @@ model MarketplaceListing {
   @@index([marketId])
   @@index([status])
   @@index([sellerId])
+}
+
+enum OrderType {
+  BUY
+  SELL
+}
+
+model Order {
+  id       String    @id @default(cuid())
+  marketId String
+  userId   String
+  side     String // 'YES' o 'NO'
+  type     OrderType // 'BUY' o 'SELL'
+
+  positionId String? // Referencia a la posición desde donde salen los shares (solo para SELL)
+
+  pricePerShare   Float // Precio límite
+  initialShares   Float // Cantidad original de shares en la orden
+  remainingShares Float // Cuántos shares faltan por llenarse
+  totalLocked     Decimal? // (Solo BUY) Saldo bloqueado en USD al colocar la orden
+
+  simulatedPriceAtCreation Float? // Para auditoría
+  executionLog             Json? // Para auditoría general de ruta
+
+  status    String   @default("OPEN") // OPEN, PARTIAL, FILLED, CANCELLED
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User      @relation("UserOrders", fields: [userId], references: [id])
+  market   Market    @relation(fields: [marketId], references: [id])
+  position Position? @relation(fields: [positionId], references: [id])
+
+  @@index([marketId, status])
+  @@index([userId])
+  @@index([status])
+}
+
+model MarketRouterAuditLog {
+  id            String  @id @default(cuid())
+  marketId      String
+  userId        String
+  requestAmount Decimal
+  side          String
+  executionType String // 'BEST_BUY', 'LIMIT_BUY', 'LIMIT_SELL'
+
+  lmsrAllocated       Decimal
+  lmsrSharesGenerated Float
+  obAllocated         Decimal
+  obSharesBought      Float
+
+  lmsrAveragePrice      Float
+  obAveragePrice        Float
+  finalAveragePricePaid Float
+
+  timestamp DateTime @default(now())
+
+  market Market @relation(fields: [marketId], references: [id])
+  user   User   @relation("UserRouterLogs", fields: [userId], references: [id])
+
+  @@index([marketId])
 }
 
 model LmsrSnapshot {
