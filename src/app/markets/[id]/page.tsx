@@ -388,16 +388,17 @@ function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
                             </div>
                           </div>
                         </div>
-                        <div className="text-right">
+                        <div className="text-right flex flex-col items-end">
                           <div className="text-base font-bold text-white flex items-baseline justify-end gap-1">
-                            <span>{pos.shares ? pos.shares.toFixed(1) : "0"}</span>
+                            <span>{pos.shares ? pos.shares.toFixed(2) : "0.00"}</span>
                             <span className="text-[10px] text-gray-400 font-normal uppercase">sh</span>
                           </div>
-                          {pos.initialProbability && (
-                            <div className="text-[9px] font-bold text-gray-400 uppercase mt-0.5">
-                              Compró @ {pos.initialProbability.toFixed(1)}%
-                            </div>
-                          )}
+                          <div className="text-[11px] font-bold text-[#64c883] mt-0.5">
+                            ${pos.amount ? pos.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "0.00"} <span className="text-gray-500 font-normal text-[9px] ml-0.5">inv.</span>
+                          </div>
+                          <div className="text-[9px] font-bold text-gray-400 uppercase mt-1">
+                            Avg. ${(pos.shares > 0 && pos.amount > 0 ? (pos.amount / pos.shares) : (pos.purchasePrice || 0)).toFixed(2)} c/u
+                          </div>
                         </div>
                       </div>
 
