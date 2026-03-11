@@ -252,22 +252,20 @@ async function GET(request, { params }) {
         const platformFeeRate = market.platformFee ? Number(market.platformFee) : 0.1;
         let feeAmount = 0;
         // Scenario 1: User wants to spend X amount (e.g. $10)
+        // Inclusive fee: If user spends 10, totalCost is 10, fee is 1, net is 9.
         if (amountStr && !sharesStr) {
-            const amount = parseFloat(amountStr);
-            if (isNaN(amount) || amount <= 0) {
+            totalCost = parseFloat(amountStr);
+            if (isNaN(totalCost) || totalCost <= 0) {
                 return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
                     error: "Invalid amount"
                 }, {
                     status: 400
                 });
             }
-            // Inclusive fee calculation: Total = Net * (1 + platformFeeRate)
-            // Net = Total / (1 + platformFeeRate)
-            const netAmount = amount / (1 + platformFeeRate);
-            feeAmount = amount - netAmount;
-            // Calculate shares for amount
+            feeAmount = totalCost * platformFeeRate;
+            const netAmount = totalCost - feeAmount;
+            // Calculate shares for net amount
             shares = lmsrService.getSharesToBuy(market.qYes, market.qNo, market.b, side, netAmount);
-            totalCost = amount; // User pays the full amount
         } else if (sharesStr) {
             shares = parseFloat(sharesStr);
             if (isNaN(shares) || shares <= 0) {
@@ -277,10 +275,11 @@ async function GET(request, { params }) {
                     status: 400
                 });
             }
-            // Calculate net cost to pool for these shares
+            // Cost to buy these shares in the pool (NET COST)
             const netCost = lmsrService.getCostToBuy(market.qYes, market.qNo, market.b, side, shares);
-            // Inclusive fee: Total = Net * (1 + Rate)
-            totalCost = netCost * (1 + platformFeeRate);
+            // If WIN takes 10% of total, then netCost = 90% of total.
+            // E.g. 9 = 0.9 * Total => Total = 9 / 0.9 = 10.
+            totalCost = netCost / (1 - platformFeeRate);
             feeAmount = totalCost - netCost;
         } else {
             return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
@@ -289,11 +288,13 @@ async function GET(request, { params }) {
                 status: 400
             });
         }
+        // avgPrice is based on Net Amount (the price per share in the pool)
         const avgPrice = shares > 0 ? (totalCost - feeAmount) / shares : 0;
-        // Validate bounds for the requested amount (explicit limits only)
+        // Validate bounds for the requested net investment
         const maxBetAmount = market.maxBetAmount ?? null;
         const maxPriceImpact = market.maxPriceImpact ?? null;
-        const validation = lmsrService.validateBetAmount(totalCost, market.qYes, market.qNo, market.b, side, maxBetAmount, maxPriceImpact);
+        const netInvestment = totalCost - feeAmount;
+        const validation = lmsrService.validateBetAmount(netInvestment, market.qYes, market.qNo, market.b, side, maxBetAmount, maxPriceImpact);
         // Calculate new probabilities (post-trade state simulation)
         const newQYes = side === "YES" ? market.qYes + shares : market.qYes;
         const newQNo = side === "NO" ? market.qNo + shares : market.qNo;

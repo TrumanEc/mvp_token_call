@@ -351,8 +351,14 @@ class PositionService {
                 }
             });
             if (!user) throw new Error("User not found");
-            const amount = new __TURBOPACK__imported__module__$5b$externals$5d2f40$prisma$2f$client$2f$runtime$2f$library__$5b$external$5d$__$2840$prisma$2f$client$2f$runtime$2f$library$2c$__cjs$2c$__$5b$project$5d2f$node_modules$2f40$prisma$2f$client$29$__["Decimal"](data.amount);
-            if (new __TURBOPACK__imported__module__$5b$externals$5d2f40$prisma$2f$client$2f$runtime$2f$library__$5b$external$5d$__$2840$prisma$2f$client$2f$runtime$2f$library$2c$__cjs$2c$__$5b$project$5d2f$node_modules$2f40$prisma$2f$client$29$__["Decimal"](user.balance).lessThan(amount)) {
+            const platformFeeRate = market.platformFee ? Number(market.platformFee) : 0.1;
+            // 10% Inclusive fee calculation:
+            // If user spends 10, totalToDeduct is 10, fee is 1, net is 9.
+            const totalToDeductNum = data.amount;
+            const feeAmountNum = totalToDeductNum * platformFeeRate;
+            const netAmountNum = totalToDeductNum - feeAmountNum;
+            const totalToDeduct = new __TURBOPACK__imported__module__$5b$externals$5d2f40$prisma$2f$client$2f$runtime$2f$library__$5b$external$5d$__$2840$prisma$2f$client$2f$runtime$2f$library$2c$__cjs$2c$__$5b$project$5d2f$node_modules$2f40$prisma$2f$client$29$__["Decimal"](totalToDeductNum);
+            if (new __TURBOPACK__imported__module__$5b$externals$5d2f40$prisma$2f$client$2f$runtime$2f$library__$5b$external$5d$__$2840$prisma$2f$client$2f$runtime$2f$library$2c$__cjs$2c$__$5b$project$5d2f$node_modules$2f40$prisma$2f$client$29$__["Decimal"](user.balance).lessThan(totalToDeduct)) {
                 throw new Error("Insufficient balance");
             }
             // LMSR Logic
@@ -360,26 +366,22 @@ class PositionService {
             // Market specific configs (no global fallbacks - explicit limits only)
             const maxBetAmount = market.maxBetAmount ?? null;
             const maxPriceImpact = market.maxPriceImpact ?? null;
-            const validation = lmsrService.validateBetAmount(data.amount, market.qYes, market.qNo, market.b, data.side, maxBetAmount, maxPriceImpact);
+            const validation = lmsrService.validateBetAmount(netAmountNum, market.qYes, market.qNo, market.b, data.side, maxBetAmount, maxPriceImpact);
             if (!validation.allowed) {
                 throw new Error(validation.reason || "Monto excede los límites permitidos");
             }
             // State before
             const stateBefore = lmsrService.getMarketState(market.qYes, market.qNo, market.b);
-            // Apply platform fee from market config
-            const platformFeeRate = market.platformFee ? Number(market.platformFee) : 0.1;
-            const feeAmount = amount.toNumber() * platformFeeRate;
-            const netAmount = amount.toNumber() - feeAmount;
-            // Calculate shares to buy
-            const shares = lmsrService.getSharesToBuy(market.qYes, market.qNo, market.b, data.side, netAmount);
+            // Calculate shares using NET amount
+            const shares = lmsrService.getSharesToBuy(market.qYes, market.qNo, market.b, data.side, netAmountNum);
             const cost = lmsrService.getCostToBuy(market.qYes, market.qNo, market.b, data.side, shares);
             const avgCostPerShare = shares > 0 ? cost / shares : 0;
             // Update Market State
             const newQYes = data.side === "YES" ? market.qYes + shares : market.qYes;
             const newQNo = data.side === "NO" ? market.qNo + shares : market.qNo;
             const stateAfter = lmsrService.getMarketState(newQYes, newQNo, market.b);
-            // Deduct balance
-            await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$balance$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["BalanceService"].deduct(tx, user.id, amount, "BET_PLACED", `Bet ${data.amount} on ${data.side}`, data.marketId);
+            // Deduct balance (Total spent is the input amount)
+            await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$balance$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["BalanceService"].deduct(tx, user.id, totalToDeduct, "BET_PLACED", `Bet ${totalToDeductNum} (Net: ${netAmountNum}, Fee: ${feeAmountNum}) on ${data.side}`, data.marketId);
             // Create Position
             const position = await tx.position.create({
                 data: {
@@ -387,7 +389,7 @@ class PositionService {
                     originalOwnerId: data.userId,
                     currentOwnerId: data.userId,
                     side: data.side,
-                    amount,
+                    amount: totalToDeduct,
                     status: "ACTIVE",
                     shares,
                     avgCostPerShare,
@@ -406,12 +408,12 @@ class PositionService {
                 data: {
                     qYes: newQYes,
                     qNo: newQNo,
-                    // Update legacy pools for audit/volume tracking
+                    // Update pools using NET amount (Volume)
                     yesPool: data.side === "YES" ? {
-                        increment: amount
+                        increment: netAmountNum
                     } : undefined,
                     noPool: data.side === "NO" ? {
-                        increment: amount
+                        increment: netAmountNum
                     } : undefined
                 }
             });
@@ -510,9 +512,8 @@ class PositionService {
         });
         const groups = {};
         for (const p of rawPositions){
-            // Group active positions by market and side
-            // Keep inactive (RESOLVED) positions separate to show history correctly
-            const key = p.status === "ACTIVE" ? `${p.marketId}-${p.side}` : `resolved-${p.id}`;
+            // Group active positions by marketId only. Resolved remain separate.
+            const key = p.status === "ACTIVE" ? p.marketId : `resolved-${p.id}`;
             if (!groups[key]) {
                 groups[key] = {
                     id: p.id,
@@ -525,7 +526,20 @@ class PositionService {
                         yesPool: p.market.yesPool.toNumber(),
                         noPool: p.market.noPool.toNumber()
                     },
-                    side: p.side,
+                    yes: {
+                        shares: new __TURBOPACK__imported__module__$5b$externals$5d2f40$prisma$2f$client$2f$runtime$2f$library__$5b$external$5d$__$2840$prisma$2f$client$2f$runtime$2f$library$2c$__cjs$2c$__$5b$project$5d2f$node_modules$2f40$prisma$2f$client$29$__["Decimal"](0),
+                        invested: new __TURBOPACK__imported__module__$5b$externals$5d2f40$prisma$2f$client$2f$runtime$2f$library__$5b$external$5d$__$2840$prisma$2f$client$2f$runtime$2f$library$2c$__cjs$2c$__$5b$project$5d2f$node_modules$2f40$prisma$2f$client$29$__["Decimal"](0),
+                        netCost: new __TURBOPACK__imported__module__$5b$externals$5d2f40$prisma$2f$client$2f$runtime$2f$library__$5b$external$5d$__$2840$prisma$2f$client$2f$runtime$2f$library$2c$__cjs$2c$__$5b$project$5d2f$node_modules$2f40$prisma$2f$client$29$__["Decimal"](0),
+                        fees: new __TURBOPACK__imported__module__$5b$externals$5d2f40$prisma$2f$client$2f$runtime$2f$library__$5b$external$5d$__$2840$prisma$2f$client$2f$runtime$2f$library$2c$__cjs$2c$__$5b$project$5d2f$node_modules$2f40$prisma$2f$client$29$__["Decimal"](0),
+                        history: []
+                    },
+                    no: {
+                        shares: new __TURBOPACK__imported__module__$5b$externals$5d2f40$prisma$2f$client$2f$runtime$2f$library__$5b$external$5d$__$2840$prisma$2f$client$2f$runtime$2f$library$2c$__cjs$2c$__$5b$project$5d2f$node_modules$2f40$prisma$2f$client$29$__["Decimal"](0),
+                        invested: new __TURBOPACK__imported__module__$5b$externals$5d2f40$prisma$2f$client$2f$runtime$2f$library__$5b$external$5d$__$2840$prisma$2f$client$2f$runtime$2f$library$2c$__cjs$2c$__$5b$project$5d2f$node_modules$2f40$prisma$2f$client$29$__["Decimal"](0),
+                        netCost: new __TURBOPACK__imported__module__$5b$externals$5d2f40$prisma$2f$client$2f$runtime$2f$library__$5b$external$5d$__$2840$prisma$2f$client$2f$runtime$2f$library$2c$__cjs$2c$__$5b$project$5d2f$node_modules$2f40$prisma$2f$client$29$__["Decimal"](0),
+                        fees: new __TURBOPACK__imported__module__$5b$externals$5d2f40$prisma$2f$client$2f$runtime$2f$library__$5b$external$5d$__$2840$prisma$2f$client$2f$runtime$2f$library$2c$__cjs$2c$__$5b$project$5d2f$node_modules$2f40$prisma$2f$client$29$__["Decimal"](0),
+                        history: []
+                    },
                     shares: new __TURBOPACK__imported__module__$5b$externals$5d2f40$prisma$2f$client$2f$runtime$2f$library__$5b$external$5d$__$2840$prisma$2f$client$2f$runtime$2f$library$2c$__cjs$2c$__$5b$project$5d2f$node_modules$2f40$prisma$2f$client$29$__["Decimal"](0),
                     amount: new __TURBOPACK__imported__module__$5b$externals$5d2f40$prisma$2f$client$2f$runtime$2f$library__$5b$external$5d$__$2840$prisma$2f$client$2f$runtime$2f$library$2c$__cjs$2c$__$5b$project$5d2f$node_modules$2f40$prisma$2f$client$29$__["Decimal"](0),
                     totalFees: new __TURBOPACK__imported__module__$5b$externals$5d2f40$prisma$2f$client$2f$runtime$2f$library__$5b$external$5d$__$2840$prisma$2f$client$2f$runtime$2f$library$2c$__cjs$2c$__$5b$project$5d2f$node_modules$2f40$prisma$2f$client$29$__["Decimal"](0),
@@ -537,11 +551,27 @@ class PositionService {
             }
             const pShares = new __TURBOPACK__imported__module__$5b$externals$5d2f40$prisma$2f$client$2f$runtime$2f$library__$5b$external$5d$__$2840$prisma$2f$client$2f$runtime$2f$library$2c$__cjs$2c$__$5b$project$5d2f$node_modules$2f40$prisma$2f$client$29$__["Decimal"](p.shares || 0);
             const feeAmount = p.amount.minus(new __TURBOPACK__imported__module__$5b$externals$5d2f40$prisma$2f$client$2f$runtime$2f$library__$5b$external$5d$__$2840$prisma$2f$client$2f$runtime$2f$library$2c$__cjs$2c$__$5b$project$5d2f$node_modules$2f40$prisma$2f$client$29$__["Decimal"](p.totalCost || 0));
+            const sideKey = p.side.toLowerCase();
+            if (p.status === "ACTIVE") {
+                groups[key][sideKey].shares = groups[key][sideKey].shares.plus(pShares);
+                groups[key][sideKey].invested = groups[key][sideKey].invested.plus(p.amount);
+                groups[key][sideKey].netCost = groups[key][sideKey].netCost.plus(new __TURBOPACK__imported__module__$5b$externals$5d2f40$prisma$2f$client$2f$runtime$2f$library__$5b$external$5d$__$2840$prisma$2f$client$2f$runtime$2f$library$2c$__cjs$2c$__$5b$project$5d2f$node_modules$2f40$prisma$2f$client$29$__["Decimal"](p.totalCost || 0));
+                groups[key][sideKey].fees = groups[key][sideKey].fees.plus(feeAmount);
+                groups[key][sideKey].history.push({
+                    id: p.id,
+                    amount: p.amount.toNumber(),
+                    shares: pShares.toNumber(),
+                    createdAt: p.createdAt,
+                    purchasePrice: p.purchasePrice?.toNumber()
+                });
+            }
+            // Legacy support/Global aggregates
             groups[key].shares = groups[key].shares.plus(pShares);
             groups[key].amount = groups[key].amount.plus(p.amount);
             groups[key].totalFees = groups[key].totalFees.plus(feeAmount);
             groups[key].history.push({
                 id: p.id,
+                side: p.side,
                 amount: p.amount.toNumber(),
                 shares: pShares.toNumber(),
                 createdAt: p.createdAt,
@@ -551,23 +581,75 @@ class PositionService {
         }
         return Object.values(groups).map((g)=>{
             const odds = __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$odds$2d$calculator$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["OddsCalculator"].calculateOdds(new __TURBOPACK__imported__module__$5b$externals$5d2f40$prisma$2f$client$2f$runtime$2f$library__$5b$external$5d$__$2840$prisma$2f$client$2f$runtime$2f$library$2c$__cjs$2c$__$5b$project$5d2f$node_modules$2f40$prisma$2f$client$29$__["Decimal"](g.market.yesPool), new __TURBOPACK__imported__module__$5b$externals$5d2f40$prisma$2f$client$2f$runtime$2f$library__$5b$external$5d$__$2840$prisma$2f$client$2f$runtime$2f$library$2c$__cjs$2c$__$5b$project$5d2f$node_modules$2f40$prisma$2f$client$29$__["Decimal"](g.market.noPool));
-            const currentPrice = new __TURBOPACK__imported__module__$5b$externals$5d2f40$prisma$2f$client$2f$runtime$2f$library__$5b$external$5d$__$2840$prisma$2f$client$2f$runtime$2f$library$2c$__cjs$2c$__$5b$project$5d2f$node_modules$2f40$prisma$2f$client$29$__["Decimal"](g.side === "YES" ? odds.yesOdds : odds.noOdds).dividedBy(100);
-            const sharesNum = g.shares.toNumber();
-            const amountNum = g.amount.toNumber();
-            const avgPrice = sharesNum > 0 ? amountNum / sharesNum : 0;
-            const fairValue = sharesNum * currentPrice.toNumber();
-            const potentialReturn = sharesNum; // wins $1 per share
+            const probYes = new __TURBOPACK__imported__module__$5b$externals$5d2f40$prisma$2f$client$2f$runtime$2f$library__$5b$external$5d$__$2840$prisma$2f$client$2f$runtime$2f$library$2c$__cjs$2c$__$5b$project$5d2f$node_modules$2f40$prisma$2f$client$29$__["Decimal"](odds.yesOdds).dividedBy(100);
+            const probNo = new __TURBOPACK__imported__module__$5b$externals$5d2f40$prisma$2f$client$2f$runtime$2f$library__$5b$external$5d$__$2840$prisma$2f$client$2f$runtime$2f$library$2c$__cjs$2c$__$5b$project$5d2f$node_modules$2f40$prisma$2f$client$29$__["Decimal"](odds.noOdds).dividedBy(100);
+            // Calculations for YES
+            const yesShares = g.yes.shares.toNumber();
+            const yesInvested = g.yes.invested.toNumber();
+            const yesAvgPrice = yesShares > 0 ? yesInvested / yesShares : 0;
+            const yesFairValue = yesShares * probYes.toNumber();
+            const yesPnL = yesFairValue - yesInvested;
+            const yesROI = yesInvested > 0 ? yesPnL / yesInvested * 100 : 0;
+            // Calculations for NO
+            const noShares = g.no.shares.toNumber();
+            const noInvested = g.no.invested.toNumber();
+            const noAvgPrice = noShares > 0 ? noInvested / noShares : 0;
+            const noFairValue = noShares * probNo.toNumber();
+            const noPnL = noFairValue - noInvested;
+            const noROI = noInvested > 0 ? noPnL / noInvested * 100 : 0;
+            // Market Totals
+            const totalInvested = yesInvested + noInvested;
+            const totalFairValue = yesFairValue + noFairValue;
+            const totalPnL = totalFairValue - totalInvested;
+            const totalROI = totalInvested > 0 ? totalPnL / totalInvested * 100 : 0;
+            // Settlement Scenarios (Payout - Total Investment)
+            const ifYesWinsPayout = yesShares; // wins $1 per share
+            const ifNoWinsPayout = noShares; // wins $1 per share
+            const ifYesWinsPnL = ifYesWinsPayout - totalInvested;
+            const ifNoWinsPnL = ifNoWinsPayout - totalInvested;
             return {
                 ...g,
-                shares: sharesNum,
-                amount: amountNum,
+                yes: {
+                    ...g.yes,
+                    shares: yesShares,
+                    invested: yesInvested,
+                    fees: g.yes.fees.toNumber(),
+                    avgPrice: yesAvgPrice,
+                    fairValue: yesFairValue,
+                    pnl: yesPnL,
+                    roi: yesROI,
+                    prob: probYes.toNumber()
+                },
+                no: {
+                    ...g.no,
+                    shares: noShares,
+                    invested: noInvested,
+                    fees: g.no.fees.toNumber(),
+                    avgPrice: noAvgPrice,
+                    fairValue: noFairValue,
+                    pnl: noPnL,
+                    roi: noROI,
+                    prob: probNo.toNumber()
+                },
+                amount: totalInvested,
+                fairValue: totalFairValue,
+                totalPnL,
+                totalROI,
+                scenarios: {
+                    ifYesWins: {
+                        payout: ifYesWinsPayout,
+                        net: ifYesWinsPnL
+                    },
+                    ifNoWins: {
+                        payout: ifNoWinsPayout,
+                        net: ifNoWinsPnL
+                    }
+                },
+                // Legacy fields for backward compat
+                shares: g.shares.toNumber(),
                 totalFees: g.totalFees.toNumber(),
-                purchasePrice: avgPrice,
-                currentPrice: currentPrice.toNumber(),
-                fairValue,
-                potentialReturn,
-                currentPayout: g.side === "YES" ? odds.yesPayout : odds.noPayout,
-                breakEvenPrice: avgPrice
+                currentPrice: probYes.toNumber(),
+                potentialReturn: Math.max(ifYesWinsPayout, ifNoWinsPayout)
             };
         });
     }

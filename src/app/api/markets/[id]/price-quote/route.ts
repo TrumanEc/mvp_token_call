@@ -45,18 +45,17 @@ export async function GET(
     let feeAmount = 0;
 
     // Scenario 1: User wants to spend X amount (e.g. $10)
+    // Inclusive fee: If user spends 10, totalCost is 10, fee is 1, net is 9.
     if (amountStr && !sharesStr) {
-      const amount = parseFloat(amountStr);
-      if (isNaN(amount) || amount <= 0) {
+      totalCost = parseFloat(amountStr);
+      if (isNaN(totalCost) || totalCost <= 0) {
         return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
       }
 
-      // Inclusive fee calculation: Total = Net * (1 + platformFeeRate)
-      // Net = Total / (1 + platformFeeRate)
-      const netAmount = amount / (1 + platformFeeRate);
-      feeAmount = amount - netAmount;
+      feeAmount = totalCost * platformFeeRate;
+      const netAmount = totalCost - feeAmount;
 
-      // Calculate shares for amount
+      // Calculate shares for net amount
       shares = lmsrService.getSharesToBuy(
         market.qYes,
         market.qNo,
@@ -64,7 +63,6 @@ export async function GET(
         side,
         netAmount,
       );
-      totalCost = amount; // User pays the full amount
     }
     // Scenario 2: User wants to buy Y shares (e.g. 10 shares)
     else if (sharesStr) {
@@ -73,7 +71,7 @@ export async function GET(
         return NextResponse.json({ error: "Invalid shares" }, { status: 400 });
       }
 
-      // Calculate net cost to pool for these shares
+      // Cost to buy these shares in the pool (NET COST)
       const netCost = lmsrService.getCostToBuy(
         market.qYes,
         market.qNo,
@@ -81,8 +79,9 @@ export async function GET(
         side,
         shares,
       );
-      // Inclusive fee: Total = Net * (1 + Rate)
-      totalCost = netCost * (1 + platformFeeRate);
+      // If WIN takes 10% of total, then netCost = 90% of total.
+      // E.g. 9 = 0.9 * Total => Total = 9 / 0.9 = 10.
+      totalCost = netCost / (1 - platformFeeRate);
       feeAmount = totalCost - netCost;
     } else {
       return NextResponse.json(
@@ -91,14 +90,17 @@ export async function GET(
       );
     }
 
+    // avgPrice is based on Net Amount (the price per share in the pool)
     const avgPrice = shares > 0 ? (totalCost - feeAmount) / shares : 0;
 
-    // Validate bounds for the requested amount (explicit limits only)
+    // Validate bounds for the requested net investment
     const maxBetAmount = market.maxBetAmount ?? null;
     const maxPriceImpact = market.maxPriceImpact ?? null;
 
+    const netInvestment = totalCost - feeAmount;
+
     const validation = lmsrService.validateBetAmount(
-      totalCost, // Check the actual cost to be precise
+      netInvestment, // Validate against the net investment amount
       market.qYes,
       market.qNo,
       market.b,

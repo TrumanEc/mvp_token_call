@@ -34,17 +34,18 @@ export function LmsrCalculator() {
 
   if (amount > 0 && b > 0) {
     const feeRate = parseFloat(platformFeeRate) / 100 || 0;
-    // Inclusive fee: Total = Net * (1 + platformFeeRate)
-    // Net = Total / (1 + platformFeeRate)
-    const netAmount = Number(amount) / (1 + feeRate);
-    const feeAmount = Number(amount) - netAmount;
+    // Inclusive fee: 10% of 10 is 1.
+    // User spends 10, pays 1 fee, 9 goes to pool.
+    const totalCost = Number(amount);
+    const feeAmount = totalCost * feeRate;
+    const netAmount = totalCost - feeAmount;
 
     let low = 0;
     let high = netAmount * 2; // Upper bound guess
     let shares = 0;
 
-    // Binary search for shares
-    for (let i = 0; i < 20; i++) {
+    // Binary search for shares (align with LmsrService)
+    for (let i = 0; i < 100; i++) {
       const mid = (low + high) / 2;
       const testQYes = simSide === "YES" ? qYes + mid : qYes;
       const testQNo = simSide === "NO" ? qNo + mid : qNo;
@@ -59,7 +60,7 @@ export function LmsrCalculator() {
           ));
       const deltaCost = costNew - cost;
 
-      if (Math.abs(deltaCost - netAmount) < 0.01) {
+      if (Math.abs(deltaCost - netAmount) < 1e-8) {
         shares = mid;
         break;
       }
@@ -110,6 +111,8 @@ export function LmsrCalculator() {
       wouldExceedCap,
       capReason,
       feeAmount,
+      totalCost,
+      netAmount,
     };
   }
 
@@ -306,8 +309,20 @@ export function LmsrCalculator() {
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Comisión WIN:</span>
+                <span className="text-[#e16464] font-bold">
+                  - ${simResult.feeAmount.toFixed(2)}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Inversión Neta:</span>
                 <span className="text-white font-bold">
-                  ${simResult.feeAmount.toFixed(2)}
+                  ${simResult.netAmount.toFixed(2)}
+                </span>
+              </div>
+              <div className="flex justify-between border-t border-white/5 pt-1 mt-1">
+                <span className="text-gray-400">Costo Total:</span>
+                <span className="text-white font-bold">
+                  ${simResult.totalCost.toFixed(2)}
                 </span>
               </div>
               <div className="flex justify-between">

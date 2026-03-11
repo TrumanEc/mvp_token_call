@@ -1145,22 +1145,23 @@ function LmsrCalculator() {
     let simResult = null;
     if (amount > 0 && b > 0) {
         const feeRate = parseFloat(platformFeeRate) / 100 || 0;
-        // Inclusive fee: Total = Net * (1 + platformFeeRate)
-        // Net = Total / (1 + platformFeeRate)
-        const netAmount = Number(amount) / (1 + feeRate);
-        const feeAmount = Number(amount) - netAmount;
+        // Inclusive fee: 10% of 10 is 1.
+        // User spends 10, pays 1 fee, 9 goes to pool.
+        const totalCost = Number(amount);
+        const feeAmount = totalCost * feeRate;
+        const netAmount = totalCost - feeAmount;
         let low = 0;
         let high = netAmount * 2; // Upper bound guess
         let shares = 0;
-        // Binary search for shares
-        for(let i = 0; i < 20; i++){
+        // Binary search for shares (align with LmsrService)
+        for(let i = 0; i < 100; i++){
             const mid = (low + high) / 2;
             const testQYes = simSide === "YES" ? qYes + mid : qYes;
             const testQNo = simSide === "NO" ? qNo + mid : qNo;
             const testMaxQ = Math.max(testQYes / b, testQNo / b);
             const costNew = b * (testMaxQ + Math.log(Math.exp(testQYes / b - testMaxQ) + Math.exp(testQNo / b - testMaxQ)));
             const deltaCost = costNew - cost;
-            if (Math.abs(deltaCost - netAmount) < 0.01) {
+            if (Math.abs(deltaCost - netAmount) < 1e-8) {
                 shares = mid;
                 break;
             }
@@ -1201,7 +1202,9 @@ function LmsrCalculator() {
             priceImpact,
             wouldExceedCap,
             capReason,
-            feeAmount
+            feeAmount,
+            totalCost,
+            netAmount
         };
     }
     // Liquidity Report Simulation
@@ -1217,12 +1220,12 @@ function LmsrCalculator() {
                     children: "Simulador LMSR"
                 }, void 0, false, {
                     fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                    lineNumber: 124,
+                    lineNumber: 127,
                     columnNumber: 9
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                lineNumber: 123,
+                lineNumber: 126,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$Card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["CardContent"], {
@@ -1238,7 +1241,7 @@ function LmsrCalculator() {
                                         children: "Liquidez (b)"
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                        lineNumber: 131,
+                                        lineNumber: 134,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$Input$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Input"], {
@@ -1248,13 +1251,13 @@ function LmsrCalculator() {
                                         className: "bg-[#0a0a0a] border-white/5 text-white"
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                        lineNumber: 134,
+                                        lineNumber: 137,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                lineNumber: 130,
+                                lineNumber: 133,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1264,7 +1267,7 @@ function LmsrCalculator() {
                                         children: "Shares YES (q1)"
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                        lineNumber: 142,
+                                        lineNumber: 145,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$Input$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Input"], {
@@ -1274,13 +1277,13 @@ function LmsrCalculator() {
                                         className: "bg-[#0a0a0a] border-white/5 text-white"
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                        lineNumber: 145,
+                                        lineNumber: 148,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                lineNumber: 141,
+                                lineNumber: 144,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1290,7 +1293,7 @@ function LmsrCalculator() {
                                         children: "Shares NO (q2)"
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                        lineNumber: 153,
+                                        lineNumber: 156,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$Input$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Input"], {
@@ -1300,19 +1303,19 @@ function LmsrCalculator() {
                                         className: "bg-[#0a0a0a] border-white/5 text-white"
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                        lineNumber: 156,
+                                        lineNumber: 159,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                lineNumber: 152,
+                                lineNumber: 155,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                        lineNumber: 129,
+                        lineNumber: 132,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1326,7 +1329,7 @@ function LmsrCalculator() {
                                         children: "Balance de Liquidez (WIN)"
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                        lineNumber: 167,
+                                        lineNumber: 170,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1340,7 +1343,7 @@ function LmsrCalculator() {
                                                         children: "Liquidez puesta por WIN (b)"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                                        lineNumber: 172,
+                                                        lineNumber: 175,
                                                         columnNumber: 17
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1351,13 +1354,13 @@ function LmsrCalculator() {
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                                        lineNumber: 175,
+                                                        lineNumber: 178,
                                                         columnNumber: 17
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                                lineNumber: 171,
+                                                lineNumber: 174,
                                                 columnNumber: 15
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1368,7 +1371,7 @@ function LmsrCalculator() {
                                                         children: "Subsidio Inicial (Seed Cost)"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                                        lineNumber: 178,
+                                                        lineNumber: 181,
                                                         columnNumber: 17
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1379,13 +1382,13 @@ function LmsrCalculator() {
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                                        lineNumber: 181,
+                                                        lineNumber: 184,
                                                         columnNumber: 17
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                                lineNumber: 177,
+                                                lineNumber: 180,
                                                 columnNumber: 15
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1396,7 +1399,7 @@ function LmsrCalculator() {
                                                         children: "Inversiones Netas (In)"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                                        lineNumber: 186,
+                                                        lineNumber: 189,
                                                         columnNumber: 17
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1407,13 +1410,13 @@ function LmsrCalculator() {
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                                        lineNumber: 187,
+                                                        lineNumber: 190,
                                                         columnNumber: 17
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                                lineNumber: 185,
+                                                lineNumber: 188,
                                                 columnNumber: 15
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1424,7 +1427,7 @@ function LmsrCalculator() {
                                                         children: "PnL de Liquidez (Neto)"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                                        lineNumber: 192,
+                                                        lineNumber: 195,
                                                         columnNumber: 17
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1435,13 +1438,13 @@ function LmsrCalculator() {
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                                        lineNumber: 195,
+                                                        lineNumber: 198,
                                                         columnNumber: 17
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                                lineNumber: 191,
+                                                lineNumber: 194,
                                                 columnNumber: 15
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1451,24 +1454,24 @@ function LmsrCalculator() {
                                                     children: "* El Seed Cost se calcula como b × ln(2). El factor 0.6931 representa el costo de establecer las probabilidades al 50% inicial en un mercado LMSR."
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                                    lineNumber: 202,
+                                                    lineNumber: 205,
                                                     columnNumber: 17
                                                 }, this)
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                                lineNumber: 201,
+                                                lineNumber: 204,
                                                 columnNumber: 15
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                        lineNumber: 170,
+                                        lineNumber: 173,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                lineNumber: 166,
+                                lineNumber: 169,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1481,7 +1484,7 @@ function LmsrCalculator() {
                                                 children: "Precio SÍ"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                                lineNumber: 213,
+                                                lineNumber: 216,
                                                 columnNumber: 15
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1492,13 +1495,13 @@ function LmsrCalculator() {
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                                lineNumber: 216,
+                                                lineNumber: 219,
                                                 columnNumber: 15
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                        lineNumber: 212,
+                                        lineNumber: 215,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1508,7 +1511,7 @@ function LmsrCalculator() {
                                                 children: "Precio NO"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                                lineNumber: 221,
+                                                lineNumber: 224,
                                                 columnNumber: 15
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1519,25 +1522,25 @@ function LmsrCalculator() {
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                                lineNumber: 224,
+                                                lineNumber: 227,
                                                 columnNumber: 15
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                        lineNumber: 220,
+                                        lineNumber: 223,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                lineNumber: 211,
+                                lineNumber: 214,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                        lineNumber: 165,
+                        lineNumber: 168,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1550,7 +1553,7 @@ function LmsrCalculator() {
                                         children: "CAP Pago ($)"
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                        lineNumber: 233,
+                                        lineNumber: 236,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$Input$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Input"], {
@@ -1561,13 +1564,13 @@ function LmsrCalculator() {
                                         className: "bg-[#0a0a0a] border-white/5 text-white"
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                        lineNumber: 236,
+                                        lineNumber: 239,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                lineNumber: 232,
+                                lineNumber: 235,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1577,7 +1580,7 @@ function LmsrCalculator() {
                                         children: "CAP Impacto (%)"
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                        lineNumber: 245,
+                                        lineNumber: 248,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$Input$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Input"], {
@@ -1588,13 +1591,13 @@ function LmsrCalculator() {
                                         className: "bg-[#0a0a0a] border-white/5 text-white"
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                        lineNumber: 248,
+                                        lineNumber: 251,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                lineNumber: 244,
+                                lineNumber: 247,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1604,7 +1607,7 @@ function LmsrCalculator() {
                                         children: "Comisión WIN (%)"
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                        lineNumber: 257,
+                                        lineNumber: 260,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$Input$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Input"], {
@@ -1614,19 +1617,19 @@ function LmsrCalculator() {
                                         className: "bg-[#0a0a0a] border-white/5 text-white"
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                        lineNumber: 260,
+                                        lineNumber: 263,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                lineNumber: 256,
+                                lineNumber: 259,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                        lineNumber: 231,
+                        lineNumber: 234,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1637,7 +1640,7 @@ function LmsrCalculator() {
                                 children: "Simular Compra"
                             }, void 0, false, {
                                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                lineNumber: 270,
+                                lineNumber: 273,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1653,12 +1656,12 @@ function LmsrCalculator() {
                                             placeholder: "Monto ($)"
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                            lineNumber: 275,
+                                            lineNumber: 278,
                                             columnNumber: 15
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                        lineNumber: 274,
+                                        lineNumber: 277,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1670,7 +1673,7 @@ function LmsrCalculator() {
                                                 children: "YES"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                                lineNumber: 284,
+                                                lineNumber: 287,
                                                 columnNumber: 15
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$Button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
@@ -1679,19 +1682,19 @@ function LmsrCalculator() {
                                                 children: "NO"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                                lineNumber: 290,
+                                                lineNumber: 293,
                                                 columnNumber: 15
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                        lineNumber: 283,
+                                        lineNumber: 286,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                lineNumber: 273,
+                                lineNumber: 276,
                                 columnNumber: 11
                             }, this),
                             simResult && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1705,7 +1708,7 @@ function LmsrCalculator() {
                                                 children: "Shares Recibidas:"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                                lineNumber: 302,
+                                                lineNumber: 305,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1713,13 +1716,13 @@ function LmsrCalculator() {
                                                 children: simResult.shares.toFixed(2)
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                                lineNumber: 303,
+                                                lineNumber: 306,
                                                 columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                        lineNumber: 301,
+                                        lineNumber: 304,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1730,24 +1733,80 @@ function LmsrCalculator() {
                                                 children: "Comisión WIN:"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                                lineNumber: 308,
+                                                lineNumber: 311,
+                                                columnNumber: 17
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                className: "text-[#e16464] font-bold",
+                                                children: [
+                                                    "- $",
+                                                    simResult.feeAmount.toFixed(2)
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
+                                                lineNumber: 312,
+                                                columnNumber: 17
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
+                                        lineNumber: 310,
+                                        columnNumber: 15
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        className: "flex justify-between",
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                className: "text-gray-400",
+                                                children: "Inversión Neta:"
+                                            }, void 0, false, {
+                                                fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
+                                                lineNumber: 317,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                                 className: "text-white font-bold",
                                                 children: [
                                                     "$",
-                                                    simResult.feeAmount.toFixed(2)
+                                                    simResult.netAmount.toFixed(2)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                                lineNumber: 309,
+                                                lineNumber: 318,
                                                 columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                        lineNumber: 307,
+                                        lineNumber: 316,
+                                        columnNumber: 15
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        className: "flex justify-between border-t border-white/5 pt-1 mt-1",
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                className: "text-gray-400",
+                                                children: "Costo Total:"
+                                            }, void 0, false, {
+                                                fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
+                                                lineNumber: 323,
+                                                columnNumber: 17
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                className: "text-white font-bold",
+                                                children: [
+                                                    "$",
+                                                    simResult.totalCost.toFixed(2)
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
+                                                lineNumber: 324,
+                                                columnNumber: 17
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
+                                        lineNumber: 322,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1758,7 +1817,7 @@ function LmsrCalculator() {
                                                 children: "Precio Promedio:"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                                lineNumber: 314,
+                                                lineNumber: 329,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1769,13 +1828,13 @@ function LmsrCalculator() {
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                                lineNumber: 315,
+                                                lineNumber: 330,
                                                 columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                        lineNumber: 313,
+                                        lineNumber: 328,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1786,7 +1845,7 @@ function LmsrCalculator() {
                                                 children: "Impacto p:"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                                lineNumber: 320,
+                                                lineNumber: 335,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1797,13 +1856,13 @@ function LmsrCalculator() {
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                                lineNumber: 321,
+                                                lineNumber: 336,
                                                 columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                        lineNumber: 319,
+                                        lineNumber: 334,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1818,7 +1877,7 @@ function LmsrCalculator() {
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                                lineNumber: 328,
+                                                lineNumber: 343,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1829,13 +1888,13 @@ function LmsrCalculator() {
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                                lineNumber: 329,
+                                                lineNumber: 344,
                                                 columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                        lineNumber: 327,
+                                        lineNumber: 342,
                                         columnNumber: 15
                                     }, this),
                                     simResult.wouldExceedCap && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1846,31 +1905,31 @@ function LmsrCalculator() {
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                        lineNumber: 340,
+                                        lineNumber: 355,
                                         columnNumber: 17
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                                lineNumber: 300,
+                                lineNumber: 303,
                                 columnNumber: 13
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                        lineNumber: 269,
+                        lineNumber: 272,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-                lineNumber: 128,
+                lineNumber: 131,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/src/app/admin/lmsr-calculator.tsx",
-        lineNumber: 122,
+        lineNumber: 125,
         columnNumber: 5
     }, this);
 }

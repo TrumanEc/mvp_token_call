@@ -6,9 +6,11 @@
   "/api/markets/[id]/price-quote/route": "app/api/markets/[id]/price-quote/route.js",
   "/api/markets/[id]/route": "app/api/markets/[id]/route.js",
   "/api/markets/route": "app/api/markets/route.js",
+  "/api/positions/route": "app/api/positions/route.js",
   "/api/users/[id]/route": "app/api/users/[id]/route.js",
   "/api/users/route": "app/api/users/route.js",
   "/markets/[id]/page": "app/markets/[id]/page.js",
   "/markets/page": "app/markets/page.js",
-  "/page": "app/page.js"
+  "/page": "app/page.js",
+  "/positions/page": "app/positions/page.js"
 }

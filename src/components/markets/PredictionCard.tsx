@@ -78,7 +78,13 @@ export function PredictionCard({
   // Use quoted values or fallback to current market price for estimation
   const currentPrice =
     (side === "YES" ? market.odds.yesOdds : market.odds.noOdds) / 100;
-  const netAmount = amountNum - (quote?.feeAmount || 0);
+
+  // Inclusive fee: If user spends 10, totalCost is 10, fee is 1, net is 9.
+  const totalCost = amountNum;
+  const netAmount = quote
+    ? quote.totalCost - (quote.feeAmount ?? 0)
+    : amountNum * 0.9;
+
   const estimatedShares = quote
     ? quote.shares
     : netAmount > 0
@@ -98,7 +104,7 @@ export function PredictionCard({
       return;
     }
 
-    if (amountNum > userBalance) {
+    if (totalCost > userBalance) {
       setError("Saldo insuficiente");
       return;
     }
@@ -267,7 +273,13 @@ export function PredictionCard({
                 <div className="flex justify-between items-center px-4 py-3 bg-[#0d0d0d]/50 rounded-xl border border-white/5">
                   <span className="text-xs text-gray-400">Inversión Neta</span>
                   <span className="text-sm font-bold text-white">
-                    ${(amountNum - quote.feeAmount).toFixed(2)}
+                    ${(quote.totalCost - quote.feeAmount).toFixed(2)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center px-4 py-3 bg-[#0d0d0d]/50 rounded-xl border border-white/5">
+                  <span className="text-xs text-gray-400">Costo Total</span>
+                  <span className="text-sm font-bold text-white">
+                    ${quote.totalCost.toFixed(2)}
                   </span>
                 </div>
               </>

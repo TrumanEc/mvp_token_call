@@ -844,7 +844,9 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
     ]);
     // Use quoted values or fallback to current market price for estimation
     const currentPrice = (side === "YES" ? market.odds.yesOdds : market.odds.noOdds) / 100;
-    const netAmount = amountNum - (quote?.feeAmount || 0);
+    // Inclusive fee: If user spends 10, totalCost is 10, fee is 1, net is 9.
+    const totalCost = amountNum;
+    const netAmount = quote ? quote.totalCost - (quote.feeAmount ?? 0) : amountNum * 0.9;
     const estimatedShares = quote ? quote.shares : netAmount > 0 ? netAmount / currentPrice : 0;
     // In LMSR, return is $1 per share. So potential return value = shares.
     const potentialReturnValue = estimatedShares;
@@ -857,7 +859,7 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
             setError("Ingresa un monto válido");
             return;
         }
-        if (amountNum > userBalance) {
+        if (totalCost > userBalance) {
             setError("Saldo insuficiente");
             return;
         }
@@ -904,7 +906,7 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
                         children: market.question
                     }, void 0, false, {
                         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                        lineNumber: 146,
+                        lineNumber: 152,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -930,7 +932,7 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
                                         className: "transform -rotate-180 origin-center"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                        lineNumber: 157,
+                                        lineNumber: 163,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("circle", {
@@ -949,13 +951,13 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
                                         className: "transform -rotate-180 origin-center"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                        lineNumber: 170,
+                                        lineNumber: 176,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                lineNumber: 151,
+                                lineNumber: 157,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -969,7 +971,7 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                        lineNumber: 187,
+                                        lineNumber: 193,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -977,25 +979,25 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
                                         children: "Chance"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                        lineNumber: 190,
+                                        lineNumber: 196,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                lineNumber: 186,
+                                lineNumber: 192,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                        lineNumber: 150,
+                        lineNumber: 156,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                lineNumber: 145,
+                lineNumber: 151,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1011,7 +1013,7 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
                                 children: "Yes"
                             }, void 0, false, {
                                 fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                lineNumber: 208,
+                                lineNumber: 214,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1024,18 +1026,18 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                    lineNumber: 210,
+                                    lineNumber: 216,
                                     columnNumber: 13
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                lineNumber: 209,
+                                lineNumber: 215,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                        lineNumber: 199,
+                        lineNumber: 205,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -1048,7 +1050,7 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
                                 children: "No"
                             }, void 0, false, {
                                 fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                lineNumber: 224,
+                                lineNumber: 230,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1061,24 +1063,24 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                    lineNumber: 226,
+                                    lineNumber: 232,
                                     columnNumber: 13
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                lineNumber: 225,
+                                lineNumber: 231,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                        lineNumber: 215,
+                        lineNumber: 221,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                lineNumber: 198,
+                lineNumber: 204,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("form", {
@@ -1095,7 +1097,7 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
                                         children: "MONTO A INVERTIR"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                        lineNumber: 237,
+                                        lineNumber: 243,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1105,13 +1107,13 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                        lineNumber: 238,
+                                        lineNumber: 244,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                lineNumber: 236,
+                                lineNumber: 242,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1125,7 +1127,7 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
                                         className: "w-full bg-[#0d0d0d] border border-[#272727] rounded-xl px-4 py-3 text-white font-bold text-lg outline-none transition-all group-focus-within:border-[#64c883] group-focus-within:ring-1 group-focus-within:ring-[#64c883]/20"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                        lineNumber: 241,
+                                        lineNumber: 247,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1133,19 +1135,19 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
                                         children: "$"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                        lineNumber: 248,
+                                        lineNumber: 254,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                lineNumber: 240,
+                                lineNumber: 246,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                        lineNumber: 235,
+                        lineNumber: 241,
                         columnNumber: 9
                     }, this),
                     amountNum > 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1165,7 +1167,7 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                                lineNumber: 259,
+                                                lineNumber: 265,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1176,13 +1178,13 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                                lineNumber: 263,
+                                                lineNumber: 269,
                                                 columnNumber: 19
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                        lineNumber: 258,
+                                        lineNumber: 264,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1193,24 +1195,52 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
                                                 children: "Inversión Neta"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                                lineNumber: 268,
+                                                lineNumber: 274,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                                 className: "text-sm font-bold text-white",
                                                 children: [
                                                     "$",
-                                                    (amountNum - quote.feeAmount).toFixed(2)
+                                                    (quote.totalCost - quote.feeAmount).toFixed(2)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                                lineNumber: 269,
+                                                lineNumber: 275,
                                                 columnNumber: 19
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                        lineNumber: 267,
+                                        lineNumber: 273,
+                                        columnNumber: 17
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        className: "flex justify-between items-center px-4 py-3 bg-[#0d0d0d]/50 rounded-xl border border-white/5",
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                className: "text-xs text-gray-400",
+                                                children: "Costo Total"
+                                            }, void 0, false, {
+                                                fileName: "[project]/src/components/markets/PredictionCard.tsx",
+                                                lineNumber: 280,
+                                                columnNumber: 19
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                className: "text-sm font-bold text-white",
+                                                children: [
+                                                    "$",
+                                                    quote.totalCost.toFixed(2)
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/src/components/markets/PredictionCard.tsx",
+                                                lineNumber: 281,
+                                                columnNumber: 19
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/src/components/markets/PredictionCard.tsx",
+                                        lineNumber: 279,
                                         columnNumber: 17
                                     }, this)
                                 ]
@@ -1223,7 +1253,7 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
                                         children: "Acciones Estimadas"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                        lineNumber: 276,
+                                        lineNumber: 288,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1231,13 +1261,13 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
                                         children: quoteLoading ? "..." : estimatedShares.toFixed(2)
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                        lineNumber: 277,
+                                        lineNumber: 289,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                lineNumber: 275,
+                                lineNumber: 287,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1248,7 +1278,7 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
                                         children: "Precio Promedio"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                        lineNumber: 282,
+                                        lineNumber: 294,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1256,13 +1286,13 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
                                         children: quoteLoading ? "..." : `$${(quote ? quote.avgPrice : currentPrice).toFixed(4)}`
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                        lineNumber: 283,
+                                        lineNumber: 295,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                lineNumber: 281,
+                                lineNumber: 293,
                                 columnNumber: 13
                             }, this),
                             quote && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1273,7 +1303,7 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
                                         children: "Nuevo Precio del Mercado"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                        lineNumber: 291,
+                                        lineNumber: 303,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1287,7 +1317,7 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                                lineNumber: 295,
+                                                lineNumber: 307,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1298,19 +1328,19 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                                lineNumber: 298,
+                                                lineNumber: 310,
                                                 columnNumber: 19
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                        lineNumber: 294,
+                                        lineNumber: 306,
                                         columnNumber: 17
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                lineNumber: 290,
+                                lineNumber: 302,
                                 columnNumber: 15
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1325,7 +1355,7 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                        lineNumber: 305,
+                                        lineNumber: 317,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1333,19 +1363,19 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
                                         children: quoteLoading ? "..." : `$${potentialReturnValue.toFixed(2)}`
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                        lineNumber: 308,
+                                        lineNumber: 320,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                lineNumber: 304,
+                                lineNumber: 316,
                                 columnNumber: 13
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                        lineNumber: 255,
+                        lineNumber: 261,
                         columnNumber: 11
                     }, this),
                     quote?.wouldExceedCap && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1356,14 +1386,14 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
                                 children: "⚠️ Límite excedido"
                             }, void 0, false, {
                                 fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                lineNumber: 317,
+                                lineNumber: 329,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                 children: quote.capReason
                             }, void 0, false, {
                                 fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                lineNumber: 318,
+                                lineNumber: 330,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1378,13 +1408,13 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                        lineNumber: 321,
+                                        lineNumber: 333,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                lineNumber: 319,
+                                lineNumber: 331,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -1394,13 +1424,13 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
                                 children: "Ajustar al máximo"
                             }, void 0, false, {
                                 fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                                lineNumber: 323,
+                                lineNumber: 335,
                                 columnNumber: 13
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                        lineNumber: 316,
+                        lineNumber: 328,
                         columnNumber: 11
                     }, this),
                     error && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1408,7 +1438,7 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
                         children: error
                     }, void 0, false, {
                         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                        lineNumber: 336,
+                        lineNumber: 348,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$Button$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Button"], {
@@ -1422,13 +1452,13 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                        lineNumber: 341,
+                        lineNumber: 353,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                lineNumber: 234,
+                lineNumber: 240,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1441,18 +1471,18 @@ function PredictionCard({ market, userId, userBalance, onSuccess }) {
                     ]
                 }, void 0, true, {
                     fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                    lineNumber: 363,
+                    lineNumber: 375,
                     columnNumber: 9
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/src/components/markets/PredictionCard.tsx",
-                lineNumber: 362,
+                lineNumber: 374,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/src/components/markets/PredictionCard.tsx",
-        lineNumber: 143,
+        lineNumber: 149,
         columnNumber: 5
     }, this);
 }

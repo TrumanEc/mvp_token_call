@@ -1,395 +1,244 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
-import { PositionHistory } from "./PositionHistory";
 
 interface PositionCardProps {
-  position: {
-    id: string;
-    side: "YES" | "NO";
-    amount: number; // Total Cost
-    status: string;
-    shares: number;
-    currentPrice: number; // Current Market Price per Share
-    fairValue: number; // Total Fair Value
-    currentPayout: number;
-    potentialReturn: number;
-    isForSale: boolean;
-    createdAt: string | Date;
-    purchasePrice: number; // Weighted Avg Cost (avg price per share)
-    breakEvenPrice: number;
-    history: any[];
-    market: {
-      id: string;
-      playerName: string;
-      question: string;
-      status: string;
-    };
-  };
+  position: any; // Consolidated position object from PositionService
   userId: string;
   onSell: () => void;
 }
 
 export function PositionCard({ position, userId, onSell }: PositionCardProps) {
   const [showSellModal, setShowSellModal] = useState(false);
-  const [sellShares, setSellShares] = useState(position.shares.toFixed(2));
-  const [askPrice, setAskPrice] = useState(position.fairValue.toFixed(2));
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
-  const profit = position.fairValue - position.amount;
-  const profitPct =
-    position.amount > 0
-      ? (
-          ((position.fairValue - position.amount) / position.amount) *
-          100
-        ).toFixed(1)
-      : "0.0";
+  const {
+    yes,
+    no,
+    market,
+    amount: totalInvested,
+    fairValue: totalFairValue,
+    scenarios,
+  } = position;
 
-  const sellSharesNum = parseFloat(sellShares) || 0;
-  // Proportional Fair Value based on shares being sold
-  const proportionalFairValue =
-    (sellSharesNum / position.shares) * position.fairValue;
+  // Active positions are consolidated.
+  const isActive = position.status === "ACTIVE";
 
-  const handleSell = async () => {
-    setError("");
-    setLoading(true);
-
-    try {
-      const sharesToSell = parseFloat(sellShares);
-      const priceToAsk = parseFloat(askPrice);
-
-      if (sharesToSell <= 0 || sharesToSell > position.shares) {
-        throw new Error("Cantidad de acciones inválida");
-      }
-
-      // Check if selling full position (approx)
-      const isFull = Math.abs(sharesToSell - position.shares) < 0.01;
-
-      const res = await fetch(`/api/positions/${position.id}/list`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId,
-          askPrice: priceToAsk,
-          amount: isFull ? undefined : sharesToSell, // Backend expects 'amount' as shares for partial
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || "Error al listar posición");
-      }
-
-      setShowSellModal(false);
-      onSell();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Error desconocido");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSellSharesChange = (value: string) => {
-    setSellShares(value);
-    const newShares = parseFloat(value) || 0;
-    // Suggest price proportional to fair value
-    const newFairValue = (newShares / position.shares) * position.fairValue;
-    setAskPrice(newFairValue.toFixed(2));
-  };
+  const renderRow = (label: string, data: any, colorClass: string) => (
+    <tr className="border-b border-white/5 last:border-0 h-14 group/row">
+      <td
+        className={`pl-4 text-[10px] font-bold uppercase tracking-wider ${colorClass}`}
+      >
+        {label}
+      </td>
+      <td className="text-center text-xs font-bold text-white">
+        {data.shares > 0
+          ? data.shares.toLocaleString(undefined, { maximumFractionDigits: 2 })
+          : "-"}
+      </td>
+      <td className="text-center text-xs font-bold text-white/60">
+        {data.shares > 0 ? `$${data.avgPrice.toFixed(4)}` : "-"}
+      </td>
+      <td className="text-center text-xs font-bold text-white">
+        {data.invested > 0
+          ? `$${data.invested.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+          : "-"}
+      </td>
+      <td className="text-center text-xs font-bold text-white">
+        {data.shares > 0
+          ? `$${data.fairValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+          : "-"}
+      </td>
+      <td
+        className={`text-center text-xs font-bold ${data.pnl >= 0 ? "text-[#64c883]" : "text-[#e16464]"} ${data.shares === 0 ? "opacity-0" : ""}`}
+      >
+        {data.pnl >= 0 ? "+" : ""}$
+        {data.pnl.toLocaleString(undefined, {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })}
+      </td>
+      <td
+        className={`text-center text-xs font-bold ${data.roi >= 0 ? "text-[#64c883]" : "text-[#e16464]"} ${data.shares === 0 ? "opacity-0" : ""}`}
+      >
+        {data.roi >= 0 ? "+" : ""}
+        {data.roi.toFixed(1)}%
+      </td>
+      <td className="text-center text-xs font-bold text-white/40">
+        {data.shares > 0 ? `$${data.avgPrice.toFixed(4)}` : "-"}
+      </td>
+      <td className={`pr-4 text-right text-xs font-extrabold ${colorClass}`}>
+        {(data.prob * 100).toFixed(1)}%
+      </td>
+    </tr>
+  );
 
   return (
-    <>
-      <div className="bg-[#121212] border border-white/5 rounded-3xl p-6 transition-all hover:border-white/10 group">
-        <div className="flex items-start justify-between mb-8">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                {new Date(position.createdAt).toLocaleDateString()}
-              </span>
-              <div className="w-1 h-1 rounded-full bg-white/10" />
-              <div className="flex gap-1">
-                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-                  Avg Cost:
-                </span>
-                <span className="text-[10px] font-bold text-[#64c883] uppercase tracking-wider">
-                  ${position.purchasePrice.toFixed(3)}
-                </span>
-              </div>
-            </div>
-            <h4 className="text-xl font-bold text-white group-hover:text-[#64c883] transition-colors leading-tight">
-              {position.market.question}
+    <div className="bg-[#121212] border border-white/5 rounded-3xl overflow-hidden transition-all hover:border-white/10 group col-span-1 md:col-span-2 shadow-2xl shadow-black/20">
+      {/* Header */}
+      <div className="p-6 md:px-8 md:py-7 flex justify-between items-center bg-white/[0.01]">
+        <div>
+          <div className="flex flex-wrap items-center gap-2 mb-1">
+            <h4 className="text-xl md:text-2xl font-bold text-white transition-colors leading-tight">
+              {market.question}
             </h4>
-          </div>
-          <div className="flex gap-2 shrink-0">
-            <span
-              className={`px-3 py-1 text-[10px] font-bold rounded-full uppercase tracking-wider ${
-                position.side === "YES"
-                  ? "bg-[#64c883]/10 text-[#64c883]"
-                  : "bg-[#e16464]/10 text-[#e16464]"
-              }`}
-            >
-              {position.side}
+            <span className="text-[10px] font-bold text-gray-600 uppercase tracking-widest mt-1">
+              {market.playerName}
+            </span>
+            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">
+              #{market.id.slice(-4)}
+            </span>
+            <span className="text-[10px] font-bold text-gray-600 uppercase tracking-widest mt-1 ml-2">
+              {new Date(position.createdAt).toLocaleDateString()}
             </span>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 bg-[#0a0a0a]/50 p-5 rounded-2xl border border-white/5">
-          <div className="space-y-1">
-            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-              Acciones
+        {/* Probability Bar at Top Right */}
+        <div className="flex flex-col items-end gap-2 pr-2">
+          <div className="flex gap-4 mb-0.5">
+            <div className="flex items-center gap-1.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-[#64c883]" />
+              <span className="text-[10px] font-extrabold text-[#64c883]">
+                {(yes.prob * 100).toFixed(1)}%
+              </span>
             </div>
-            <div className="text-xl font-extrabold text-white">
-              {position.shares.toFixed(2)}
-            </div>
-            <div className="text-[9px] font-bold text-gray-500 uppercase">
-              Tokens Acumulados
-            </div>
-          </div>
-          <div className="space-y-1">
-            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-              Valor de Mercado
-            </div>
-            <div className="text-xl font-extrabold text-white">
-              $ {position.fairValue.toFixed(2)}
-            </div>
-            <div className="text-[9px] font-bold text-[#64c883] uppercase flex items-center gap-1">
-              <div className="w-1.5 h-1.5 rounded-full bg-[#64c883] animate-pulse" />
-              @{position.currentPrice.toFixed(3)}
+            <div className="flex items-center gap-1.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-[#e16464]" />
+              <span className="text-[10px] font-extrabold text-[#e16464]">
+                {(no.prob * 100).toFixed(1)}%
+              </span>
             </div>
           </div>
-          <div className="space-y-1">
-            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-              Inversión Total
-            </div>
-            <div className="text-xl font-extrabold text-white">
-              ${" "}
-              {position.amount.toLocaleString(undefined, {
-                minimumFractionDigits: 2,
-              })}
-            </div>
-            <div className="text-[9px] font-bold text-gray-500 uppercase flex flex-col gap-0.5">
-              <div className="flex justify-between">
-                <span>Neta:</span>
-                <span className="text-white/60">
-                  ${" "}
-                  {(
-                    position.amount - ((position as any).totalFees || 0)
-                  ).toFixed(2)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Comisión:</span>
-                <span className="text-[#e16464]/60">
-                  $ {((position as any).totalFees || 0).toFixed(2)}
-                </span>
-              </div>
-            </div>
-          </div>
-          <div className="space-y-1 text-right lg:text-left">
-            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-              Resultado P&L
-            </div>
+          <div className="w-40 h-1.5 bg-white/5 rounded-full overflow-hidden flex">
             <div
-              className={`text-xl font-extrabold ${parseFloat(profitPct) >= 0 ? "text-[#64c883]" : "text-[#e16464]"}`}
-            >
-              {parseFloat(profitPct) >= 0 ? "+" : ""}
-              {profitPct}%
-            </div>
+              className="h-full bg-[#64c883] transition-all duration-1000"
+              style={{ width: `${yes.prob * 100}%` }}
+            />
             <div
-              className={`text-[9px] font-bold uppercase ${parseFloat(profitPct) >= 0 ? "text-[#64c883]/60" : "text-[#e16464]/60"}`}
-            >
-              $ {profit.toFixed(2)}
-            </div>
-          </div>
-        </div>
-
-        {/* Break-even & Probability Bar */}
-        <div className="mt-8 space-y-4">
-          <div className="flex justify-between items-center px-1">
-            <div className="flex flex-col">
-              <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">
-                Punto de Equilibrio
-              </span>
-              <span className="text-[11px] font-bold text-white">
-                ${position.breakEvenPrice.toFixed(3)}{" "}
-                <span className="text-gray-500 font-medium ml-1">/ share</span>
-              </span>
-            </div>
-            <div className="text-right flex flex-col">
-              <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">
-                Probabilidad Actual
-              </span>
-              <span className="text-[11px] font-bold text-[#64c883]">
-                {(position.currentPrice * 100).toFixed(1)}%
-              </span>
-            </div>
-          </div>
-
-          <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden flex">
-            <div
-              className={`h-full transition-all duration-1000 ${position.side === "YES" ? "bg-[#64c883]" : "bg-[#e16464]"}`}
-              style={{ width: `${position.currentPrice * 100}%` }}
+              className="h-full bg-[#e16464] transition-all duration-1000"
+              style={{ width: `${no.prob * 100}%` }}
             />
           </div>
         </div>
-
-        {/* History Component */}
-        <PositionHistory history={position.history} />
-
-        {position.status === "ACTIVE" &&
-          position.market.status === "ACTIVE" &&
-          !position.isForSale && (
-            <div className="mt-8">
-              <button
-                onClick={() => setShowSellModal(true)}
-                className="w-full h-12 rounded-xl flex items-center justify-center text-[10px] font-bold uppercase tracking-[0.1em] bg-white/5 text-white/60 hover:bg-white/10 hover:text-white transition-all border border-white/5"
-              >
-                Vender en Marketplace
-              </button>
-            </div>
-          )}
-
-        {position.isForSale && (
-          <div className="mt-8 h-12 flex items-center justify-center rounded-xl bg-white/5 border border-white/10">
-            <span className="text-[10px] font-bold text-white/60 uppercase tracking-[0.1em]">
-              En venta en Marketplace
-            </span>
-          </div>
-        )}
       </div>
 
-      <Modal
-        isOpen={showSellModal}
-        onClose={() => setShowSellModal(false)}
-        title="Vender Posición"
-      >
-        <div className="space-y-6 pt-4">
-          <div className="grid grid-cols-2 gap-4 bg-[#0a0a0a] p-4 rounded-xl border border-white/5">
-            <div>
-              <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
-                Acciones Disp.
-              </div>
-              <div className="text-xl font-extrabold text-white">
-                {position.shares.toFixed(2)}
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
-                Fair Value
-              </div>
-              <div className="text-xl font-extrabold text-[#64c883]">
-                $ {position.fairValue.toFixed(2)}
-              </div>
-            </div>
-          </div>
+      {/* Table Content */}
+      <div className="px-6 md:px-8 py-4">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="h-10 text-[9px] font-bold text-gray-500 uppercase tracking-widest">
+                <th className="pl-4">LADO</th>
+                <th className="text-center">ACCIONES</th>
+                <th className="text-center">PRECIO PROM.</th>
+                <th className="text-center">INVERSIÓN</th>
+                <th className="text-center">VALOR MKT</th>
+                <th className="text-center">P&L</th>
+                <th className="text-center">ROI</th>
+                <th className="text-center">BREAKEVEN</th>
+                <th className="pr-4 text-right">PROB.</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5 bg-[#0a0a0a]/40 rounded-2xl overflow-hidden border border-white/5">
+              {renderRow("YES", yes, "text-[#64c883]")}
+              {renderRow("NO", no, "text-[#e16464]")}
 
-          <div className="space-y-2">
-            <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider px-1">
-              Acciones a vender
-            </label>
-            <div className="relative group">
-              <input
-                type="number"
-                value={sellShares}
-                onChange={(e) => handleSellSharesChange(e.target.value)}
-                className="w-full h-14 bg-[#0a0a0a] border border-[#272727] rounded-xl px-4 text-white font-bold text-lg outline-none transition-all focus:border-[#64c883] focus:ring-1 focus:ring-[#64c883]/20"
-              />
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">
-                Shares
-              </div>
-            </div>
-          </div>
+              {/* TOTAL ROW */}
+              <tr className="h-14 bg-white/[0.03]">
+                <td className="pl-4 text-[10px] font-extrabold text-white uppercase tracking-wider">
+                  TOTAL
+                </td>
+                <td></td>
+                <td></td>
+                <td className="text-center text-xs font-extrabold text-white">
+                  $
+                  {totalInvested.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </td>
+                <td className="text-center text-xs font-extrabold text-white">
+                  $
+                  {totalFairValue.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </td>
+                <td
+                  className={`text-center text-xs font-extrabold ${position.totalPnL >= 0 ? "text-[#64c883]" : "text-[#e16464]"}`}
+                >
+                  {position.totalPnL >= 0 ? "+" : ""}$
+                  {position.totalPnL.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </td>
+                <td
+                  className={`text-center text-xs font-extrabold ${position.totalROI >= 0 ? "text-[#64c883]" : "text-[#e16464]"}`}
+                >
+                  {position.totalROI >= 0 ? "+" : ""}
+                  {position.totalROI.toFixed(1)}%
+                </td>
+                <td></td>
+                <td></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-          <div className="flex gap-2">
-            {[25, 50, 75, 100].map((pct) => (
-              <button
-                key={pct}
-                onClick={() =>
-                  handleSellSharesChange(
-                    ((position.shares * pct) / 100).toFixed(2),
-                  )
-                }
-                className="flex-1 h-10 rounded-lg bg-white/5 text-[10px] font-bold uppercase tracking-wider text-gray-400 hover:bg-white/10 hover:text-white transition-all"
-              >
-                {pct}%
-              </button>
-            ))}
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider px-1">
-              Precio Total de Venta ($)
-            </label>
-            <div className="relative group">
-              <input
-                type="number"
-                value={askPrice}
-                onChange={(e) => setAskPrice(e.target.value)}
-                className="w-full h-14 bg-[#121212] border border-[#272727] rounded-xl px-4 text-white font-bold text-lg outline-none transition-all focus:border-[#64c883] focus:ring-1 focus:ring-[#64c883]/20"
-              />
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">
-                $
-              </div>
-            </div>
-            <p className="text-[9px] font-bold text-gray-600 uppercase tracking-wider text-center">
-              Fair Value Sugerido: $ {proportionalFairValue.toFixed(2)}
-            </p>
-          </div>
-
-          <div className="bg-[#64c883]/5 p-4 rounded-xl border border-[#64c883]/10">
-            <div className="flex justify-between items-center">
-              {/* 
-                  Projected P&L for this specific sale: 
-                  (Ask Price - Cost Basis of sold shares) 
-                  Cost Basis of sold shares = (Sold Shares / Total Shares) * Total Cost
-               */}
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                Ganancia/Pérdida (Est.)
-              </span>
-              <span
-                className={`text-base font-extrabold ${parseFloat(askPrice || "0") - (sellSharesNum / position.shares) * position.amount >= 0 ? "text-[#64c883]" : "text-[#e16464]"}`}
-              >
-                {parseFloat(askPrice || "0") -
-                  (sellSharesNum / position.shares) * position.amount >=
-                0
-                  ? "+"
-                  : ""}
-                ${" "}
-                {(
-                  parseFloat(askPrice || "0") -
-                  (sellSharesNum / position.shares) * position.amount
-                ).toFixed(2)}
-              </span>
-            </div>
-          </div>
-
-          {error && (
-            <p className="text-[#e16464] text-center text-xs font-bold uppercase">
-              {error}
-            </p>
-          )}
-
-          <div className="flex gap-3 pt-2">
-            <button
-              onClick={() => setShowSellModal(false)}
-              className="flex-1 h-16 rounded-2xl bg-white/5 text-white/40 text-[11px] font-bold uppercase tracking-wider hover:bg-white/10 transition-all"
+      {/* Footer Scenarios & Actions */}
+      <div className="px-8 md:px-10 py-6 flex flex-wrap gap-4 items-center justify-between border-t border-white/5 bg-white/[0.01]">
+        <div className="flex flex-col md:flex-row gap-4 md:gap-8">
+          <div className="flex items-center gap-3">
+            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+              Si gana YES:
+            </span>
+            <span className="text-sm font-extrabold text-white">
+              $
+              {scenarios.ifYesWins.payout.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+              })}
+            </span>
+            <span
+              className={`text-[11px] font-extrabold px-1.5 py-0.5 rounded-md ${scenarios.ifYesWins.net >= 0 ? "text-[#64c883] bg-[#64c883]/10" : "text-[#e16464] bg-[#e16464]/10"}`}
             >
-              Cancelar
-            </button>
-            <button
-              onClick={handleSell}
-              disabled={loading}
-              className="flex-1 h-16 rounded-2xl bg-[#64c883] text-[#0a0a0a] text-[11px] font-bold uppercase tracking-wider transition-all hover:scale-[1.02] shadow-xl shadow-[#64c883]/10"
+              {scenarios.ifYesWins.net >= 0 ? "+" : ""}$
+              {scenarios.ifYesWins.net.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+              })}
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+              Si gana NO:
+            </span>
+            <span className="text-sm font-extrabold text-white">
+              $
+              {scenarios.ifNoWins.payout.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+              })}
+            </span>
+            <span
+              className={`text-[11px] font-extrabold px-1.5 py-0.5 rounded-md ${scenarios.ifNoWins.net >= 0 ? "text-[#64c883] bg-[#64c883]/10" : "text-[#e16464] bg-[#e16464]/10"}`}
             >
-              {loading ? "Procesando..." : `Listar Venta`}
-            </button>
+              {scenarios.ifNoWins.net >= 0 ? "+" : ""}$
+              {scenarios.ifNoWins.net.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+              })}
+            </span>
           </div>
         </div>
-      </Modal>
-    </>
+
+        <button
+          onClick={() => {}}
+          className="px-8 py-3 rounded-xl bg-white/5 border border-white/10 text-[10px] font-extrabold text-white/40 uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all disabled:opacity-50"
+          disabled
+        >
+          VENDER
+        </button>
+      </div>
+    </div>
   );
 }

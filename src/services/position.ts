@@ -24,8 +24,18 @@ export class PositionService {
       const user = await tx.user.findUnique({ where: { id: data.userId } });
       if (!user) throw new Error("User not found");
 
-      const amount = new Decimal(data.amount);
-      if (new Decimal(user.balance).lessThan(amount)) {
+      const platformFeeRate = market.platformFee
+        ? Number(market.platformFee)
+        : 0.1;
+
+      // 10% Inclusive fee calculation:
+      // If user spends 10, totalToDeduct is 10, fee is 1, net is 9.
+      const totalToDeductNum = data.amount;
+      const feeAmountNum = totalToDeductNum * platformFeeRate;
+      const netAmountNum = totalToDeductNum - feeAmountNum;
+
+      const totalToDeduct = new Decimal(totalToDeductNum);
+      if (new Decimal(user.balance).lessThan(totalToDeduct)) {
         throw new Error("Insufficient balance");
       }
 
@@ -37,7 +47,7 @@ export class PositionService {
       const maxPriceImpact = market.maxPriceImpact ?? null;
 
       const validation = lmsrService.validateBetAmount(
-        data.amount,
+        netAmountNum, // Validate based on net amount (investment)
         market.qYes,
         market.qNo,
         market.b,
@@ -59,22 +69,15 @@ export class PositionService {
         market.b,
       );
 
-      const platformFeeRate = market.platformFee
-        ? Number(market.platformFee)
-        : 0.1;
-      // Inclusive fee calculation: Total = Net * (1 + platformFeeRate)
-      // Net = Total / (1 + platformFeeRate)
-      const netAmount = amount.toNumber() / (1 + platformFeeRate);
-      const feeAmount = amount.toNumber() - netAmount;
-
-      // Calculate shares to buy
+      // Calculate shares using NET amount
       const shares = lmsrService.getSharesToBuy(
         market.qYes,
         market.qNo,
         market.b,
         data.side,
-        netAmount,
+        netAmountNum,
       );
+
       const cost = lmsrService.getCostToBuy(
         market.qYes,
         market.qNo,
@@ -89,13 +92,13 @@ export class PositionService {
       const newQNo = data.side === "NO" ? market.qNo + shares : market.qNo;
       const stateAfter = lmsrService.getMarketState(newQYes, newQNo, market.b);
 
-      // Deduct balance
+      // Deduct balance (Total spent is the input amount)
       await BalanceService.deduct(
         tx,
         user.id,
-        amount,
+        totalToDeduct,
         "BET_PLACED",
-        `Bet ${data.amount} on ${data.side}`,
+        `Bet ${totalToDeductNum} (Net: ${netAmountNum}, Fee: ${feeAmountNum}) on ${data.side}`,
         data.marketId,
       );
 
@@ -106,11 +109,11 @@ export class PositionService {
           originalOwnerId: data.userId,
           currentOwnerId: data.userId,
           side: data.side,
-          amount, // Total amount paid by user including fee
+          amount: totalToDeduct, // Total (Net + Fee) is Decimal
           status: "ACTIVE",
-          shares,
-          avgCostPerShare,
-          totalCost: cost, // Net cost applied to reserves
+          shares, // Float
+          avgCostPerShare, // Float
+          totalCost: cost, // Float (Net investment applied to reserves)
         },
         include: { market: true, currentOwner: true },
       });
@@ -121,9 +124,10 @@ export class PositionService {
         data: {
           qYes: newQYes,
           qNo: newQNo,
-          // Update legacy pools for audit/volume tracking
-          yesPool: data.side === "YES" ? { increment: amount } : undefined,
-          noPool: data.side === "NO" ? { increment: amount } : undefined,
+          // Update pools using NET amount (Volume)
+          yesPool:
+            data.side === "YES" ? { increment: netAmountNum } : undefined,
+          noPool: data.side === "NO" ? { increment: netAmountNum } : undefined,
         },
       });
 
@@ -238,10 +242,8 @@ export class PositionService {
     const groups: Record<string, any> = {};
 
     for (const p of rawPositions) {
-      // Group active positions by market and side
-      // Keep inactive (RESOLVED) positions separate to show history correctly
-      const key =
-        p.status === "ACTIVE" ? `${p.marketId}-${p.side}` : `resolved-${p.id}`;
+      // Group active positions by marketId only. Resolved remain separate.
+      const key = p.status === "ACTIVE" ? p.marketId : `resolved-${p.id}`;
 
       if (!groups[key]) {
         groups[key] = {
@@ -255,24 +257,59 @@ export class PositionService {
             yesPool: p.market.yesPool.toNumber(),
             noPool: p.market.noPool.toNumber(),
           },
-          side: p.side,
-          shares: new Decimal(0),
-          amount: new Decimal(0),
+          yes: {
+            shares: new Decimal(0),
+            invested: new Decimal(0),
+            netCost: new Decimal(0),
+            fees: new Decimal(0),
+            history: [],
+          },
+          no: {
+            shares: new Decimal(0),
+            invested: new Decimal(0),
+            netCost: new Decimal(0),
+            fees: new Decimal(0),
+            history: [],
+          },
+          shares: new Decimal(0), // Total legacy sum (ref only)
+          amount: new Decimal(0), // Total amount (invested)
           totalFees: new Decimal(0),
           status: p.status,
           isForSale: false,
           createdAt: p.createdAt,
-          history: [],
+          history: [], // Global history
         };
       }
 
       const pShares = new Decimal((p as any).shares || 0);
       const feeAmount = p.amount.minus(new Decimal((p as any).totalCost || 0));
+      const sideKey = p.side.toLowerCase() as "yes" | "no";
+
+      if (p.status === "ACTIVE") {
+        groups[key][sideKey].shares = groups[key][sideKey].shares.plus(pShares);
+        groups[key][sideKey].invested = groups[key][sideKey].invested.plus(
+          p.amount,
+        );
+        groups[key][sideKey].netCost = groups[key][sideKey].netCost.plus(
+          new Decimal((p as any).totalCost || 0),
+        );
+        groups[key][sideKey].fees = groups[key][sideKey].fees.plus(feeAmount);
+        groups[key][sideKey].history.push({
+          id: p.id,
+          amount: p.amount.toNumber(),
+          shares: pShares.toNumber(),
+          createdAt: p.createdAt,
+          purchasePrice: (p as any).purchasePrice?.toNumber(),
+        });
+      }
+
+      // Legacy support/Global aggregates
       groups[key].shares = groups[key].shares.plus(pShares);
       groups[key].amount = groups[key].amount.plus(p.amount);
       groups[key].totalFees = groups[key].totalFees.plus(feeAmount);
       groups[key].history.push({
         id: p.id,
+        side: p.side,
         amount: p.amount.toNumber(),
         shares: pShares.toNumber(),
         createdAt: p.createdAt,
@@ -288,26 +325,75 @@ export class PositionService {
         new Decimal(g.market.noPool),
       );
 
-      const currentPrice = new Decimal(
-        g.side === "YES" ? odds.yesOdds : odds.noOdds,
-      ).dividedBy(100);
-      const sharesNum = g.shares.toNumber();
-      const amountNum = g.amount.toNumber();
-      const avgPrice = sharesNum > 0 ? amountNum / sharesNum : 0;
-      const fairValue = sharesNum * currentPrice.toNumber();
-      const potentialReturn = sharesNum; // wins $1 per share
+      const probYes = new Decimal(odds.yesOdds).dividedBy(100);
+      const probNo = new Decimal(odds.noOdds).dividedBy(100);
+
+      // Calculations for YES
+      const yesShares = g.yes.shares.toNumber();
+      const yesInvested = g.yes.invested.toNumber();
+      const yesAvgPrice = yesShares > 0 ? yesInvested / yesShares : 0;
+      const yesFairValue = yesShares * probYes.toNumber();
+      const yesPnL = yesFairValue - yesInvested;
+      const yesROI = yesInvested > 0 ? (yesPnL / yesInvested) * 100 : 0;
+
+      // Calculations for NO
+      const noShares = g.no.shares.toNumber();
+      const noInvested = g.no.invested.toNumber();
+      const noAvgPrice = noShares > 0 ? noInvested / noShares : 0;
+      const noFairValue = noShares * probNo.toNumber();
+      const noPnL = noFairValue - noInvested;
+      const noROI = noInvested > 0 ? (noPnL / noInvested) * 100 : 0;
+
+      // Market Totals
+      const totalInvested = yesInvested + noInvested;
+      const totalFairValue = yesFairValue + noFairValue;
+      const totalPnL = totalFairValue - totalInvested;
+      const totalROI = totalInvested > 0 ? (totalPnL / totalInvested) * 100 : 0;
+
+      // Settlement Scenarios (Payout - Total Investment)
+      const ifYesWinsPayout = yesShares; // wins $1 per share
+      const ifNoWinsPayout = noShares; // wins $1 per share
+
+      const ifYesWinsPnL = ifYesWinsPayout - totalInvested;
+      const ifNoWinsPnL = ifNoWinsPayout - totalInvested;
 
       return {
         ...g,
-        shares: sharesNum,
-        amount: amountNum,
+        yes: {
+          ...g.yes,
+          shares: yesShares,
+          invested: yesInvested,
+          fees: g.yes.fees.toNumber(),
+          avgPrice: yesAvgPrice,
+          fairValue: yesFairValue,
+          pnl: yesPnL,
+          roi: yesROI,
+          prob: probYes.toNumber(),
+        },
+        no: {
+          ...g.no,
+          shares: noShares,
+          invested: noInvested,
+          fees: g.no.fees.toNumber(),
+          avgPrice: noAvgPrice,
+          fairValue: noFairValue,
+          pnl: noPnL,
+          roi: noROI,
+          prob: probNo.toNumber(),
+        },
+        amount: totalInvested,
+        fairValue: totalFairValue,
+        totalPnL,
+        totalROI,
+        scenarios: {
+          ifYesWins: { payout: ifYesWinsPayout, net: ifYesWinsPnL },
+          ifNoWins: { payout: ifNoWinsPayout, net: ifNoWinsPnL },
+        },
+        // Legacy fields for backward compat
+        shares: g.shares.toNumber(),
         totalFees: g.totalFees.toNumber(),
-        purchasePrice: avgPrice, // Weighted avg
-        currentPrice: currentPrice.toNumber(),
-        fairValue,
-        potentialReturn,
-        currentPayout: g.side === "YES" ? odds.yesPayout : odds.noPayout,
-        breakEvenPrice: avgPrice,
+        currentPrice: probYes.toNumber(),
+        potentialReturn: Math.max(ifYesWinsPayout, ifNoWinsPayout),
       };
     });
   }
