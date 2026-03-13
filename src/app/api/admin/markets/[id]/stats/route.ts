@@ -94,29 +94,46 @@ export async function GET(
         createdAt: o.createdAt,
       }));
 
-    // Secondary market: filled orders (from audit log - OB portion)
-    const obFills = routerLogs
-      .filter((l) => l.obSharesBought > 0)
-      .map((l) => ({
-        id: l.id,
-        username: l.user.username,
-        side: l.side,
-        obShares: l.obSharesBought,
-        obAmount: Number(l.obAllocated),
-        obAvgPrice: l.obAveragePrice,
-        lmsrShares: l.lmsrSharesGenerated,
-        lmsrAmount: Number(l.lmsrAllocated),
-        finalAvgPrice: l.finalAveragePricePaid,
-        totalAmount: Number(l.requestAmount),
-        timestamp: l.timestamp,
-      }));
+    // Secondary market: filled orders (P2P Transfers)
+    // Buscamos todas las transferencias de posiciones del mercado actual asociadas a una orden (listingId != null)
+    const p2pTransfers = await prisma.positionTransfer.findMany({
+      where: {
+        position: { marketId: id },
+        listingId: { not: null }
+      },
+      include: {
+        toUser: { select: { username: true } },
+        fromUser: { select: { username: true } },
+      },
+      orderBy: { transferredAt: "desc" }
+    });
 
-    // P2P Volume summary
-    const totalP2PVolumeExecuted = obFills.reduce((acc, f) => acc + f.obAmount, 0);
-    const totalP2PSharesExecuted = obFills.reduce((acc, f) => acc + f.obShares, 0);
-    const avgP2PPrice = totalP2PSharesExecuted > 0
-      ? totalP2PVolumeExecuted / totalP2PSharesExecuted
-      : 0;
+    const obFills = [];
+    let totalP2PVolumeExecuted = 0;
+    let totalP2PFeeCollected = 0;
+
+    for (const t of p2pTransfers) {
+      // El seller recibe el precio neto (98%). El comprador pagó el 100%.
+      // Gross = Net / 0.98
+      const netAmount = Number(t.price);
+      const grossAmount = netAmount / 0.98;
+      const fee = grossAmount - netAmount;
+
+      totalP2PVolumeExecuted += netAmount;
+      totalP2PFeeCollected += fee;
+
+      obFills.push({
+        id: t.id,
+        buyer: t.toUser?.username || "Unknown",
+        seller: t.fromUser?.username || "Unknown",
+        netAmount,
+        grossAmount,
+        fee,
+        timestamp: t.transferredAt,
+        listingId: t.listingId
+      });
+    }
+
     const totalOpenOrderValue = openOrders.reduce((acc, o) => acc + o.totalListed, 0);
     const totalOpenShares = openOrders.reduce((acc, o) => acc + o.remainingShares, 0);
 
@@ -125,8 +142,7 @@ export async function GET(
       obFills,
       summary: {
         totalP2PVolumeExecuted,
-        totalP2PSharesExecuted,
-        avgP2PPrice,
+        totalP2PFeeCollected,
         p2pTradeCount: obFills.length,
         openOrderCount: openOrders.length,
         totalOpenOrderValue,

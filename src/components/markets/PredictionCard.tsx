@@ -10,6 +10,7 @@ interface PredictionCardProps {
   userId: string;
   userBalance: number;
   onSuccess: () => void;
+  prefillOrder?: { side: "YES" | "NO"; price: number; shares: number } | null;
 }
 
 // ─── BUY MODE ────────────────────────────────────────────────────────────────
@@ -18,6 +19,7 @@ function BuyForm({
   userId,
   userBalance,
   onSuccess,
+  prefillOrder,
 }: PredictionCardProps) {
   const [side, setSide] = useState<"YES" | "NO">("YES");
   const [amount, setAmount] = useState("");
@@ -37,6 +39,10 @@ function BuyForm({
     wouldExceedCap: boolean;
     lmsrShares?: number;
     obShares?: number;
+    lmsrFeeAmount?: number;
+    obFeeAmount?: number;
+    lmsrFeeRate?: number;
+    obFeeRate?: number;
   } | null>(null);
 
   const currentPrice =
@@ -53,6 +59,21 @@ function BuyForm({
   const potentialReturnValue = estimatedShares;
   const potentialProfit = potentialReturnValue - netAmount;
   const roi = netAmount > 0 ? (potentialProfit / netAmount) * 100 : 0;
+
+  useEffect(() => {
+    if (prefillOrder && prefillOrder.shares && prefillOrder.price) {
+      setSide(prefillOrder.side);
+      // Populate amount with the exact gross cost to consume that specific order size
+      // Total cost without fee = price * shares
+      // Gross cost = (price * shares) / (1 - platformFeeRate), but we don't know the exact fee rate here without quote.
+      // We can just set amount to roughly what it takes (a bit more is fine, quote will adjust max)
+      // Actually, since users see limit orders naturally, providing just price * shares is good enough to pre-fill close to it.
+      const rawCost = prefillOrder.shares * prefillOrder.price;
+      const estimatedGross = rawCost / 0.9; 
+      setAmount(estimatedGross.toFixed(2));
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [prefillOrder]);
 
   useEffect(() => {
     const fetchQuote = async () => {
@@ -148,10 +169,24 @@ function BuyForm({
           <div className="space-y-2">
             {quote?.feeAmount !== undefined && quote.feeAmount > 0 && (
               <>
-                <div className="flex justify-between items-center px-4 py-3 bg-[#0d0d0d]/50 rounded-xl border border-white/5">
-                  <span className="text-xs text-gray-400">Comisión WIN ({((quote.platformFeeRate ?? 0.1) * 100).toFixed(0)}%)</span>
-                  <span className="text-sm font-bold text-[#e16464]">- ${quote.feeAmount.toFixed(2)}</span>
-                </div>
+                {quote.lmsrFeeAmount !== undefined && quote.lmsrFeeAmount > 0 && (
+                  <div className="flex justify-between items-center px-4 py-3 bg-[#0d0d0d]/50 rounded-xl border border-white/5">
+                    <span className="text-xs text-purple-400">Comisión WIN ({((quote.lmsrFeeRate ?? 0.1) * 100).toFixed(0)}%)</span>
+                    <span className="text-sm font-bold text-[#e16464]">- ${quote.lmsrFeeAmount.toFixed(2)}</span>
+                  </div>
+                )}
+                {quote.obFeeAmount !== undefined && quote.obFeeAmount > 0 && (
+                  <div className="flex justify-between items-center px-4 py-3 bg-[#0d0d0d]/50 rounded-xl border border-white/5">
+                    <span className="text-xs text-blue-400">Comisión P2P ({((quote.obFeeRate ?? 0.02) * 100).toFixed(0)}%)</span>
+                    <span className="text-sm font-bold text-[#e16464]">- ${quote.obFeeAmount.toFixed(2)}</span>
+                  </div>
+                )}
+                {(quote.lmsrFeeAmount === undefined || quote.lmsrFeeAmount === 0) && (quote.obFeeAmount === undefined || quote.obFeeAmount === 0) && quote.feeAmount > 0 && (
+                  <div className="flex justify-between items-center px-4 py-3 bg-[#0d0d0d]/50 rounded-xl border border-white/5">
+                    <span className="text-xs text-gray-400">Comisión WIN ({((quote.platformFeeRate ?? 0.1) * 100).toFixed(0)}%)</span>
+                    <span className="text-sm font-bold text-[#e16464]">- ${quote.feeAmount.toFixed(2)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between items-center px-4 py-3 bg-[#0d0d0d]/50 rounded-xl border border-white/5">
                   <span className="text-xs text-gray-400">Inversión Neta</span>
                   <span className="text-sm font-bold text-white">${(quote.totalCost - quote.feeAmount).toFixed(2)}</span>
@@ -181,10 +216,10 @@ function BuyForm({
                   </div>
                   <div className="flex justify-between mt-1.5 text-[9px] font-bold uppercase tracking-wider">
                     {(quote.obShares || 0) > 0 ? (
-                      <span className="text-blue-400">P2P: {((quote.obShares! / quote.shares) * 100).toFixed(0)}%</span>
+                      <span className="text-blue-400">P2P: {((quote.obShares! / quote.shares) * 100).toFixed(2)}%</span>
                     ) : <span />}
                     {(quote.lmsrShares || 0) > 0 ? (
-                      <span className="text-purple-400">WIN: {((quote.lmsrShares! / quote.shares) * 100).toFixed(0)}%</span>
+                      <span className="text-purple-400">WIN: {((quote.lmsrShares! / quote.shares) * 100).toFixed(2)}%</span>
                     ) : <span />}
                   </div>
                 </div>
@@ -206,7 +241,7 @@ function BuyForm({
               </div>
             )}
             <div className="flex justify-between items-center px-4 py-4 bg-[#64c883]/5 rounded-xl border border-[#64c883]/10">
-              <span className="text-xs text-[#64c883]">Retorno ({Math.max(0, roi).toFixed(0)}%)</span>
+              <span className="text-xs text-[#64c883]">Pago si gana {side} ({Math.max(0, roi).toFixed(0)}%)</span>
               <span className="text-base font-extrabold text-[#64c883]">
                 {quoteLoading ? "..." : `$${potentialReturnValue.toFixed(2)}`}
               </span>
@@ -370,7 +405,14 @@ function SellForm({ market, userId, onSuccess }: SellFormProps) {
             </span>
             <div>
               <div className="text-xs font-bold text-white">{selectedPos.shares.toFixed(2)} shares disponibles</div>
-              <div className="text-[9px] text-gray-500">Compradas @ ${(selectedPos.amount / selectedPos.shares).toFixed(4)} c/u</div>
+              <div className="text-[9px] text-gray-500">
+                Compradas @ ${(selectedPos.amount / selectedPos.shares).toFixed(4)} c/u
+                {selectedPos.totalCost > 0 && (
+                  <span className="text-gray-600 ml-1">
+                    · neto ${(selectedPos.totalCost / selectedPos.shares).toFixed(4)}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
           <div className="text-right">
@@ -430,6 +472,10 @@ function SellForm({ market, userId, onSuccess }: SellFormProps) {
             <span className="text-xs text-gray-400">Órdenes a colocar</span>
             <span className="text-sm font-bold text-white">{numShares.toFixed(2)} sh @ ${numPrice.toFixed(2)}</span>
           </div>
+          <div className="flex justify-between items-center px-4 py-3 bg-[#0d0d0d]/50 rounded-xl border border-white/5">
+            <span className="text-xs text-gray-400">Comisión (Maker)</span>
+            <span className="text-sm font-bold text-[#64c883]">0%</span>
+          </div>
           <div className="flex justify-between items-center px-4 py-4 bg-orange-500/5 rounded-xl border border-orange-500/10">
             <span className="text-xs text-orange-400">Recibirás si se ejecuta</span>
             <span className="text-base font-extrabold text-orange-300">${estimatedRevenue.toFixed(2)}</span>
@@ -454,11 +500,18 @@ function SellForm({ market, userId, onSuccess }: SellFormProps) {
 
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 export function PredictionCard({
-  market, userId, userBalance, onSuccess,
+  market, userId, userBalance, onSuccess, prefillOrder
 }: PredictionCardProps) {
   const searchParams = useSearchParams();
   const initialTab = searchParams.get("tab") === "sell" ? "SELL" : "BUY";
   const [mode, setMode] = useState<"BUY" | "SELL">(initialTab);
+
+  // Force buy mode if an order is prefilled
+  useEffect(() => {
+    if (prefillOrder) {
+      setMode("BUY");
+    }
+  }, [prefillOrder]);
 
   const yesOdds = market.odds.yesOdds;
   const totalVolume = market.yesPool + market.noPool;
@@ -538,7 +591,7 @@ export function PredictionCard({
 
       {/* Form content */}
       {mode === "BUY" ? (
-        <BuyForm market={market} userId={userId} userBalance={userBalance} onSuccess={onSuccess} />
+        <BuyForm market={market} userId={userId} userBalance={userBalance} onSuccess={onSuccess} prefillOrder={prefillOrder} />
       ) : (
         <SellForm market={market} userId={userId} onSuccess={onSuccess} />
       )}

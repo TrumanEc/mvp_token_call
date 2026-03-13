@@ -109,7 +109,7 @@ async function main() {
     });
 
     console.log("\n================ REPORT ======================");
-    console.log(`💰 Dinero Gastado: $${result.executionSummary.spent.toFixed(2)}`);
+    console.log(`💰 Dinero Gastado: $${result.executionSummary.spentGross.toFixed(2)}`);
     console.log(`📊 Total Shares Comprados: ${result.executionSummary.sharesCollected.toFixed(2)} shares`);
     console.log(`🎯 Precio Promedio Final: $${result.executionSummary.averagePrice.toFixed(4)}\n`);
     
@@ -119,7 +119,7 @@ async function main() {
 
     console.log("📝  Rastro Poso a Paso (Order Path):");
     result.executionSummary.path.forEach((step, i) => {
-      console.log(`    [Paso ${i+1}] Vía: ${step.fuente.padEnd(10)} | Gastó: $${step.invertido.toFixed(2).padStart(6)} | Adquirió: ${step.shares.toFixed(2).padStart(7)} shares | Precio Prom: $${step.precioPromedio.toFixed(4)}`);
+      console.log(`    [Paso ${i+1}] Vía: ${step.fuente.padEnd(10)} | Gastó: $${step.invertidoBruto.toFixed(2).padStart(6)} | Adquirió: ${step.shares.toFixed(2).padStart(7)} shares | Precio Prom: $${step.precioPromedio.toFixed(4)}`);
     });
 
     // Validar base de datos Admin Logs

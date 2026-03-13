@@ -19,6 +19,11 @@ function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const [sellingPositionId, setSellingPositionId] = useState<string | null>(
     null,
   );
+  const [prefillOrder, setPrefillOrder] = useState<{
+    side: "YES" | "NO";
+    price: number;
+    shares: number;
+  } | null>(null);
 
   const fetchMarket = () => {
     fetch(`/api/markets/${id}`)
@@ -310,62 +315,77 @@ function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
                   </div>
                 </div>
                 {/* Collected Fees */}
-                <div className="bg-[#111] border border-white/5 rounded-xl p-3">
-                  <div className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">
-                    Fees Recolectados
-                  </div>
-                  <div className="text-lg font-extrabold text-white mt-1">
-                    $ {(totalVolume * (market.platformFee || 0.1)).toFixed(2)}
-                  </div>
-                  <div className="text-[9px] text-gray-600 mt-0.5">
-                    {((market.platformFee || 0.1) * 100).toFixed(0)}% del
-                    volumen
-                  </div>
-                </div>
+                {(() => {
+                  const fee = market.platformFee || 0.1;
+                  // El fee se cobra sobre el bruto: bruto = volume / (1 - fee)
+                  // Por lo tanto: fee_amount = volume / (1 - fee) * fee
+                  const collectedFees = (totalVolume / (1 - fee)) * fee;
+                  return (
+                    <div className="bg-[#111] border border-white/5 rounded-xl p-3">
+                      <div className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">
+                        Fees Recolectados
+                      </div>
+                      <div className="text-lg font-extrabold text-white mt-1">
+                        $ {collectedFees.toFixed(2)}
+                      </div>
+                      <div className="text-[9px] text-gray-600 mt-0.5">
+                        {(fee * 100).toFixed(0)}% del volumen bruto
+                      </div>
+                    </div>
+                  );
+                })()}
                 {/* PnL YES Outcome */}
-                <div className="bg-[#111] border border-white/5 rounded-xl p-3">
-                  <div className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">
-                    PnL WIN (YES Outcome)
-                  </div>
-                  {(() => {
-                    const maxPayout = market.qYes || 0;
-                    const pnl = totalVolume - maxPayout;
-                    return (
-                      <>
-                        <div
-                          className={`text-lg font-extrabold mt-1 ${pnl >= 0 ? "text-[#64c883]" : "text-[#e16464]"}`}
-                        >
-                          {pnl >= 0 ? "+" : ""}${pnl.toFixed(2)}
-                        </div>
-                        <div className="text-[9px] text-gray-600 mt-0.5">
-                          PnL si el settlement es YES
-                        </div>
-                      </>
-                    );
-                  })()}
-                </div>
+                {(() => {
+                  const fee = market.platformFee || 0.1;
+                  const collectedFees = (totalVolume / (1 - fee)) * fee;
+                  const maxPayout = market.qYes || 0;
+                  const pnlSinComision = totalVolume - maxPayout;
+                  const pnlConComision = pnlSinComision + collectedFees;
+                  return (
+                    <div className="bg-[#111] border border-white/5 rounded-xl p-3">
+                      <div className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">
+                        PnL WIN (YES Outcome)
+                      </div>
+                      <div
+                        className={`text-lg font-extrabold mt-1 ${pnlSinComision >= 0 ? "text-[#64c883]" : "text-[#e16464]"}`}
+                      >
+                        {pnlSinComision >= 0 ? "+" : ""}${pnlSinComision.toFixed(2)}
+                      </div>
+                      <div className="text-[9px] text-gray-600 mt-0.5">
+                        Sin comisión · Con comisión:{" "}
+                        <span className={pnlConComision >= 0 ? "text-[#64c883]" : "text-[#e16464]"}>
+                          {pnlConComision >= 0 ? "+" : ""}${pnlConComision.toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()}
                 {/* PnL NO Outcome */}
-                <div className="bg-[#111] border border-white/5 rounded-xl p-3">
-                  <div className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">
-                    PnL WIN (NO Outcome)
-                  </div>
-                  {(() => {
-                    const maxPayout = market.qNo || 0;
-                    const pnl = totalVolume - maxPayout;
-                    return (
-                      <>
-                        <div
-                          className={`text-lg font-extrabold mt-1 ${pnl >= 0 ? "text-[#64c883]" : "text-[#e16464]"}`}
-                        >
-                          {pnl >= 0 ? "+" : ""}${pnl.toFixed(2)}
-                        </div>
-                        <div className="text-[9px] text-gray-600 mt-0.5">
-                          PnL si el settlement es NO
-                        </div>
-                      </>
-                    );
-                  })()}
-                </div>
+                {(() => {
+                  const fee = market.platformFee || 0.1;
+                  const collectedFees = (totalVolume / (1 - fee)) * fee;
+                  const maxPayout = market.qNo || 0;
+                  const pnlSinComision = totalVolume - maxPayout;
+                  const pnlConComision = pnlSinComision + collectedFees;
+                  return (
+                    <div className="bg-[#111] border border-white/5 rounded-xl p-3">
+                      <div className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">
+                        PnL WIN (NO Outcome)
+                      </div>
+                      <div
+                        className={`text-lg font-extrabold mt-1 ${pnlSinComision >= 0 ? "text-[#64c883]" : "text-[#e16464]"}`}
+                      >
+                        {pnlSinComision >= 0 ? "+" : ""}${pnlSinComision.toFixed(2)}
+                      </div>
+                      <div className="text-[9px] text-gray-600 mt-0.5">
+                        Sin comisión · Con comisión:{" "}
+                        <span className={pnlConComision >= 0 ? "text-[#64c883]" : "text-[#e16464]"}>
+                          {pnlConComision >= 0 ? "+" : ""}${pnlConComision.toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </details>
 
@@ -471,7 +491,10 @@ function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
               <h2 className="text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400">
                 Profundidad del Mercado (Orderbook Limit)
               </h2>
-              <OrderbookDisplay orders={market.orders || []} />
+              <OrderbookDisplay 
+                orders={market.orders || []} 
+                onOrderClick={(side, price, shares) => setPrefillOrder({ side, price, shares })}
+              />
             </div>
           </div>
 
@@ -483,6 +506,7 @@ function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
                 userId={user.id}
                 userBalance={user.balance}
                 onSuccess={handleTransactionSuccess}
+                prefillOrder={prefillOrder}
               />
             </Suspense>
             <div className="space-y-4 pt-2 ">
@@ -596,7 +620,7 @@ function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
                             </div>
                             <div className="text-center">
                               <div className="text-[9px] text-gray-500 uppercase tracking-wider">
-                                Retorno
+                                Si gana {pos.side}
                               </div>
                               <div
                                 className={`text-xs font-bold mt-0.5 ${pos.shares > 0 ? "text-[#64c883]" : "text-gray-500"}`}

@@ -225,7 +225,7 @@ class LmsrService {
    * Uses binary search as the inverse of costFunction is not easily solvable analytically for delta
    */ getSharesToBuy(qYes, qNo, b, side, amount, tolerance = 1e-6) {
         let low = 0;
-        let high = amount * 10; // Heuristic upper bound, usually price < 1 so shares > amount
+        let high = amount * 10000; // Heuristic upper bound, assuming lowest possible price is around 0.0001
         // Binary search for 100 iterations (sufficient precision)
         for(let i = 0; i < 100; i++){
             const mid = (low + high) / 2;
@@ -240,6 +240,32 @@ class LmsrService {
             }
         }
         return (low + high) / 2;
+    }
+    /**
+   * Calcula cuánto capital ($) se necesita invertir para llevar el precio marginal
+   * (probabilidad instantánea) del LMSR hasta un `targetPrice` específico.
+   * Usado por el Router Híbrido para no exceder el precio del Orderbook.
+   */ getCostToReachTargetPrice(qYes, qNo, b, side, targetPrice) {
+        const { pYes, pNo } = this.getPrice(qYes, qNo, b);
+        const currentPrice = side === "YES" ? pYes : pNo;
+        // Si el LMSR ya está más caro o igual al Orderbook (targetPrice), cuesta $0 (no minteamos)
+        if (currentPrice >= targetPrice) {
+            return 0;
+        }
+        let lowShares = 0;
+        let highShares = b * 20;
+        // Búsqueda binaria de shares necesarios para alcanzar targetPrice
+        for(let i = 0; i < 100; i++){
+            const midShares = (lowShares + highShares) / 2;
+            const tempQYes = side === "YES" ? qYes + midShares : qYes;
+            const tempQNo = side === "NO" ? qNo + midShares : qNo;
+            const { pYes: newPYes, pNo: newPNo } = this.getPrice(tempQYes, tempQNo, b);
+            const priceAfter = side === "YES" ? newPYes : newPNo;
+            if (priceAfter < targetPrice) lowShares = midShares;
+            else highShares = midShares;
+        }
+        const optimalShares = (lowShares + highShares) / 2;
+        return this.getCostToBuy(qYes, qNo, b, side, optimalShares);
     }
     /**
    * Calcula el monto máximo permitido para una transacción
@@ -510,6 +536,38 @@ class PositionService {
                 createdAt: "desc"
             }
         });
+        // Fetch open/partial sell orders the user has in the orderbook
+        const openSellOrders = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$prisma$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["prisma"].order.findMany({
+            where: {
+                userId,
+                type: "SELL",
+                status: {
+                    in: [
+                        "OPEN",
+                        "PARTIAL"
+                    ]
+                },
+                ...marketId && {
+                    marketId
+                }
+            }
+        });
+        // Index by marketId + side for quick lookup
+        const obMap = {};
+        for (const o of openSellOrders){
+            const k = `${o.marketId}__${o.side}`;
+            if (!obMap[k]) obMap[k] = {
+                shares: 0,
+                revenue: 0,
+                avgPrice: 0
+            };
+            obMap[k].shares += o.remainingShares;
+            obMap[k].revenue += o.remainingShares * o.pricePerShare;
+        }
+        for (const k of Object.keys(obMap)){
+            const e = obMap[k];
+            e.avgPrice = e.shares > 0 ? e.revenue / e.shares : 0;
+        }
         const groups = {};
         for (const p of rawPositions){
             // Group active positions by marketId only. Resolved remain separate.
@@ -607,6 +665,16 @@ class PositionService {
             const ifNoWinsPayout = noShares; // wins $1 per share
             const ifYesWinsPnL = ifYesWinsPayout - totalInvested;
             const ifNoWinsPnL = ifNoWinsPayout - totalInvested;
+            const obYes = obMap[`${g.marketId}__YES`] || {
+                shares: 0,
+                revenue: 0,
+                avgPrice: 0
+            };
+            const obNo = obMap[`${g.marketId}__NO`] || {
+                shares: 0,
+                revenue: 0,
+                avgPrice: 0
+            };
             return {
                 ...g,
                 yes: {
@@ -618,7 +686,12 @@ class PositionService {
                     fairValue: yesFairValue,
                     pnl: yesPnL,
                     roi: yesROI,
-                    prob: probYes.toNumber()
+                    prob: probYes.toNumber(),
+                    openOrders: {
+                        pendingShares: obYes.shares,
+                        expectedRevenue: obYes.revenue,
+                        avgListPrice: obYes.avgPrice
+                    }
                 },
                 no: {
                     ...g.no,
@@ -629,7 +702,12 @@ class PositionService {
                     fairValue: noFairValue,
                     pnl: noPnL,
                     roi: noROI,
-                    prob: probNo.toNumber()
+                    prob: probNo.toNumber(),
+                    openOrders: {
+                        pendingShares: obNo.shares,
+                        expectedRevenue: obNo.revenue,
+                        avgListPrice: obNo.avgPrice
+                    }
                 },
                 amount: totalInvested,
                 fairValue: totalFairValue,

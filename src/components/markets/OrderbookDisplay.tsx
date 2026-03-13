@@ -11,7 +11,7 @@ type Order = {
   user: { username: string | null };
 };
 
-export function OrderbookDisplay({ orders }: { orders: Order[] }) {
+export function OrderbookDisplay({ orders, onOrderClick }: { orders: Order[], onOrderClick?: (side: 'YES'|'NO', price: number, shares: number) => void }) {
   // Aggregate limits by price level and side
   const { yesBids, yesAsks, noBids, noAsks } = useMemo(() => {
     // Current MVP only has SELL limit orders technically (from the plan limitation)
@@ -40,7 +40,7 @@ export function OrderbookDisplay({ orders }: { orders: Order[] }) {
     };
   }, [orders]);
 
-  const renderBook = (bids: {price:number, totalShares:number}[], asks: {price:number, totalShares:number}[], colorClass: string, lightBg: string, label: string) => {
+  const renderBook = (bids: {price:number, totalShares:number}[], asks: {price:number, totalShares:number}[], colorClass: string, lightBg: string, label: "YES"|"NO") => {
     return (
       <div className={`flex flex-col rounded-xl overflow-hidden border border-gray-100 bg-white shadow-sm`}>
         <div className={`p-3 text-center font-bold text-sm tracking-widest uppercase ${lightBg} border-b border-gray-100`}>
@@ -56,9 +56,13 @@ export function OrderbookDisplay({ orders }: { orders: Order[] }) {
            {/* ASKS (Ventas) renderizamos de mas caro a mas barato si hubieran muchos, pero el sort ya nos da los mejores arriba. */}
            {asks.length > 0 ? (
              asks.slice(0, 5).reverse().map((ask, i) => (
-                <div key={`ask-${i}`} className="grid grid-cols-2 text-sm px-2 py-1 items-center hover:bg-gray-50 rounded group">
-                  <div className="text-gray-600 font-medium">{ask.totalShares.toFixed(1)}</div>
-                  <div className={`text-right font-bold text-red-500`}>{ask.price.toFixed(2)}</div>
+                <div 
+                  key={`ask-${i}`} 
+                  className="grid grid-cols-2 text-sm px-2 py-1 items-center hover:bg-gray-800 rounded group cursor-pointer transition-colors"
+                  onClick={() => onOrderClick && onOrderClick(label, ask.price, ask.totalShares)}
+                >
+                  <div className="text-gray-400 font-medium">{ask.totalShares.toFixed(1)}</div>
+                  <div className={`text-right font-bold text-red-500 group-hover:text-red-400`}>{ask.price.toFixed(2)}</div>
                 </div>
              ))
            ) : (
@@ -70,9 +74,13 @@ export function OrderbookDisplay({ orders }: { orders: Order[] }) {
            {/* BIDS (Compras) */}
            {bids.length > 0 ? (
              bids.slice(0, 5).map((bid, i) => (
-                <div key={`bid-${i}`} className="grid grid-cols-2 text-sm px-2 py-1 items-center hover:bg-gray-50 rounded group">
-                  <div className="text-gray-600 font-medium">{bid.totalShares.toFixed(1)}</div>
-                  <div className={`text-right font-bold text-green-500`}>{bid.price.toFixed(2)}</div>
+                <div 
+                  key={`bid-${i}`} 
+                  className="grid grid-cols-2 text-sm px-2 py-1 items-center hover:bg-gray-800 rounded group cursor-pointer transition-colors"
+                  onClick={() => onOrderClick && onOrderClick(label, bid.price, bid.totalShares)}
+                >
+                  <div className="text-gray-400 font-medium">{bid.totalShares.toFixed(1)}</div>
+                  <div className={`text-right font-bold text-green-500 group-hover:text-green-400`}>{bid.price.toFixed(2)}</div>
                 </div>
              ))
            ) : (

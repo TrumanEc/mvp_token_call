@@ -106,7 +106,7 @@ class LmsrService {
    * Uses binary search as the inverse of costFunction is not easily solvable analytically for delta
    */ getSharesToBuy(qYes, qNo, b, side, amount, tolerance = 1e-6) {
         let low = 0;
-        let high = amount * 10; // Heuristic upper bound, usually price < 1 so shares > amount
+        let high = amount * 10000; // Heuristic upper bound, assuming lowest possible price is around 0.0001
         // Binary search for 100 iterations (sufficient precision)
         for(let i = 0; i < 100; i++){
             const mid = (low + high) / 2;
@@ -121,6 +121,32 @@ class LmsrService {
             }
         }
         return (low + high) / 2;
+    }
+    /**
+   * Calcula cuánto capital ($) se necesita invertir para llevar el precio marginal
+   * (probabilidad instantánea) del LMSR hasta un `targetPrice` específico.
+   * Usado por el Router Híbrido para no exceder el precio del Orderbook.
+   */ getCostToReachTargetPrice(qYes, qNo, b, side, targetPrice) {
+        const { pYes, pNo } = this.getPrice(qYes, qNo, b);
+        const currentPrice = side === "YES" ? pYes : pNo;
+        // Si el LMSR ya está más caro o igual al Orderbook (targetPrice), cuesta $0 (no minteamos)
+        if (currentPrice >= targetPrice) {
+            return 0;
+        }
+        let lowShares = 0;
+        let highShares = b * 20;
+        // Búsqueda binaria de shares necesarios para alcanzar targetPrice
+        for(let i = 0; i < 100; i++){
+            const midShares = (lowShares + highShares) / 2;
+            const tempQYes = side === "YES" ? qYes + midShares : qYes;
+            const tempQNo = side === "NO" ? qNo + midShares : qNo;
+            const { pYes: newPYes, pNo: newPNo } = this.getPrice(tempQYes, tempQNo, b);
+            const priceAfter = side === "YES" ? newPYes : newPNo;
+            if (priceAfter < targetPrice) lowShares = midShares;
+            else highShares = midShares;
+        }
+        const optimalShares = (lowShares + highShares) / 2;
+        return this.getCostToBuy(qYes, qNo, b, side, optimalShares);
     }
     /**
    * Calcula el monto máximo permitido para una transacción
@@ -249,10 +275,16 @@ async function GET(request, { params }) {
         const lmsrService = new __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$lmsr$2e$service$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["LmsrService"]();
         let shares = 0;
         let totalCost = 0;
+        let lmsrShares = 0;
+        let obShares = 0;
         const platformFeeRate = market.platformFee ? Number(market.platformFee) : 0.1;
         let feeAmount = 0;
-        // Scenario 1: User wants to spend X amount (e.g. $10)
-        // Inclusive fee: If user spends 10, totalCost is 10, fee is 1, net is 9.
+        let newQYes = market.qYes;
+        let newQNo = market.qNo;
+        let newPrices = {
+            pYes: 0,
+            pNo: 0
+        };
         if (amountStr && !sharesStr) {
             totalCost = parseFloat(amountStr);
             if (isNaN(totalCost) || totalCost <= 0) {
@@ -262,10 +294,21 @@ async function GET(request, { params }) {
                     status: 400
                 });
             }
-            feeAmount = totalCost * platformFeeRate;
-            const netAmount = totalCost - feeAmount;
-            // Calculate shares for net amount
-            shares = lmsrService.getSharesToBuy(market.qYes, market.qNo, market.b, side, netAmount);
+            const { RouterService } = await __turbopack_context__.A("[project]/src/services/router.service.ts [app-route] (ecmascript, async loader)");
+            // Simula directamente con el monto BRUTO. El router se encarga de discriminar fees.
+            const sim = await RouterService.simulateMarketBuy({
+                marketId: id,
+                side,
+                budget: totalCost
+            });
+            feeAmount = sim.fee;
+            shares = sim.sharesCollected;
+            lmsrShares = sim.lmsrShares;
+            obShares = sim.obShares;
+            newPrices = {
+                pYes: sim.newProbabilities.yes,
+                pNo: sim.newProbabilities.no
+            };
         } else if (sharesStr) {
             shares = parseFloat(sharesStr);
             if (isNaN(shares) || shares <= 0) {
@@ -275,12 +318,14 @@ async function GET(request, { params }) {
                     status: 400
                 });
             }
-            // Cost to buy these shares in the pool (NET COST)
             const netCost = lmsrService.getCostToBuy(market.qYes, market.qNo, market.b, side, shares);
-            // If WIN takes 10% of total, then netCost = 90% of total.
-            // E.g. 9 = 0.9 * Total => Total = 9 / 0.9 = 10.
             totalCost = netCost / (1 - platformFeeRate);
             feeAmount = totalCost - netCost;
+            newQYes = side === "YES" ? market.qYes + shares : market.qYes;
+            newQNo = side === "NO" ? market.qNo + shares : market.qNo;
+            newPrices = lmsrService.getPrice(newQYes, newQNo, market.b);
+            lmsrShares = shares;
+            obShares = 0;
         } else {
             return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
                 error: "Must provide either amount or shares"
@@ -288,24 +333,30 @@ async function GET(request, { params }) {
                 status: 400
             });
         }
-        // avgPrice is based on Net Amount (the price per share in the pool)
-        const avgPrice = shares > 0 ? (totalCost - feeAmount) / shares : 0;
-        // Validate bounds for the requested net investment
+        // avgPrice en términos BRUTOS (incluyendo fee) para ser consistente con
+        // la vista de posiciones, donde "Precio Comp." = investidoBruto / shares
+        const avgPrice = shares > 0 ? totalCost / shares : 0;
         const maxBetAmount = market.maxBetAmount ?? null;
         const maxPriceImpact = market.maxPriceImpact ?? null;
         const netInvestment = totalCost - feeAmount;
         const validation = lmsrService.validateBetAmount(netInvestment, market.qYes, market.qNo, market.b, side, maxBetAmount, maxPriceImpact);
-        // Calculate new probabilities (post-trade state simulation)
-        const newQYes = side === "YES" ? market.qYes + shares : market.qYes;
-        const newQNo = side === "NO" ? market.qNo + shares : market.qNo;
-        const newPrices = lmsrService.getPrice(newQYes, newQNo, market.b);
+        // Approximating exact fee per bucket for UI
+        const totalSharesCalc = lmsrShares + obShares || 1;
+        const lmsrFeeAmount = feeAmount * (lmsrShares / totalSharesCalc);
+        const obFeeAmount = feeAmount * (obShares / totalSharesCalc);
         return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
             side,
             shares,
+            lmsrShares,
+            obShares,
             totalCost,
             avgPrice,
             feeAmount,
+            lmsrFeeAmount,
+            obFeeAmount,
             platformFeeRate,
+            lmsrFeeRate: platformFeeRate,
+            obFeeRate: 0.02,
             newProbabilities: {
                 yes: newPrices.pYes,
                 no: newPrices.pNo

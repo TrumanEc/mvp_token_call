@@ -10,77 +10,22 @@ __turbopack_context__.s([
 ]);
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/compiled/react/jsx-dev-runtime.js [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/compiled/react/index.js [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2d$auth$2f$react$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next-auth/react.js [app-client] (ecmascript)");
 ;
 var _s = __turbopack_context__.k.signature(), _s1 = __turbopack_context__.k.signature();
-'use client';
+;
 ;
 const UserContext = /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["createContext"])(undefined);
 function UserProvider({ children }) {
     _s();
+    const { data: session, status } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2d$auth$2f$react$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useSession"])();
     const [user, setUser] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
     const [loading, setLoading] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(true);
-    (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
-        "UserProvider.useEffect": ()=>{
-            const savedUser = localStorage.getItem('wsm_user');
-            if (savedUser) {
-                const parsed = JSON.parse(savedUser);
-                login(parsed.username).catch({
-                    "UserProvider.useEffect": ()=>setLoading(false)
-                }["UserProvider.useEffect"]);
-            } else {
-                setLoading(false);
-            }
-        }
-    }["UserProvider.useEffect"], []);
-    const createUser = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useCallback"])({
-        "UserProvider.useCallback[createUser]": async (username, email)=>{
-            try {
-                const res = await fetch('/api/users', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        username,
-                        email
-                    })
-                });
-                if (!res.ok) {
-                    const data = await res.json();
-                    throw new Error(data.error || 'Failed to create user');
-                }
-                return true;
-            } catch (error) {
-                console.error('Error creating user:', error);
-                return false;
-            }
-        }
-    }["UserProvider.useCallback[createUser]"], []);
-    const login = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useCallback"])({
-        "UserProvider.useCallback[login]": async (username)=>{
-            setLoading(true);
-            try {
-                const res = await fetch(`/api/users/${username}`);
-                if (!res.ok) throw new Error('User not found');
-                const data = await res.json();
-                const userData = {
-                    id: data.id,
-                    username: data.username,
-                    balance: data.balance,
-                    role: data.role
-                };
-                setUser(userData);
-                localStorage.setItem('wsm_user', JSON.stringify(userData));
-            } finally{
-                setLoading(false);
-            }
-        }
-    }["UserProvider.useCallback[login]"], []);
     const refreshBalance = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useCallback"])({
         "UserProvider.useCallback[refreshBalance]": async ()=>{
             if (!user) return;
             try {
-                const res = await fetch(`/api/users/${user.username}`);
+                const res = await fetch(`/api/users/${user.id}`);
                 if (res.ok) {
                     const data = await res.json();
                     setUser({
@@ -89,16 +34,57 @@ function UserProvider({ children }) {
                                 balance: data.balance
                             } : null
                     }["UserProvider.useCallback[refreshBalance]"]);
-                    localStorage.setItem('wsm_user', JSON.stringify({
-                        ...user,
-                        balance: data.balance
-                    }));
                 }
             } catch  {}
         }
     }["UserProvider.useCallback[refreshBalance]"], [
         user
     ]);
+    (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
+        "UserProvider.useEffect": ()=>{
+            if (status === 'loading') return;
+            if (session?.user) {
+                const fetchUser = {
+                    "UserProvider.useEffect.fetchUser": async ()=>{
+                        try {
+                            const res = await fetch(`/api/users/${session.user.id}`);
+                            if (res.ok) {
+                                const data = await res.json();
+                                setUser({
+                                    id: data.id,
+                                    name: data.name,
+                                    username: data.username,
+                                    email: data.email,
+                                    balance: data.balance,
+                                    role: data.role
+                                });
+                            }
+                        } finally{
+                            setLoading(false);
+                        }
+                    }
+                }["UserProvider.useEffect.fetchUser"];
+                fetchUser();
+            } else {
+                setUser(null);
+                setLoading(false);
+            }
+        }
+    }["UserProvider.useEffect"], [
+        session,
+        status
+    ]);
+    const createUser = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useCallback"])({
+        "UserProvider.useCallback[createUser]": async (username, email)=>{
+            // This is now handled by NextAuth, but we keep the type for compatibility if needed
+            return true;
+        }
+    }["UserProvider.useCallback[createUser]"], []);
+    const login = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useCallback"])({
+        "UserProvider.useCallback[login]": async (username)=>{
+        // This is now handled by NextAuth
+        }
+    }["UserProvider.useCallback[login]"], []);
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(UserContext.Provider, {
         value: {
             user,
@@ -111,11 +97,15 @@ function UserProvider({ children }) {
         children: children
     }, void 0, false, {
         fileName: "[project]/src/contexts/UserContext.tsx",
-        lineNumber: 82,
+        lineNumber: 79,
         columnNumber: 5
     }, this);
 }
-_s(UserProvider, "DdIskkxRzIVT8RzGPx6gqePMiY0=");
+_s(UserProvider, "7//6PMha+6UA6EfQAJmft8a0UVA=", false, function() {
+    return [
+        __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2d$auth$2f$react$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useSession"]
+    ];
+});
 _c = UserProvider;
 function useUser() {
     _s1();
@@ -141,16 +131,18 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$client$2f$app$2d$dir$2f$link$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/client/app-dir/link.js [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/navigation.js [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$contexts$2f$UserContext$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/contexts/UserContext.tsx [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2d$auth$2f$react$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next-auth/react.js [app-client] (ecmascript)");
 ;
 var _s = __turbopack_context__.k.signature();
 'use client';
 ;
 ;
 ;
+;
 function Shell({ children }) {
     _s();
     const pathname = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["usePathname"])();
-    const { user, setUser } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$contexts$2f$UserContext$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useUser"])();
+    const { user } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$contexts$2f$UserContext$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useUser"])();
     const navigation = [
         {
             name: 'Mercados',
@@ -172,9 +164,9 @@ function Shell({ children }) {
         }
     ];
     const handleLogout = ()=>{
-        setUser(null);
-        localStorage.removeItem('wsm_user');
-        window.location.href = '/';
+        (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2d$auth$2f$react$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["signOut"])({
+            callbackUrl: '/login'
+        });
     };
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
         className: "min-h-screen bg-[#0a0a0a]",
@@ -198,7 +190,7 @@ function Shell({ children }) {
                                                 children: "WIN"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/layout/Shell.tsx",
-                                                lineNumber: 37,
+                                                lineNumber: 36,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -206,13 +198,13 @@ function Shell({ children }) {
                                                 children: "Market"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/layout/Shell.tsx",
-                                                lineNumber: 38,
+                                                lineNumber: 37,
                                                 columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/layout/Shell.tsx",
-                                        lineNumber: 36,
+                                        lineNumber: 35,
                                         columnNumber: 15
                                     }, this),
                                     user && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -229,13 +221,13 @@ function Shell({ children }) {
                                                             className: "absolute bottom-0 left-2 right-2 h-[2px] bg-[#64c883] rounded-full shadow-[0_0_8px_rgba(100,200,131,0.4)]"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/components/layout/Shell.tsx",
-                                                            lineNumber: 57,
+                                                            lineNumber: 56,
                                                             columnNumber: 27
                                                         }, this)
                                                     ]
                                                 }, item.name, true, {
                                                     fileName: "[project]/src/components/layout/Shell.tsx",
-                                                    lineNumber: 46,
+                                                    lineNumber: 45,
                                                     columnNumber: 23
                                                 }, this);
                                             }),
@@ -250,26 +242,26 @@ function Shell({ children }) {
                                                             className: "absolute bottom-0 left-2 right-2 h-[2px] bg-white rounded-full shadow-[0_0_8px_rgba(255,255,255,0.2)]"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/components/layout/Shell.tsx",
-                                                            lineNumber: 77,
+                                                            lineNumber: 76,
                                                             columnNumber: 27
                                                         }, this)
                                                     ]
                                                 }, item.name, true, {
                                                     fileName: "[project]/src/components/layout/Shell.tsx",
-                                                    lineNumber: 66,
+                                                    lineNumber: 65,
                                                     columnNumber: 25
                                                 }, this);
                                             })
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/layout/Shell.tsx",
-                                        lineNumber: 42,
+                                        lineNumber: 41,
                                         columnNumber: 17
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/layout/Shell.tsx",
-                                lineNumber: 35,
+                                lineNumber: 34,
                                 columnNumber: 13
                             }, this),
                             user && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -283,7 +275,7 @@ function Shell({ children }) {
                                                 children: "Balance"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/layout/Shell.tsx",
-                                                lineNumber: 89,
+                                                lineNumber: 88,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -296,20 +288,20 @@ function Shell({ children }) {
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/components/layout/Shell.tsx",
-                                                lineNumber: 90,
+                                                lineNumber: 89,
                                                 columnNumber: 19
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/layout/Shell.tsx",
-                                        lineNumber: 88,
+                                        lineNumber: 87,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                         className: "h-8 w-[1px] bg-white/5"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/layout/Shell.tsx",
-                                        lineNumber: 95,
+                                        lineNumber: 94,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -319,13 +311,10 @@ function Shell({ children }) {
                                             children: [
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                                     className: "text-[11px] font-bold text-white tracking-tight",
-                                                    children: [
-                                                        "@",
-                                                        user.username
-                                                    ]
-                                                }, void 0, true, {
+                                                    children: user.username ? `@${user.username}` : user.email?.split('@')[0] || 'Usuario'
+                                                }, void 0, false, {
                                                     fileName: "[project]/src/components/layout/Shell.tsx",
-                                                    lineNumber: 99,
+                                                    lineNumber: 98,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -334,40 +323,40 @@ function Shell({ children }) {
                                                     children: "Cerrar Sesión"
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/components/layout/Shell.tsx",
-                                                    lineNumber: 100,
+                                                    lineNumber: 101,
                                                     columnNumber: 21
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/components/layout/Shell.tsx",
-                                            lineNumber: 98,
+                                            lineNumber: 97,
                                             columnNumber: 19
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/layout/Shell.tsx",
-                                        lineNumber: 97,
+                                        lineNumber: 96,
                                         columnNumber: 17
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/layout/Shell.tsx",
-                                lineNumber: 87,
+                                lineNumber: 86,
                                 columnNumber: 15
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/layout/Shell.tsx",
-                        lineNumber: 34,
+                        lineNumber: 33,
                         columnNumber: 11
                     }, this)
                 }, void 0, false, {
                     fileName: "[project]/src/components/layout/Shell.tsx",
-                    lineNumber: 33,
+                    lineNumber: 32,
                     columnNumber: 9
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/src/components/layout/Shell.tsx",
-                lineNumber: 32,
+                lineNumber: 31,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("main", {
@@ -375,17 +364,17 @@ function Shell({ children }) {
                 children: children
             }, void 0, false, {
                 fileName: "[project]/src/components/layout/Shell.tsx",
-                lineNumber: 114,
+                lineNumber: 115,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/src/components/layout/Shell.tsx",
-        lineNumber: 31,
+        lineNumber: 30,
         columnNumber: 5
     }, this);
 }
-_s(Shell, "S6xFNrXkdjIWCPqB0zcDPctists=", false, function() {
+_s(Shell, "Ju5YgGqZ+OOPwJNZl+qTpaekOog=", false, function() {
     return [
         __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["usePathname"],
         __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$contexts$2f$UserContext$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useUser"]

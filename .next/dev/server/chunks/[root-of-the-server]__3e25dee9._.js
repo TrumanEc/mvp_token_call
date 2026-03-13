@@ -217,7 +217,7 @@ class LmsrService {
    * Cost = C(new) - C(old)
    */ getCostToBuy(qYes, qNo, b, side, deltaShares) {
         const before = this.costFunction(qYes, qNo, b);
-        const after = side === 'YES' ? this.costFunction(qYes + deltaShares, qNo, b) : this.costFunction(qYes, qNo + deltaShares, b);
+        const after = side === "YES" ? this.costFunction(qYes + deltaShares, qNo, b) : this.costFunction(qYes, qNo + deltaShares, b);
         return after - before;
     }
     /**
@@ -225,8 +225,7 @@ class LmsrService {
    * Uses binary search as the inverse of costFunction is not easily solvable analytically for delta
    */ getSharesToBuy(qYes, qNo, b, side, amount, tolerance = 1e-6) {
         let low = 0;
-        let high = amount * 10 // Heuristic upper bound, usually price < 1 so shares > amount
-        ;
+        let high = amount * 10000; // Heuristic upper bound, assuming lowest possible price is around 0.0001
         // Binary search for 100 iterations (sufficient precision)
         for(let i = 0; i < 100; i++){
             const mid = (low + high) / 2;
@@ -243,22 +242,47 @@ class LmsrService {
         return (low + high) / 2;
     }
     /**
+   * Calcula cuánto capital ($) se necesita invertir para llevar el precio marginal
+   * (probabilidad instantánea) del LMSR hasta un `targetPrice` específico.
+   * Usado por el Router Híbrido para no exceder el precio del Orderbook.
+   */ getCostToReachTargetPrice(qYes, qNo, b, side, targetPrice) {
+        const { pYes, pNo } = this.getPrice(qYes, qNo, b);
+        const currentPrice = side === "YES" ? pYes : pNo;
+        // Si el LMSR ya está más caro o igual al Orderbook (targetPrice), cuesta $0 (no minteamos)
+        if (currentPrice >= targetPrice) {
+            return 0;
+        }
+        let lowShares = 0;
+        let highShares = b * 20;
+        // Búsqueda binaria de shares necesarios para alcanzar targetPrice
+        for(let i = 0; i < 100; i++){
+            const midShares = (lowShares + highShares) / 2;
+            const tempQYes = side === "YES" ? qYes + midShares : qYes;
+            const tempQNo = side === "NO" ? qNo + midShares : qNo;
+            const { pYes: newPYes, pNo: newPNo } = this.getPrice(tempQYes, tempQNo, b);
+            const priceAfter = side === "YES" ? newPYes : newPNo;
+            if (priceAfter < targetPrice) lowShares = midShares;
+            else highShares = midShares;
+        }
+        const optimalShares = (lowShares + highShares) / 2;
+        return this.getCostToBuy(qYes, qNo, b, side, optimalShares);
+    }
+    /**
    * Calcula el monto máximo permitido para una transacción
    * dado un límite de price impact en porcentaje
-   */ getMaxAmountForPriceImpact(qYes, qNo, b, side, maxImpactPercent// ej: 5 = no mover más de 5%
-    ) {
+   */ getMaxAmountForPriceImpact(qYes, qNo, b, side, maxImpactPercent) {
         const { pYes, pNo } = this.getPrice(qYes, qNo, b);
-        const currentPrice = side === 'YES' ? pYes : pNo;
+        const currentPrice = side === "YES" ? pYes : pNo;
         const maxPrice = Math.min(currentPrice + maxImpactPercent / 100, 0.99);
         // Buscar binariamente cuántos shares llevan el precio hasta maxPrice
         let low = 0;
         let high = b * 20;
         for(let i = 0; i < 100; i++){
             const mid = (low + high) / 2;
-            const newQYes = side === 'YES' ? qYes + mid : qYes;
-            const newQNo = side === 'NO' ? qNo + mid : qNo;
+            const newQYes = side === "YES" ? qYes + mid : qYes;
+            const newQNo = side === "NO" ? qNo + mid : qNo;
             const { pYes: pAfter, pNo: pNoAfter } = this.getPrice(newQYes, newQNo, b);
-            const priceAfter = side === 'YES' ? pAfter : pNoAfter;
+            const priceAfter = side === "YES" ? pAfter : pNoAfter;
             if (priceAfter < maxPrice) low = mid;
             else high = mid;
         }
@@ -269,8 +293,8 @@ class LmsrService {
    * Valida una transacción contra todos los límites configurados.
    * Devuelve el monto máximo permitido y la razón si fue limitado.
    */ validateBetAmount(amount, qYes, qNo, b, side, maxBetAmount, maxPriceImpact) {
-        // 1. CAP fijo
-        if (amount > maxBetAmount) {
+        // 1. CAP fijo (Add 1 cent tolerance for float precision)
+        if (maxBetAmount && amount > maxBetAmount + 0.01) {
             return {
                 allowed: false,
                 maxAllowed: maxBetAmount,
@@ -280,10 +304,10 @@ class LmsrService {
         // 2. CAP dinámico por price impact (si está configurado)
         if (maxPriceImpact) {
             const maxByImpact = this.getMaxAmountForPriceImpact(qYes, qNo, b, side, maxPriceImpact);
-            if (amount > maxByImpact) {
+            if (amount > maxByImpact + 0.01) {
                 return {
                     allowed: false,
-                    maxAllowed: Math.min(maxBetAmount, maxByImpact),
+                    maxAllowed: maxBetAmount ? Math.min(maxBetAmount, maxByImpact) : maxByImpact,
                     reason: `Esta compra movería el precio más del ${maxPriceImpact}% permitido`
                 };
             }
@@ -308,8 +332,8 @@ class LmsrService {
         return {
             qYes,
             qNo,
-            pYes: parseFloat((pYes * 100).toFixed(4)),
-            pNo: parseFloat((pNo * 100).toFixed(4)),
+            pYes,
+            pNo,
             costAccumulated: cost,
             maxLoss,
             liquidityRemaining: maxLoss - cost + maxLoss,

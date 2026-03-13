@@ -76,10 +76,6 @@ function PositionsPage() {
                     {totalProfit >= 0 ? '+' : ''}{totalProfitPct.toFixed(1)}%
                   </span>
                </div>
-               <div className="bg-[#121212] border border-white/5 p-4 rounded-2xl flex flex-col min-w-[140px]">
-                  <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1">Retorno Máximo</span>
-                  <span className="text-lg font-extrabold text-white/40">$ {totalPotential.toLocaleString()}</span>
-               </div>
             </div>
           </div>
           

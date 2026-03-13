@@ -3,6 +3,7 @@ import { Decimal } from "@prisma/client/runtime/library";
 import { OddsCalculator } from "./odds-calculator";
 import { BalanceService } from "./balance";
 import { LmsrService } from "./lmsr.service";
+import { RouterService } from "./router.service";
 
 export type Side = "YES" | "NO";
 
@@ -13,148 +14,15 @@ export class PositionService {
     side: Side;
     amount: number;
   }) {
-    return prisma.$transaction(async (tx) => {
-      const market = await tx.market.findUnique({
-        where: { id: data.marketId },
-      });
-      if (!market || market.status !== "ACTIVE") {
-        throw new Error("Market is not active");
-      }
-
-      const user = await tx.user.findUnique({ where: { id: data.userId } });
-      if (!user) throw new Error("User not found");
-
-      const platformFeeRate = market.platformFee
-        ? Number(market.platformFee)
-        : 0.1;
-
-      // 10% Inclusive fee calculation:
-      // If user spends 10, totalToDeduct is 10, fee is 1, net is 9.
-      const totalToDeductNum = data.amount;
-      const feeAmountNum = totalToDeductNum * platformFeeRate;
-      const netAmountNum = totalToDeductNum - feeAmountNum;
-
-      const totalToDeduct = new Decimal(totalToDeductNum);
-      if (new Decimal(user.balance).lessThan(totalToDeduct)) {
-        throw new Error("Insufficient balance");
-      }
-
-      // LMSR Logic
-      const lmsrService = new LmsrService();
-
-      // Market specific configs (no global fallbacks - explicit limits only)
-      const maxBetAmount = market.maxBetAmount ?? null;
-      const maxPriceImpact = market.maxPriceImpact ?? null;
-
-      const validation = lmsrService.validateBetAmount(
-        netAmountNum, // Validate based on net amount (investment)
-        market.qYes,
-        market.qNo,
-        market.b,
-        data.side,
-        maxBetAmount,
-        maxPriceImpact,
-      );
-
-      if (!validation.allowed) {
-        throw new Error(
-          validation.reason || "Monto excede los límites permitidos",
-        );
-      }
-
-      // State before
-      const stateBefore = lmsrService.getMarketState(
-        market.qYes,
-        market.qNo,
-        market.b,
-      );
-
-      // Calculate shares using NET amount
-      const shares = lmsrService.getSharesToBuy(
-        market.qYes,
-        market.qNo,
-        market.b,
-        data.side,
-        netAmountNum,
-      );
-
-      const cost = lmsrService.getCostToBuy(
-        market.qYes,
-        market.qNo,
-        market.b,
-        data.side,
-        shares,
-      );
-      const avgCostPerShare = shares > 0 ? cost / shares : 0;
-
-      // Update Market State
-      const newQYes = data.side === "YES" ? market.qYes + shares : market.qYes;
-      const newQNo = data.side === "NO" ? market.qNo + shares : market.qNo;
-      const stateAfter = lmsrService.getMarketState(newQYes, newQNo, market.b);
-
-      // Deduct balance (Total spent is the input amount)
-      await BalanceService.deduct(
-        tx,
-        user.id,
-        totalToDeduct,
-        "BET_PLACED",
-        `Bet ${totalToDeductNum} (Net: ${netAmountNum}, Fee: ${feeAmountNum}) on ${data.side}`,
-        data.marketId,
-      );
-
-      // Create Position
-      const position = await tx.position.create({
-        data: {
-          marketId: data.marketId,
-          originalOwnerId: data.userId,
-          currentOwnerId: data.userId,
-          side: data.side,
-          amount: totalToDeduct, // Total (Net + Fee) is Decimal
-          status: "ACTIVE",
-          shares, // Float
-          avgCostPerShare, // Float
-          totalCost: cost, // Float (Net investment applied to reserves)
-        },
-        include: { market: true, currentOwner: true },
-      });
-
-      // Update Market
-      await tx.market.update({
-        where: { id: data.marketId },
-        data: {
-          qYes: newQYes,
-          qNo: newQNo,
-          // Update pools using NET amount (Volume)
-          yesPool:
-            data.side === "YES" ? { increment: netAmountNum } : undefined,
-          noPool: data.side === "NO" ? { increment: netAmountNum } : undefined,
-        },
-      });
-
-      // Create LMSR Snapshot
-      await tx.lmsrSnapshot.create({
-        data: {
-          marketId: data.marketId,
-          userId: data.userId,
-          side: data.side,
-          deltaShares: shares,
-          cost,
-          qYesBefore: stateBefore.qYes,
-          qNoBefore: stateBefore.qNo,
-          pYesBefore: stateBefore.pYes,
-          qYesAfter: stateAfter.qYes,
-          qNoAfter: stateAfter.qNo,
-          pYesAfter: stateAfter.pYes,
-          triggerType: "BUY",
-        },
-      });
-
-      return {
-        ...position,
-        amount: position.amount.toNumber(),
-        initialProbability: stateAfter.pYes, // Return current prob as ref
-      };
+    // We now delegate to RouterService which handles LMSR + OrderBook + Smart Fees
+    const result = await RouterService.executeMarketBuy({
+      marketId: data.marketId,
+      userId: data.userId,
+      side: data.side,
+      budget: data.amount // This is the gross budget
     });
+
+    return result.position;
   }
 
   static async getUserPositions(userId: string, marketId?: string) {
@@ -281,6 +149,10 @@ export class PositionService {
             yesPool: p.market.yesPool.toNumber(),
             noPool: p.market.noPool.toNumber(),
           },
+          // Store LMSR state parameters for price calculation
+          _b: p.market.b,
+          _qYes: p.market.qYes,
+          _qNo: p.market.qNo,
           yes: {
             shares: new Decimal(0),
             invested: new Decimal(0),
@@ -344,26 +216,30 @@ export class PositionService {
     }
 
     return Object.values(groups).map((g: any) => {
-      const odds = OddsCalculator.calculateOdds(
-        new Decimal(g.market.yesPool),
-        new Decimal(g.market.noPool),
-      );
+      // Use real LMSR price (NOT pool ratio)
+      const lmsrService = new LmsrService();
+      const marketB = (g as any)._b || 1000;
+      const marketQYes = (g as any)._qYes || 0;
+      const marketQNo = (g as any)._qNo || 0;
+      const lmsrReal = lmsrService.getPrice(marketQYes, marketQNo, marketB);
+      const probYes = new Decimal(lmsrReal.pYes);
+      const probNo = new Decimal(lmsrReal.pNo);
 
-      const probYes = new Decimal(odds.yesOdds).dividedBy(100);
-      const probNo = new Decimal(odds.noOdds).dividedBy(100);
-
-      // Calculations for YES
       const yesShares = g.yes.shares.toNumber();
-      const yesInvested = g.yes.invested.toNumber();
-      const yesAvgPrice = yesShares > 0 ? yesInvested / yesShares : 0;
+      const yesInvested = g.yes.invested.toNumber();           // bruto (con fee)
+      const yesNetCost = g.yes.netCost.toNumber();             // neto (sin fee, lo que fue al LMSR)
+      const yesAvgPrice    = yesShares > 0 ? yesInvested / yesShares : 0;  // bruto/share
+      const yesAvgPriceNet = yesShares > 0 ? yesNetCost  / yesShares : 0;  // neto/share
       const yesFairValue = yesShares * probYes.toNumber();
       const yesPnL = yesFairValue - yesInvested;
       const yesROI = yesInvested > 0 ? (yesPnL / yesInvested) * 100 : 0;
 
       // Calculations for NO
       const noShares = g.no.shares.toNumber();
-      const noInvested = g.no.invested.toNumber();
-      const noAvgPrice = noShares > 0 ? noInvested / noShares : 0;
+      const noInvested = g.no.invested.toNumber();             // bruto (con fee)
+      const noNetCost = g.no.netCost.toNumber();               // neto (sin fee)
+      const noAvgPrice    = noShares > 0 ? noInvested / noShares : 0;  // bruto/share
+      const noAvgPriceNet = noShares > 0 ? noNetCost  / noShares : 0;  // neto/share
       const noFairValue = noShares * probNo.toNumber();
       const noPnL = noFairValue - noInvested;
       const noROI = noInvested > 0 ? (noPnL / noInvested) * 100 : 0;
@@ -374,12 +250,13 @@ export class PositionService {
       const totalPnL = totalFairValue - totalInvested;
       const totalROI = totalInvested > 0 ? (totalPnL / totalInvested) * 100 : 0;
 
-      // Settlement Scenarios (Payout - Total Investment)
-      const ifYesWinsPayout = yesShares; // wins $1 per share
-      const ifNoWinsPayout = noShares; // wins $1 per share
-
-      const ifYesWinsPnL = ifYesWinsPayout - totalInvested;
-      const ifNoWinsPnL = ifNoWinsPayout - totalInvested;
+      // Settlement Scenarios — USER perspective:
+      // If YES wins: user collects yesShares × $1, net = payout - what they paid for YES only
+      // If NO wins:  user collects noShares × $1,  net = payout - what they paid for NO only
+      const ifYesWinsPayout = yesShares;
+      const ifNoWinsPayout  = noShares;
+      const ifYesWinsPnL = ifYesWinsPayout - yesInvested;
+      const ifNoWinsPnL  = ifNoWinsPayout  - noInvested;
 
       const obYes = obMap[`${g.marketId}__YES`] || { shares: 0, revenue: 0, avgPrice: 0 };
       const obNo  = obMap[`${g.marketId}__NO`]  || { shares: 0, revenue: 0, avgPrice: 0 };
@@ -391,7 +268,8 @@ export class PositionService {
           shares: yesShares,
           invested: yesInvested,
           fees: g.yes.fees.toNumber(),
-          avgPrice: yesAvgPrice,
+          avgPrice: yesAvgPrice,        // bruto: totalPagado / shares
+          avgPriceNet: yesAvgPriceNet,  // neto: sinFee / shares
           fairValue: yesFairValue,
           pnl: yesPnL,
           roi: yesROI,
@@ -407,7 +285,8 @@ export class PositionService {
           shares: noShares,
           invested: noInvested,
           fees: g.no.fees.toNumber(),
-          avgPrice: noAvgPrice,
+          avgPrice: noAvgPrice,        // bruto: totalPagado / shares
+          avgPriceNet: noAvgPriceNet,  // neto: sinFee / shares
           fairValue: noFairValue,
           pnl: noPnL,
           roi: noROI,
