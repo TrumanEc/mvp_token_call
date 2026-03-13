@@ -55,20 +55,21 @@ export async function GET(
         return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
       }
 
-      feeAmount = totalCost * platformFeeRate;
-      const netAmount = totalCost - feeAmount;
-
       const { RouterService } = await import("@/services/router.service");
+      
+      // Simula directamente con el monto BRUTO. El router se encarga de discriminar fees.
       const sim = await RouterService.simulateMarketBuy({
-        marketId: id,
-        side,
-        budget: netAmount,
+        marketId: id, 
+        side, 
+        budget: totalCost,
       });
 
+      feeAmount = sim.fee;
       shares = sim.sharesCollected;
       lmsrShares = sim.lmsrShares;
       obShares = sim.obShares;
       newPrices = { pYes: sim.newProbabilities.yes, pNo: sim.newProbabilities.no };
+
     } else if (sharesStr) {
       shares = parseFloat(sharesStr);
       if (isNaN(shares) || shares <= 0) {
@@ -97,7 +98,9 @@ export async function GET(
       );
     }
 
-    const avgPrice = shares > 0 ? (totalCost - feeAmount) / shares : 0;
+    // avgPrice en términos BRUTOS (incluyendo fee) para ser consistente con
+    // la vista de posiciones, donde "Precio Comp." = investidoBruto / shares
+    const avgPrice = shares > 0 ? totalCost / shares : 0;
     const maxBetAmount = market.maxBetAmount ?? null;
     const maxPriceImpact = market.maxPriceImpact ?? null;
     const netInvestment = totalCost - feeAmount;
@@ -112,6 +115,11 @@ export async function GET(
       maxPriceImpact,
     );
 
+    // Approximating exact fee per bucket for UI
+    const totalSharesCalc = lmsrShares + obShares || 1;
+    const lmsrFeeAmount = feeAmount * (lmsrShares / totalSharesCalc);
+    const obFeeAmount = feeAmount * (obShares / totalSharesCalc);
+
     return NextResponse.json({
       side,
       shares,
@@ -120,7 +128,11 @@ export async function GET(
       totalCost,
       avgPrice,
       feeAmount,
-      platformFeeRate,
+      lmsrFeeAmount,
+      obFeeAmount,
+      platformFeeRate, // backwards compat
+      lmsrFeeRate: platformFeeRate,
+      obFeeRate: 0.02,
       newProbabilities: {
         yes: newPrices.pYes,
         no: newPrices.pNo,

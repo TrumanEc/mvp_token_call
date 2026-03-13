@@ -210,6 +210,8 @@ model PositionTransfer {
   fromUserId    String
   toUserId      String
   price         Decimal
+  fee           Decimal  @default(0)
+  shares        Float    @default(0)
   listingId     String?
   transferredAt DateTime @default(now())
   toUser        User     @relation("TransfersTo", fields: [toUserId], references: [id])

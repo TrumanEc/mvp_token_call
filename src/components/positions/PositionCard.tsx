@@ -42,7 +42,16 @@ export function PositionCard({ position, userId, onSell }: PositionCardProps) {
           : "-"}
       </td>
       <td className="text-center text-xs font-bold text-white/60">
-        {data.shares > 0 ? `$${data.avgPrice.toFixed(4)}` : "-"}
+        {data.shares > 0 ? (
+          <div className="flex flex-col items-center gap-0.5">
+            <span>${data.avgPrice.toFixed(4)}</span>
+            {data.avgPriceNet != null && data.avgPriceNet !== data.avgPrice && (
+              <span className="text-[9px] text-gray-600 font-normal">
+                neto ${data.avgPriceNet.toFixed(4)}
+              </span>
+            )}
+          </div>
+        ) : "-"}
       </td>
       <td className="text-center text-xs font-bold text-white">
         {data.invested > 0
@@ -68,9 +77,6 @@ export function PositionCard({ position, userId, onSell }: PositionCardProps) {
       >
         {data.roi >= 0 ? "+" : ""}
         {data.roi.toFixed(1)}%
-      </td>
-      <td className="text-center text-xs font-bold text-white/40">
-        {data.shares > 0 ? `$${data.avgPrice.toFixed(4)}` : "-"}
       </td>
       {/* OB Pending */}
       <td className="text-center">
@@ -156,7 +162,6 @@ export function PositionCard({ position, userId, onSell }: PositionCardProps) {
                 <th className="text-center">VALOR MKT</th>
                 <th className="text-center">P&L</th>
                 <th className="text-center">ROI</th>
-                <th className="text-center">BREAKEVEN</th>
                 <th className="text-center">
                   <span className="text-blue-400">EN OB</span>
                 </th>

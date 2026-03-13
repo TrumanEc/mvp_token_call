@@ -106,7 +106,7 @@ class LmsrService {
    * Uses binary search as the inverse of costFunction is not easily solvable analytically for delta
    */ getSharesToBuy(qYes, qNo, b, side, amount, tolerance = 1e-6) {
         let low = 0;
-        let high = amount * 10; // Heuristic upper bound, usually price < 1 so shares > amount
+        let high = amount * 10000; // Heuristic upper bound, assuming lowest possible price is around 0.0001
         // Binary search for 100 iterations (sufficient precision)
         for(let i = 0; i < 100; i++){
             const mid = (low + high) / 2;
@@ -121,6 +121,32 @@ class LmsrService {
             }
         }
         return (low + high) / 2;
+    }
+    /**
+   * Calcula cuánto capital ($) se necesita invertir para llevar el precio marginal
+   * (probabilidad instantánea) del LMSR hasta un `targetPrice` específico.
+   * Usado por el Router Híbrido para no exceder el precio del Orderbook.
+   */ getCostToReachTargetPrice(qYes, qNo, b, side, targetPrice) {
+        const { pYes, pNo } = this.getPrice(qYes, qNo, b);
+        const currentPrice = side === "YES" ? pYes : pNo;
+        // Si el LMSR ya está más caro o igual al Orderbook (targetPrice), cuesta $0 (no minteamos)
+        if (currentPrice >= targetPrice) {
+            return 0;
+        }
+        let lowShares = 0;
+        let highShares = b * 20;
+        // Búsqueda binaria de shares necesarios para alcanzar targetPrice
+        for(let i = 0; i < 100; i++){
+            const midShares = (lowShares + highShares) / 2;
+            const tempQYes = side === "YES" ? qYes + midShares : qYes;
+            const tempQNo = side === "NO" ? qNo + midShares : qNo;
+            const { pYes: newPYes, pNo: newPNo } = this.getPrice(tempQYes, tempQNo, b);
+            const priceAfter = side === "YES" ? newPYes : newPNo;
+            if (priceAfter < targetPrice) lowShares = midShares;
+            else highShares = midShares;
+        }
+        const optimalShares = (lowShares + highShares) / 2;
+        return this.getCostToBuy(qYes, qNo, b, side, optimalShares);
     }
     /**
    * Calcula el monto máximo permitido para una transacción
@@ -257,6 +283,27 @@ class MarketService {
                         createdAt: "desc"
                     },
                     take: 100
+                },
+                orders: {
+                    where: {
+                        status: {
+                            in: [
+                                "OPEN",
+                                "PARTIAL"
+                            ]
+                        }
+                    },
+                    orderBy: {
+                        pricePerShare: "asc"
+                    },
+                    include: {
+                        user: {
+                            select: {
+                                id: true,
+                                username: true
+                            }
+                        }
+                    }
                 }
             }
         });
@@ -273,6 +320,7 @@ class MarketService {
             yesPool: market.yesPool.toNumber(),
             noPool: market.noPool.toNumber(),
             maxPool: market.maxPool?.toNumber() ?? null,
+            orders: market.orders || [],
             odds,
             positions: market.positions.map((p)=>({
                     ...p,

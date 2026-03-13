@@ -774,6 +774,22 @@ function AdminPage() {
         ) : (
           selectedMarketStats && (
             <div className="space-y-8 pt-4">
+              {/* Header de Info Base */}
+              <div className="flex items-center gap-4 px-1">
+                <div className="bg-[#121212] px-4 py-2 rounded-xl border border-white/5">
+                  <div className="text-[9px] font-bold text-gray-500 uppercase tracking-wider mb-0.5">ID Mercado</div>
+                  <div className="text-xs font-mono text-gray-400">{selectedMarketStats.id}</div>
+                </div>
+                <div className="bg-[#121212] px-4 py-2 rounded-xl border border-white/5">
+                  <div className="text-[9px] font-bold text-[#64c883] uppercase tracking-wider mb-0.5">Liquidez (b)</div>
+                  <div className="text-xs font-mono text-white">{selectedMarketStats.b || 100}</div>
+                </div>
+                <div className="bg-[#121212] px-4 py-2 rounded-xl border border-white/5">
+                  <div className="text-[9px] font-bold text-gray-500 uppercase tracking-wider mb-0.5">Seed Cost Inicial</div>
+                  <div className="text-xs font-mono text-gray-400">$ {Number(selectedMarketStats.liquidity?.initialSeed || 0).toFixed(2)}</div>
+                </div>
+              </div>
+
               <div className="bg-[#0a0a0a] p-6 rounded-2xl border border-white/5">
                 <div className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.1em] mb-4">
                   Evolución de Probabilidad
@@ -805,6 +821,10 @@ function AdminPage() {
                             0,
                         ).toFixed(2)}
                       </span>
+                    </div>
+                    <div className="flex justify-between items-center px-4 py-2 bg-white/5 rounded-lg border border-white/5">
+                      <span className="text-[9px] font-bold text-gray-500 uppercase">Liquidez (b)</span>
+                      <span className="text-xs font-mono text-gray-300">{selectedMarketStats.b || 100}</span>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="p-4 bg-[#64c883]/5 rounded-xl border border-[#64c883]/10">
@@ -864,123 +884,161 @@ function AdminPage() {
                     <div className="text-3xl font-extrabold">
                       $ {Number(selectedMarketStats.totalPool || 0).toFixed(0)}
                     </div>
-                    <div className="text-[10px] mt-2 font-bold uppercase tracking-wider opacity-70">
-                      Límite:{" "}
-                      {selectedMarketStats.maxPool
-                        ? `$ ${selectedMarketStats.maxPool.toLocaleString()}`
-                        : "Ilimitado"}
-                    </div>
+
                   </div>
                 </div>
               </div>
 
-              {/* Liquidity Balance Section (Visible for all markets) */}
-              {selectedMarketStats.liquidity && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-8 border-t border-white/10">
-                  <div className="bg-[#121212] p-6 rounded-2xl border border-white/5 space-y-4">
-                    <div className="flex items-center gap-2 mb-2">
+              {/* PnL Scenarios Section */}
+              {(() => {
+                const fee = selectedMarketStats.platformFee
+                  ? Number(selectedMarketStats.platformFee)
+                  : 0.1;
+                const totalVolume =
+                  Number(selectedMarketStats.yesPool || 0) +
+                  Number(selectedMarketStats.noPool || 0);
+                // Fee correcto: se cobra sobre el bruto → vol / (1-fee) * fee
+                const collectedFees = (totalVolume / (1 - fee)) * fee;
+                const seedCost = Number(selectedMarketStats.liquidity?.initialSeed || 0);
+
+                // Payout máximo por escenario
+                const qYes = Number(selectedMarketStats.qYes || 0);
+                const qNo = Number(selectedMarketStats.qNo || 0);
+
+                // PnL = Ingresos brutos - SeedCost - Payout obligatorio
+                // Con/sin fee (el fee ya está captado en los ingresos brutos)
+                const pnlYesSinFee = totalVolume - seedCost - qYes;
+                const pnlYesConFee = pnlYesSinFee + collectedFees;
+                const pnlNoSinFee = totalVolume - seedCost - qNo;
+                const pnlNoConFee = pnlNoSinFee + collectedFees;
+
+                const ScenarioCard = ({
+                  label,
+                  color,
+                  borderColor,
+                  payout,
+                  pnlSin,
+                  pnlCon,
+                  vol,
+                  seed,
+                  fees
+                }: {
+                  label: string;
+                  color: string;
+                  borderColor: string;
+                  payout: number;
+                  pnlSin: number;
+                  pnlCon: number;
+                  vol: number;
+                  seed: number;
+                  fees: number;
+                }) => (
+                  <div className={`bg-[#0d0d0d] rounded-2xl border ${borderColor} p-5 space-y-4`}>
+                    {/* Header */}
+                    <div className="flex items-center justify-between">
                       <h4 className="text-[10px] font-bold text-white uppercase tracking-wider">
-                        Balance de Liquidez (WIN)
+                        Escenario: Gana{" "}
+                        <span className={color}>{label}</span>
                       </h4>
-                      <div className="group relative">
-                        <span className="cursor-help text-xs text-gray-500">
-                          ⓘ
+                      <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-full tracking-wider ${color === "text-[#64c883]" ? "bg-[#64c883]/10 text-[#64c883]" : "bg-[#e16464]/10 text-[#e16464]"}`}>
+                        {label}
+                      </span>
+                    </div>
+
+                    {/* Desglose */}
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center text-[11px]">
+                        <span className="text-gray-500">Volumen neto (pool)</span>
+                        <span className="text-white font-bold">+ ${vol.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-[11px]">
+                        <span className="text-gray-500">Seed Cost (subsidio inicial)</span>
+                        <span className="text-[#e16464] font-bold">− ${seed.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-[11px]">
+                        <span className="text-gray-500">Pago a ganadores ({label})</span>
+                        <span className="text-[#e16464] font-bold">− ${payout.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-[11px]">
+                        <span className="text-gray-500">Fee recaudado ({(fee * 100).toFixed(0)}% bruto)</span>
+                        <span className="text-[#64c883] font-bold">+ ${fees.toFixed(2)}</span>
+                      </div>
+                    </div>
+
+                    {/* Resultados */}
+                    <div className="pt-3 border-t border-white/5 space-y-3">
+                      <div className="bg-white/5 p-3 rounded-xl border border-white/5">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                            Retorno a Tesorería WIN
+                          </span>
+                          <span className="text-xs font-mono text-white opacity-40">
+                            (Check Final)
+                          </span>
+                        </div>
+                        <div className="text-lg font-black text-white">
+                          $ {(vol + fees + seed - payout).toFixed(2)}
+                        </div>
+                        <p className="text-[9px] text-gray-500 mt-1 leading-tight">
+                          Pozo total acumulado (Seed + Bets) menos el pago de acciones ganadoras.
+                        </p>
+                      </div>
+
+                      <div className="flex justify-between items-center px-1">
+                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                          PnL Neto (Profit)
                         </span>
-                        <div className="absolute bottom-full left-0 mb-2 w-64 p-3 bg-[#1a1a1a] text-[10px] text-gray-400 rounded-xl border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-                          WIN actúa como Market Maker poniendo un subsidio
-                          inicial (Seed Cost). Este balance muestra si ese
-                          subsidio se recuperó o si hubo pérdida neta tras pagar
-                          premios.
+                        <span className={`text-xl font-extrabold ${pnlCon >= 0 ? "text-[#64c883]" : "text-[#e16464]"}`}>
+                          {pnlCon >= 0 ? "+" : ""}${pnlCon.toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+
+                return (
+                  <div className="pt-8 border-t border-white/10 space-y-4">
+                    <div className="flex items-center gap-3">
+                      <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.1em]">
+                        Escenarios de PnL WIN
+                      </h3>
+                      <div className="flex-1 h-[1px] bg-white/5" />
+                      <div className="group relative">
+                        <span className="cursor-help text-xs text-gray-500">ⓘ</span>
+                        <div className="absolute bottom-full right-0 mb-2 w-72 p-3 bg-[#1a1a1a] text-[10px] text-gray-400 rounded-xl border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                          Muestra qué le pasaría a WIN en cada outcome. El PnL real depende de cuál escenario resuelve.
+                          Fórmula: Pool Neto − Seed Cost − Pago Ganadores (± Fee)
                         </div>
                       </div>
                     </div>
 
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center text-[11px]">
-                        <span className="text-gray-500">
-                          Liquidez puesta por WIN (b)
-                        </span>
-                        <span className="text-white font-bold">
-                          ${" "}
-                          {(
-                            (selectedMarketStats.liquidity as any).b || 0
-                          ).toFixed(2)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center text-[11px]">
-                        <span className="text-gray-500">
-                          Subsidio Inicial (Seed Cost)
-                        </span>
-                        <span className="text-white font-bold">
-                          ${" "}
-                          {selectedMarketStats.liquidity.initialSeed.toFixed(2)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center text-[11px]">
-                        <span className="text-gray-500">
-                          Inversiones Netas Recibidas
-                        </span>
-                        <span className="text-white font-bold">
-                          ${" "}
-                          {selectedMarketStats.liquidity.netInvestments.toFixed(
-                            2,
-                          )}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center text-[11px]">
-                        <span className="text-gray-500">
-                          Premios Pagados (Out)
-                        </span>
-                        <span className="text-[#e16464] font-bold">
-                          - ${" "}
-                          {selectedMarketStats.liquidity.totalPayouts.toFixed(
-                            2,
-                          )}
-                        </span>
-                      </div>
-                      <div className="pt-3 border-t border-white/5 flex justify-between items-center">
-                        <span className="text-[10px] font-bold text-gray-400 uppercase">
-                          PnL de Liquidez (Neto){" "}
-                          {selectedMarketStats.status === "RESOLVED"
-                            ? "Final"
-                            : "Actual"}
-                        </span>
-                        <span
-                          className={`text-lg font-extrabold ${selectedMarketStats.liquidity.netProfitLoss >= 0 ? "text-[#64c883]" : "text-[#e16464]"}`}
-                        >
-                          ${" "}
-                          {selectedMarketStats.liquidity.netProfitLoss.toFixed(
-                            2,
-                          )}
-                        </span>
-                      </div>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      <ScenarioCard
+                        label="YES"
+                        color="text-[#64c883]"
+                        borderColor="border-[#64c883]/15"
+                        payout={qYes}
+                        pnlSin={pnlYesSinFee}
+                        pnlCon={pnlYesConFee}
+                        vol={totalVolume}
+                        seed={seedCost}
+                        fees={collectedFees}
+                      />
+                      <ScenarioCard
+                        label="NO"
+                        color="text-[#e16464]"
+                        borderColor="border-[#e16464]/15"
+                        payout={qNo}
+                        pnlSin={pnlNoSinFee}
+                        pnlCon={pnlNoConFee}
+                        vol={totalVolume}
+                        seed={seedCost}
+                        fees={collectedFees}
+                      />
                     </div>
                   </div>
-
-                  <div className="bg-[#121212] p-6 rounded-2xl border border-white/5 space-y-4">
-                    <h4 className="text-[10px] font-bold text-white uppercase tracking-wider mb-2">
-                      ¿Qué pasó con la liquidez?
-                    </h4>
-                    <div className="text-[11px] text-gray-400 leading-relaxed space-y-3">
-                      <p>
-                        Al ser un mercado **LMSR**, WIN garantiza que siempre
-                        haya acciones disponibles. Para esto, la plataforma
-                        reserva un capital inicial (Seed Cost).
-                      </p>
-                      <p>
-                        Si el **PnL de Liquidez** es positivo, WIN recuperó su
-                        capital y obtuvo una ganancia adicional por el spread
-                        del mercado.
-                      </p>
-                      <p>
-                        Si es negativo, WIN pagó más en premios de lo que entró
-                        en apuestas, asumiendo el costo de proveer la liquidez
-                        inicial.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* Resolution Report Section (Visible only for resolved/voided markets) */}
               {(selectedMarketStats.status === "RESOLVED" ||
@@ -1211,10 +1269,10 @@ function AdminPage() {
                           <div className="text-xl font-extrabold text-white mt-1">${sm.totalP2PVolumeExecuted.toFixed(2)}</div>
                           <div className="text-[9px] text-gray-600 mt-0.5">{sm.p2pTradeCount} trades completados</div>
                         </div>
-                        <div className="bg-[#121212] border border-white/5 rounded-2xl p-4">
-                          <div className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">Shares P2P</div>
-                          <div className="text-xl font-extrabold text-white mt-1">{sm.totalP2PSharesExecuted.toFixed(2)}</div>
-                          <div className="text-[9px] text-gray-600 mt-0.5">Precio prom: ${sm.avgP2PPrice.toFixed(4)}</div>
+                        <div className="bg-[#64c883]/10 border border-[#64c883]/20 rounded-2xl p-4">
+                          <div className="text-[9px] font-bold text-[#64c883] uppercase tracking-wider">Ganancia WIN (FEE P2P)</div>
+                          <div className="text-xl font-extrabold text-[#64c883] mt-1">+ ${sm.totalP2PFeeCollected.toFixed(2)}</div>
+                          <div className="text-[9px] text-[#64c883]/60 mt-0.5">2% sobre el Orderbook</div>
                         </div>
                         <div className="bg-[#121212] border border-blue-500/10 rounded-2xl p-4">
                           <div className="text-[9px] font-bold text-blue-400 uppercase tracking-wider">Órdenes Abiertas</div>
@@ -1271,37 +1329,31 @@ function AdminPage() {
                     </div>
                   </div>
 
-                  {/* P2P fills table */}
+                  {/* P2P Transctions table */}
                   <div className="space-y-2">
                     <h4 className="text-[9px] font-bold text-[#64c883] uppercase tracking-[0.1em]">
-                      ✅ Compras con Porción P2P Ejecutada (Hybrid Router)
+                      ✅ Transacciones Mercado Secundario (P2P)
                     </h4>
                     <div className="bg-[#121212] border border-white/5 rounded-2xl overflow-hidden">
                       <table className="w-full text-left">
                         <thead>
                           <tr className="bg-[#171717] border-b border-white/5">
-                            {["Comprador","Lado","Sh P2P","$ P2P","Precio P2P","Sh LMSR","$ LMSR","Total Inv.","Precio Final","Fecha"].map((h) => (
+                            {["Comprador","Vendedor (Recibe Neto)","Monto Bruto","Monto Neto","Fee WIN (2%)","Fecha"].map((h) => (
                               <th key={h} className="p-3 text-[9px] font-bold text-gray-400 uppercase tracking-wider whitespace-nowrap">{h}</th>
                             ))}
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
                           {selectedMarketStats.secondaryMarket.obFills.length === 0 ? (
-                            <tr><td colSpan={10} className="p-8 text-center text-[10px] font-bold text-white/20 uppercase">No hay compras P2P ejecutadas aún</td></tr>
+                            <tr><td colSpan={7} className="p-8 text-center text-[10px] font-bold text-white/20 uppercase">No hay transacciones P2P ejecutadas aún</td></tr>
                           ) : (
-                            selectedMarketStats.secondaryMarket.obFills.map((f: any) => (
-                              <tr key={f.id} className="hover:bg-white/5 transition-colors">
-                                <td className="p-3 text-xs font-bold text-white">@{f.username}</td>
-                                <td className="p-3">
-                                  <span className={`px-2 py-0.5 text-[9px] font-bold rounded-full uppercase ${f.side === "YES" ? "bg-[#64c883]/10 text-[#64c883]" : "bg-[#e16464]/10 text-[#e16464]"}`}>{f.side}</span>
-                                </td>
-                                <td className="p-3 text-xs font-bold text-blue-300">{f.obShares.toFixed(2)}</td>
-                                <td className="p-3 text-xs font-bold text-blue-300">${f.obAmount.toFixed(2)}</td>
-                                <td className="p-3 text-xs text-blue-400">${f.obAvgPrice.toFixed(4)}</td>
-                                <td className="p-3 text-xs font-bold text-purple-300">{f.lmsrShares.toFixed(2)}</td>
-                                <td className="p-3 text-xs font-bold text-purple-300">${f.lmsrAmount.toFixed(2)}</td>
-                                <td className="p-3 text-sm font-extrabold text-white">${f.totalAmount.toFixed(2)}</td>
-                                <td className="p-3 text-xs font-bold text-[#64c883]">${f.finalAvgPrice.toFixed(4)}</td>
+                            selectedMarketStats.secondaryMarket.obFills.map((f: any, idx: number) => (
+                              <tr key={f.id || idx} className="hover:bg-white/5 transition-colors">
+                                <td className="p-3 text-xs font-bold text-[#64c883]">@{f.buyer}</td>
+                                <td className="p-3 text-xs font-bold text-gray-400">@{f.seller}</td>
+                                <td className="p-3 text-xs text-white">${f.grossAmount.toFixed(2)}</td>
+                                <td className="p-3 text-xs font-bold text-blue-300">${f.netAmount.toFixed(2)}</td>
+                                <td className="p-3 text-sm font-extrabold text-[#64c883]">+ ${f.fee.toFixed(2)}</td>
                                 <td className="p-3 text-[10px] font-bold text-gray-400 whitespace-nowrap">{new Date(f.timestamp).toLocaleDateString()}</td>
                               </tr>
                             ))
@@ -1339,37 +1391,21 @@ function AdminPage() {
                 placeholder="¿Ej: Argentina ganará el mundial?"
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-1">
-                  Fecha Resolución
-                </label>
-                <input
-                  type="date"
-                  className="w-full h-14 bg-[#121212] border border-white/5 rounded-2xl px-4 text-white font-bold outline-none focus:border-[#64c883] transition-all"
-                  value={newMarket.resolutionDate}
-                  onChange={(e) =>
-                    setNewMarket({
-                      ...newMarket,
-                      resolutionDate: e.target.value,
-                    })
-                  }
-                />
-              </div>
-              <div>
-                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-1">
-                  Límite Pool ($)
-                </label>
-                <input
-                  type="number"
-                  className="w-full h-14 bg-[#121212] border border-white/5 rounded-2xl px-4 text-white font-bold outline-none focus:border-[#64c883] transition-all"
-                  value={newMarket.maxPool}
-                  onChange={(e) =>
-                    setNewMarket({ ...newMarket, maxPool: e.target.value })
-                  }
-                  placeholder="Ilimitado"
-                />
-              </div>
+            <div>
+              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-1">
+                Fecha Resolución
+              </label>
+              <input
+                type="date"
+                className="w-full h-14 bg-[#121212] border border-white/5 rounded-2xl px-4 text-white font-bold outline-none focus:border-[#64c883] transition-all"
+                value={newMarket.resolutionDate}
+                onChange={(e) =>
+                  setNewMarket({
+                    ...newMarket,
+                    resolutionDate: e.target.value,
+                  })
+                }
+              />
             </div>
             <div className="grid grid-cols-3 gap-4">
               <div>
