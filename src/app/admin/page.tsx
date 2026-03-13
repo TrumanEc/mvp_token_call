@@ -140,6 +140,11 @@ function AdminPage() {
       const statsData = await statsRes.json();
       const logsData = await logsRes.json();
 
+      if (statsData.error) {
+        console.error("Error fetching market stats:", statsData.error);
+        return;
+      }
+
       setSelectedMarketStats(statsData);
       setLmsrLogs(logsData);
     } finally {
@@ -817,7 +822,7 @@ function AdminPage() {
                       <span className="text-lg font-extrabold text-white">
                         ${" "}
                         {Number(
-                          selectedMarketStats.simulation.platformCommission ||
+                          selectedMarketStats.simulation?.platformCommission ??
                             0,
                         ).toFixed(2)}
                       </span>
@@ -834,8 +839,8 @@ function AdminPage() {
                         <div className="text-lg font-extrabold text-white">
                           x{" "}
                           {Number(
-                            selectedMarketStats.simulation.ifYesWins
-                              .payoutPerDollar || 0,
+                            selectedMarketStats.simulation?.ifYesWins
+                              ?.payoutPerDollar ?? 0,
                           ).toFixed(2)}
                         </div>
                       </div>
@@ -846,8 +851,8 @@ function AdminPage() {
                         <div className="text-lg font-extrabold text-white">
                           x{" "}
                           {Number(
-                            selectedMarketStats.simulation.ifNoWins
-                              .payoutPerDollar || 0,
+                            selectedMarketStats.simulation?.ifNoWins
+                              ?.payoutPerDollar ?? 0,
                           ).toFixed(2)}
                         </div>
                       </div>

@@ -19,17 +19,17 @@ model User {
   balance           Decimal                @default(1000.00)
   createdAt         DateTime               @default(now())
   updatedAt         DateTime               @updatedAt
+  accounts          Account[]
+  routerLogs        MarketRouterAuditLog[] @relation("UserRouterLogs")
   purchases         MarketplaceListing[]   @relation("BuyerListings")
   sellListings      MarketplaceListing[]   @relation("SellerListings")
   orders            Order[]                @relation("UserOrders")
-  routerLogs        MarketRouterAuditLog[] @relation("UserRouterLogs")
   currentPositions  Position[]             @relation("CurrentOwner")
   originalPositions Position[]             @relation("OriginalOwner")
-  transfersTo       PositionTransfer[]     @relation("TransfersTo")
   transfersFrom     PositionTransfer[]     @relation("TransfersFrom")
-  transactions      Transaction[]
-  accounts          Account[]
+  transfersTo       PositionTransfer[]     @relation("TransfersTo")
   sessions          Session[]
+  transactions      Transaction[]
 
   @@index([username])
 }
@@ -57,9 +57,9 @@ model Market {
   maxPriceImpact Float?
   lmsrSnapshots  LmsrSnapshot[]
   history        MarketHistory[]
+  routerLogs     MarketRouterAuditLog[]
   listings       MarketplaceListing[]
   orders         Order[]
-  routerLogs     MarketRouterAuditLog[]
   positions      Position[]
 
   @@index([status])
@@ -87,8 +87,8 @@ model Position {
   listing            MarketplaceListing?
   orders             Order[]
   currentOwner       User                @relation("CurrentOwner", fields: [currentOwnerId], references: [id])
-  originalOwner      User                @relation("OriginalOwner", fields: [originalOwnerId], references: [id])
   market             Market              @relation(fields: [marketId], references: [id], onDelete: Cascade)
+  originalOwner      User                @relation("OriginalOwner", fields: [originalOwnerId], references: [id])
   transfers          PositionTransfer[]
 
   @@index([marketId])
@@ -105,7 +105,7 @@ model MarketplaceListing {
   buyerId            String?
   askPrice           Decimal
   suggestedPrice     Decimal
-  platformFee        Decimal   @default(0.025)
+  platformFee        Decimal   @default(0.020)
   status             String    @default("ACTIVE")
   listedAt           DateTime  @default(now())
   soldAt             DateTime?
@@ -114,44 +114,34 @@ model MarketplaceListing {
   askPricePerShare   Float     @default(0)
   fairValueAtListing Float     @default(0)
   buyer              User?     @relation("BuyerListings", fields: [buyerId], references: [id])
-  seller             User      @relation("SellerListings", fields: [sellerId], references: [id])
   market             Market    @relation(fields: [marketId], references: [id], onDelete: Cascade)
   position           Position  @relation(fields: [positionId], references: [id], onDelete: Cascade)
+  seller             User      @relation("SellerListings", fields: [sellerId], references: [id])
 
   @@index([marketId])
   @@index([status])
   @@index([sellerId])
 }
 
-enum OrderType {
-  BUY
-  SELL
-}
-
 model Order {
-  id       String    @id @default(cuid())
-  marketId String
-  userId   String
-  side     String // 'YES' o 'NO'
-  type     OrderType // 'BUY' o 'SELL'
-
-  positionId String? // Referencia a la posición desde donde salen los shares (solo para SELL)
-
-  pricePerShare   Float // Precio límite
-  initialShares   Float // Cantidad original de shares en la orden
-  remainingShares Float // Cuántos shares faltan por llenarse
-  totalLocked     Decimal? // (Solo BUY) Saldo bloqueado en USD al colocar la orden
-
-  simulatedPriceAtCreation Float? // Para auditoría
-  executionLog             Json? // Para auditoría general de ruta
-
-  status    String   @default("OPEN") // OPEN, PARTIAL, FILLED, CANCELLED
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user     User      @relation("UserOrders", fields: [userId], references: [id])
-  market   Market    @relation(fields: [marketId], references: [id])
-  position Position? @relation(fields: [positionId], references: [id])
+  id                       String    @id @default(cuid())
+  marketId                 String
+  userId                   String
+  side                     String
+  type                     OrderType
+  positionId               String?
+  pricePerShare            Float
+  initialShares            Float
+  remainingShares          Float
+  totalLocked              Decimal?
+  simulatedPriceAtCreation Float?
+  executionLog             Json?
+  status                   String    @default("OPEN")
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
+  market                   Market    @relation(fields: [marketId], references: [id])
+  position                 Position? @relation(fields: [positionId], references: [id])
+  user                     User      @relation("UserOrders", fields: [userId], references: [id])
 
   @@index([marketId, status])
   @@index([userId])
@@ -159,26 +149,22 @@ model Order {
 }
 
 model MarketRouterAuditLog {
-  id            String  @id @default(cuid())
-  marketId      String
-  userId        String
-  requestAmount Decimal
-  side          String
-  executionType String // 'BEST_BUY', 'LIMIT_BUY', 'LIMIT_SELL'
-
-  lmsrAllocated       Decimal
-  lmsrSharesGenerated Float
-  obAllocated         Decimal
-  obSharesBought      Float
-
+  id                    String   @id @default(cuid())
+  marketId              String
+  userId                String
+  requestAmount         Decimal
+  side                  String
+  executionType         String
+  lmsrAllocated         Decimal
+  lmsrSharesGenerated   Float
+  obAllocated           Decimal
+  obSharesBought        Float
   lmsrAveragePrice      Float
   obAveragePrice        Float
   finalAveragePricePaid Float
-
-  timestamp DateTime @default(now())
-
-  market Market @relation(fields: [marketId], references: [id])
-  user   User   @relation("UserRouterLogs", fields: [userId], references: [id])
+  timestamp             DateTime @default(now())
+  market                Market   @relation(fields: [marketId], references: [id])
+  user                  User     @relation("UserRouterLogs", fields: [userId], references: [id])
 
   @@index([marketId])
 }
@@ -210,13 +196,11 @@ model PositionTransfer {
   fromUserId    String
   toUserId      String
   price         Decimal
-  fee           Decimal  @default(0)
-  shares        Float    @default(0)
   listingId     String?
   transferredAt DateTime @default(now())
-  toUser        User     @relation("TransfersTo", fields: [toUserId], references: [id])
   fromUser      User     @relation("TransfersFrom", fields: [fromUserId], references: [id])
   position      Position @relation(fields: [positionId], references: [id], onDelete: Cascade)
+  toUser        User     @relation("TransfersTo", fields: [toUserId], references: [id])
 
   @@index([positionId])
   @@index([fromUserId])
@@ -272,8 +256,7 @@ model Account {
   scope             String?
   id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
@@ -292,4 +275,9 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+enum OrderType {
+  BUY
+  SELL
 }
