@@ -27,6 +27,7 @@ export async function GET(
         maxBetAmount: true,
         maxPriceImpact: true,
         platformFee: true,
+        status: true,
       },
     });
 
@@ -40,14 +41,11 @@ export async function GET(
     let totalCost = 0;
     let lmsrShares = 0;
     let obShares = 0;
-
-    const platformFeeRate = market.platformFee
-      ? Number(market.platformFee)
-      : 0.1;
     let feeAmount = 0;
-    let newQYes = market.qYes;
-    let newQNo = market.qNo;
+    let lmsrFeeAmount = 0;
+    let obFeeAmount = 0;
     let newPrices = { pYes: 0, pNo: 0 };
+    const platformFeeRate = market.platformFee ? Number(market.platformFee) : 0.1;
 
     if (amountStr && !sharesStr) {
       totalCost = parseFloat(amountStr);
@@ -57,7 +55,6 @@ export async function GET(
 
       const { RouterService } = await import("@/services/router.service");
       
-      // Simula directamente con el monto BRUTO. El router se encarga de discriminar fees.
       const sim = await RouterService.simulateMarketBuy({
         marketId: id, 
         side, 
@@ -65,10 +62,48 @@ export async function GET(
       });
 
       feeAmount = sim.fee;
+      lmsrFeeAmount = sim.lmsrFee;
+      obFeeAmount = sim.obFee;
       shares = sim.sharesCollected;
       lmsrShares = sim.lmsrShares;
       obShares = sim.obShares;
       newPrices = { pYes: sim.newProbabilities.yes, pNo: sim.newProbabilities.no };
+
+      const avgPrice = shares > 0 ? totalCost / shares : 0;
+      const netInvestment = totalCost - feeAmount;
+
+      const validation = lmsrService.validateBetAmount(
+        netInvestment, 
+        market.qYes,
+        market.qNo,
+        market.b,
+        side,
+        market.maxBetAmount ?? null,
+        market.maxPriceImpact ?? null,
+      );
+
+      return NextResponse.json({
+        side,
+        shares,
+        lmsrShares,
+        obShares,
+        totalCost,
+        avgPrice,
+        feeAmount,
+        lmsrFeeAmount,
+        obFeeAmount,
+        platformFeeRate,
+        lmsrFeeRate: platformFeeRate,
+        obFeeRate: 0.02,
+        newProbabilities: {
+          yes: newPrices.pYes,
+          no: newPrices.pNo,
+        },
+        priceImpact: 0,
+        maxAllowedAmount: validation.maxAllowed,
+        capReason: validation.reason || null,
+        wouldExceedCap: !validation.allowed,
+      });
 
     } else if (sharesStr) {
       shares = parseFloat(sharesStr);
@@ -85,63 +120,56 @@ export async function GET(
       );
       totalCost = netCost / (1 - platformFeeRate);
       feeAmount = totalCost - netCost;
+      lmsrFeeAmount = feeAmount;
+      obFeeAmount = 0;
       
-      newQYes = side === "YES" ? market.qYes + shares : market.qYes;
-      newQNo = side === "NO" ? market.qNo + shares : market.qNo;
+      const newQYes = side === "YES" ? market.qYes + shares : market.qYes;
+      const newQNo = side === "NO" ? market.qNo + shares : market.qNo;
       newPrices = lmsrService.getPrice(newQYes, newQNo, market.b);
       lmsrShares = shares; 
       obShares = 0;
+
+      const avgPrice = shares > 0 ? totalCost / shares : 0;
+      const netInvestment = totalCost - feeAmount;
+
+      const validation = lmsrService.validateBetAmount(
+        netInvestment, 
+        market.qYes,
+        market.qNo,
+        market.b,
+        side,
+        market.maxBetAmount ?? null,
+        market.maxPriceImpact ?? null,
+      );
+
+      return NextResponse.json({
+        side,
+        shares,
+        lmsrShares,
+        obShares,
+        totalCost,
+        avgPrice,
+        feeAmount,
+        lmsrFeeAmount,
+        obFeeAmount,
+        platformFeeRate,
+        lmsrFeeRate: platformFeeRate,
+        obFeeRate: 0.02,
+        newProbabilities: {
+          yes: newPrices.pYes,
+          no: newPrices.pNo,
+        },
+        priceImpact: 0,
+        maxAllowedAmount: validation.maxAllowed,
+        capReason: validation.reason || null,
+        wouldExceedCap: !validation.allowed,
+      });
     } else {
       return NextResponse.json(
         { error: "Must provide either amount or shares" },
         { status: 400 },
       );
     }
-
-    // avgPrice en términos BRUTOS (incluyendo fee) para ser consistente con
-    // la vista de posiciones, donde "Precio Comp." = investidoBruto / shares
-    const avgPrice = shares > 0 ? totalCost / shares : 0;
-    const maxBetAmount = market.maxBetAmount ?? null;
-    const maxPriceImpact = market.maxPriceImpact ?? null;
-    const netInvestment = totalCost - feeAmount;
-
-    const validation = lmsrService.validateBetAmount(
-      netInvestment, 
-      market.qYes,
-      market.qNo,
-      market.b,
-      side,
-      maxBetAmount,
-      maxPriceImpact,
-    );
-
-    // Approximating exact fee per bucket for UI
-    const totalSharesCalc = lmsrShares + obShares || 1;
-    const lmsrFeeAmount = feeAmount * (lmsrShares / totalSharesCalc);
-    const obFeeAmount = feeAmount * (obShares / totalSharesCalc);
-
-    return NextResponse.json({
-      side,
-      shares,
-      lmsrShares,
-      obShares,
-      totalCost,
-      avgPrice,
-      feeAmount,
-      lmsrFeeAmount,
-      obFeeAmount,
-      platformFeeRate, // backwards compat
-      lmsrFeeRate: platformFeeRate,
-      obFeeRate: 0.02,
-      newProbabilities: {
-        yes: newPrices.pYes,
-        no: newPrices.pNo,
-      },
-      priceImpact: 0, // TODO: Calculate price impact %
-      maxAllowedAmount: validation.maxAllowed,
-      capReason: validation.reason || null,
-      wouldExceedCap: !validation.allowed,
-    });
   } catch (error) {
     console.error("Error calculating price quote:", error);
     return NextResponse.json(

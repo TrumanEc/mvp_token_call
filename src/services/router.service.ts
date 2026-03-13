@@ -17,7 +17,6 @@ export class RouterService {
     budget: number; // Monto BRUTO total a gastar (incluyendo comisiones)
   }) {
     return prisma.$transaction(async (tx) => {
-      const startTimestamp = new Date();
       const budgetNum = data.budget;
 
       if (budgetNum <= 0) throw new Error("Monto a comprar debe ser positivo.");
@@ -47,7 +46,8 @@ export class RouterService {
       let lmsrNetSpent = 0;
       let obSharesCollected = 0;
       let obNetSpent = 0;
-      let totalFeeAmount = 0;
+      let lmsrFeeAmount = 0;
+      let obFeeAmount = 0;
       
       const lmsrFeeRate = market.platformFee ? Number(market.platformFee) : 0.1;
       const obFeeRate = 0.02; // 2% P2P
@@ -100,7 +100,7 @@ export class RouterService {
 
              lmsrSharesCollected += sharesGenerados;
              lmsrNetSpent += safeNetToLMSR;
-             totalFeeAmount += stepFee;
+             lmsrFeeAmount += stepFee;
              remainingGross -= stepGross;
              
              if (data.side === "YES") currentQYes += sharesGenerados;
@@ -145,7 +145,7 @@ export class RouterService {
           const stepFee = spentGross - spentNet;
           obNetSpent += spentNet;
           obSharesCollected += sharesBought;
-          totalFeeAmount += stepFee;
+          obFeeAmount += stepFee;
           remainingGross -= spentGross;
 
           executionPath.push({
@@ -245,7 +245,9 @@ export class RouterService {
          executionSummary: {
             spentGross: realSpentGross,
             spentNet: lmsrNetSpent + obNetSpent,
-            fee: totalFeeAmount,
+            fee: lmsrFeeAmount + obFeeAmount,
+            lmsrFee: lmsrFeeAmount,
+            obFee: obFeeAmount,
             sharesCollected: totalSharesCollected,
             averagePrice: avgPriceOverall,
             lmsrShares: lmsrSharesCollected,
@@ -283,7 +285,8 @@ export class RouterService {
     let lmsrNetSpent = 0;
     let obSharesCollected = 0;
     let obNetSpent = 0;
-    let totalFeeAmount = 0;
+    let lmsrFeeAmount = 0;
+    let obFeeAmount = 0;
     
     let currentQYes = market.qYes;
     let currentQNo = market.qNo;
@@ -319,7 +322,7 @@ export class RouterService {
            const stepGross = safeNetToLMSR / (1 - lmsrFeeRate);
            lmsrSharesCollected += sharesGenerados;
            lmsrNetSpent += safeNetToLMSR;
-           totalFeeAmount += (stepGross - safeNetToLMSR);
+           lmsrFeeAmount += (stepGross - safeNetToLMSR);
            remainingGross -= stepGross;
            if (data.side === "YES") currentQYes += sharesGenerados;
            else currentQNo += sharesGenerados;
@@ -329,10 +332,9 @@ export class RouterService {
         const grossToClearAsk = netToClearAsk / (1 - obFeeRate);
         
         if (remainingGross >= grossToClearAsk) {
-          lmsrNetSpent += 0; // tracking
           obNetSpent += netToClearAsk;
           obSharesCollected += bestAsk.remainingShares;
-          totalFeeAmount += (grossToClearAsk - netToClearAsk);
+          obFeeAmount += (grossToClearAsk - netToClearAsk);
           remainingGross -= grossToClearAsk;
           bestAsk.remainingShares = 0;
           askIndex++;
@@ -342,7 +344,7 @@ export class RouterService {
           const sharesBought = spentNet / bestAsk.pricePerShare;
           obNetSpent += spentNet;
           obSharesCollected += sharesBought;
-          totalFeeAmount += (spentGross - spentNet);
+          obFeeAmount += (spentGross - spentNet);
           remainingGross = 0;
         }
       }
@@ -356,7 +358,9 @@ export class RouterService {
     return {
        spentGross: realSpentGross,
        spentNet: lmsrNetSpent + obNetSpent,
-       fee: totalFeeAmount,
+       fee: lmsrFeeAmount + obFeeAmount,
+       lmsrFee: lmsrFeeAmount,
+       obFee: obFeeAmount,
        sharesCollected: totalSharesCollected,
        averagePrice: avgPriceOverall,
        lmsrShares: lmsrSharesCollected,
