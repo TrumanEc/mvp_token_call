@@ -42,7 +42,7 @@ export async function GET(
 
     // Fetch router audit logs (tracks actual fills: LMSR + OB executions)
     const routerLogs = await prisma.marketRouterAuditLog.findMany({
-      where: { marketId: id, executionType: "BEST_BUY" },
+      where: { marketId: id },
       include: {
         user: { select: { id: true, username: true } },
       },
@@ -183,8 +183,14 @@ export async function GET(
       status: market.status,
       outcome: market.outcome,
 
-      // Liquidity Balance (Always present)
-      liquidity: await SettlementService.getLiquidityStats(id),
+      // Liquidity Balance (safe fallback if it fails)
+      liquidity: await SettlementService.getLiquidityStats(id).catch(() => ({
+        b: market.b,
+        initialSeed: market.seedCost,
+        netInvestments: market.yesPool.toNumber() + market.noPool.toNumber(),
+        totalPayouts: 0,
+        netProfitLoss: 0,
+      })),
 
       // Pools (Legacy + LMSR)
       yesPool: market.yesPool,

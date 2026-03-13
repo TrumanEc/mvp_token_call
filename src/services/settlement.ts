@@ -157,7 +157,7 @@ export class SettlementService {
       (sum, t) => sum.plus(t.price),
       new Decimal(0),
     );
-    const secondaryFees = secondaryVolume.times(0.025);
+    const secondaryFees = secondaryVolume.times(0.02);
 
     return {
       market: {

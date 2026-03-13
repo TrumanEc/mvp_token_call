@@ -78,6 +78,9 @@ export class ListingService {
           fairValueAtListing: totalFairValue,
         },
         update: {
+          sellerId: data.userId,   // actualizar al nuevo propietario que lista
+          buyerId: null,            // resetear comprador previo
+          soldAt: null,             // resetear fecha de venta
           askPrice,
           suggestedPrice: new Decimal(totalFairValue),
           status: 'ACTIVE',
