@@ -32,32 +32,32 @@ export class SettlementService {
         });
       }
 
+      const activePositions = market.positions.filter(p => p.status === "ACTIVE");
+
       // Handle VOID
       if (outcome === "VOID") {
-        for (const position of market.positions) {
-          if (position.status === "ACTIVE") {
-            await BalanceService.credit(
-              tx,
-              position.currentOwnerId,
-              new Decimal(position.totalCost),
-              "BET_REFUNDED",
-              "Refund for voided market",
-              marketId,
-            );
-            await tx.position.update({
-              where: { id: position.id },
-              data: {
-                status: "REFUNDED",
-                payout: new Decimal(position.totalCost),
-              },
-            });
-          }
+        for (const position of activePositions) {
+          await BalanceService.credit(
+            tx,
+            position.currentOwnerId,
+            new Decimal(position.totalCost),
+            "BET_REFUNDED",
+            "Refund for voided market",
+            marketId,
+          );
+          await tx.position.update({
+            where: { id: position.id },
+            data: {
+              status: "REFUNDED",
+              payout: new Decimal(position.totalCost),
+            },
+          });
         }
         await tx.market.update({
           where: { id: marketId },
           data: { status: "VOIDED", resolvedAt: new Date() },
         });
-        return { type: "VOID" as const, refunded: market.positions.length };
+        return { type: "VOID" as const, refunded: activePositions.length };
       }
 
       // LMSR Settlement: Winning Share = $1
@@ -65,38 +65,38 @@ export class SettlementService {
       let losersCount = 0;
       let totalPaidOut = new Decimal(0);
 
-      for (const position of market.positions) {
-        if (position.status !== "ACTIVE") continue;
+      const winningPositions = activePositions.filter(p => p.side === outcome);
+      const losingPositions = activePositions.filter(p => p.side !== outcome);
 
-        const isWinner = position.side === outcome;
+      // 1. Batch Update Losers (High performance win)
+      if (losingPositions.length > 0) {
+        await tx.position.updateMany({
+          where: { id: { in: losingPositions.map(p => p.id) } },
+          data: { status: "LOST", payout: new Decimal(0) },
+        });
+        losersCount = losingPositions.length;
+      }
 
-        if (isWinner) {
-          // Payout = 1.0 * shares (Decimal conversion needed)
-          const payout = new Decimal(position.shares).times(1);
+      // 2. Process Winners individually for balance updates
+      for (const position of winningPositions) {
+        const payout = new Decimal(position.shares).times(1);
 
-          await BalanceService.credit(
-            tx,
-            position.currentOwnerId,
-            payout,
-            "PAYOUT_RECEIVED",
-            "Winnings from market resolution",
-            marketId,
-          );
+        await BalanceService.credit(
+          tx,
+          position.currentOwnerId,
+          payout,
+          "PAYOUT_RECEIVED",
+          "Winnings from market resolution",
+          marketId,
+        );
 
-          await tx.position.update({
-            where: { id: position.id },
-            data: { status: "WON", payout },
-          });
+        await tx.position.update({
+          where: { id: position.id },
+          data: { status: "WON", payout },
+        });
 
-          totalPaidOut = totalPaidOut.plus(payout);
-          winnersCount++;
-        } else {
-          await tx.position.update({
-            where: { id: position.id },
-            data: { status: "LOST", payout: new Decimal(0) },
-          });
-          losersCount++;
-        }
+        totalPaidOut = totalPaidOut.plus(payout);
+        winnersCount++;
       }
 
       // In LMSR, "platform fee" is effectively (Net Revenue - Paid Out), captured implicitly in the reserves.
@@ -118,6 +118,8 @@ export class SettlementService {
         platformFee: 0,
         payoutMultiplier: 1,
       };
+    }, {
+      timeout: 60000,
     });
   }
 
