@@ -129,6 +129,7 @@ function AdminPage() {
   };
 
   const fetchMarketDetails = async (marketId: string) => {
+    setSelectedMarketId(marketId);
     setLoadingDetails(true);
     setLoadingLogs(true);
     try {
@@ -379,9 +380,14 @@ function AdminPage() {
                 {markets.map((market) => (
                   <div
                     key={market.id}
-                    className="bg-[#121212] border border-white/5 rounded-3xl p-6 hover:border-white/10 transition-all group cursor-pointer"
+                    className="bg-[#121212] border border-white/5 rounded-3xl p-6 hover:border-white/10 transition-all group cursor-pointer relative"
                     onClick={() => fetchMarketDetails(market.id)}
                   >
+                    {loadingDetails && selectedMarketId === market.id && (
+                      <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] rounded-3xl z-10 flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#64c883]" />
+                      </div>
+                    )}
                     <div className="flex justify-between items-start mb-6">
                       <div className="space-y-1">
                         <span
@@ -909,137 +915,88 @@ function AdminPage() {
                 // Payout máximo por escenario
                 const qYes = Number(selectedMarketStats.qYes || 0);
                 const qNo = Number(selectedMarketStats.qNo || 0);
-
-                // PnL = Ingresos brutos - SeedCost - Payout obligatorio
-                // Con/sin fee (el fee ya está captado en los ingresos brutos)
-                const pnlYesSinFee = totalVolume - seedCost - qYes;
+                // PnL = Ingresos brutos - Payout obligatorio (Seed cost is theoretical liquidity provided, not a direct subtraction from net bets)
+                const pnlYesSinFee = totalVolume - qYes;
                 const pnlYesConFee = pnlYesSinFee + collectedFees;
-                const pnlNoSinFee = totalVolume - seedCost - qNo;
+                const pnlNoSinFee = totalVolume - qNo;
                 const pnlNoConFee = pnlNoSinFee + collectedFees;
-
-                const ScenarioCard = ({
-                  label,
-                  color,
-                  borderColor,
-                  payout,
-                  pnlSin,
-                  pnlCon,
-                  vol,
-                  seed,
-                  fees
-                }: {
-                  label: string;
-                  color: string;
-                  borderColor: string;
-                  payout: number;
-                  pnlSin: number;
-                  pnlCon: number;
-                  vol: number;
-                  seed: number;
-                  fees: number;
-                }) => (
-                  <div className={`bg-[#0d0d0d] rounded-2xl border ${borderColor} p-5 space-y-4`}>
-                    {/* Header */}
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-[10px] font-bold text-white uppercase tracking-wider">
-                        Escenario: Gana{" "}
-                        <span className={color}>{label}</span>
-                      </h4>
-                      <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-full tracking-wider ${color === "text-[#64c883]" ? "bg-[#64c883]/10 text-[#64c883]" : "bg-[#e16464]/10 text-[#e16464]"}`}>
-                        {label}
+                const renderScenarioRow = (
+                  label: string,
+                  color: string,
+                  payout: number,
+                  pnlSin: number,
+                  pnlCon: number,
+                  vol: number,
+                  fees: number,
+                  seed: number
+                ) => (
+                  <tr className="border-b border-white/5 hover:bg-white/[0.02] transition-colors h-16">
+                    <td className="pl-6">
+                      <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full tracking-wider ${color === "text-[#64c883]" ? "bg-[#64c883]/10 text-[#64c883]" : "bg-[#e16464]/10 text-[#e16464]"}`}>
+                        GANA {label}
                       </span>
-                    </div>
-
-                    {/* Desglose */}
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center text-[11px]">
-                        <span className="text-gray-500">Volumen neto (pool)</span>
-                        <span className="text-white font-bold">+ ${vol.toFixed(2)}</span>
-                      </div>
-                      <div className="flex justify-between items-center text-[11px]">
-                        <span className="text-gray-500">Seed Cost (subsidio inicial)</span>
-                        <span className="text-[#e16464] font-bold">− ${seed.toFixed(2)}</span>
-                      </div>
-                      <div className="flex justify-between items-center text-[11px]">
-                        <span className="text-gray-500">Pago a ganadores ({label})</span>
-                        <span className="text-[#e16464] font-bold">− ${payout.toFixed(2)}</span>
-                      </div>
-                      <div className="flex justify-between items-center text-[11px]">
-                        <span className="text-gray-500">Fee recaudado ({(fee * 100).toFixed(0)}% bruto)</span>
-                        <span className="text-[#64c883] font-bold">+ ${fees.toFixed(2)}</span>
-                      </div>
-                    </div>
-
-                    {/* Resultados */}
-                    <div className="pt-3 border-t border-white/5 space-y-3">
-                      <div className="bg-white/5 p-3 rounded-xl border border-white/5">
-                        <div className="flex justify-between items-center mb-1">
-                          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-                            Retorno a Tesorería WIN
-                          </span>
-                          <span className="text-xs font-mono text-white opacity-40">
-                            (Check Final)
-                          </span>
-                        </div>
-                        <div className="text-lg font-black text-white">
-                          $ {(vol + fees + seed - payout).toFixed(2)}
-                        </div>
-                        <p className="text-[9px] text-gray-500 mt-1 leading-tight">
-                          Pozo total acumulado (Seed + Bets) menos el pago de acciones ganadoras.
-                        </p>
-                      </div>
-
-                      <div className="flex justify-between items-center px-1">
-                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-                          PnL Neto (Profit)
+                    </td>
+                    <td className="text-center text-xs font-bold text-white">
+                      ${vol.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className="text-center text-xs font-bold text-[#e16464]">
+                      -${payout.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className="text-center text-xs font-bold text-[#64c883]">
+                      +${fees.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className={`text-center text-sm font-black ${pnlSin >= 0 ? "text-[#64c883]" : "text-[#e16464]"}`}>
+                      {pnlSin >= 0 ? "+" : ""}${pnlSin.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className={`text-center text-sm font-black ${pnlCon >= 0 ? "text-[#64c883]" : "text-[#e16464]"}`}>
+                      {pnlCon >= 0 ? "+" : ""}${pnlCon.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className="pr-6 text-right">
+                      <div className="flex flex-col items-end">
+                        <span className="text-sm font-bold text-white">
+                          ${(vol + fees + seed - payout).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                         </span>
-                        <span className={`text-xl font-extrabold ${pnlCon >= 0 ? "text-[#64c883]" : "text-[#e16464]"}`}>
-                          {pnlCon >= 0 ? "+" : ""}${pnlCon.toFixed(2)}
+                        <span className="text-[8px] text-gray-600 uppercase font-bold tracking-tighter mt-0.5">
+                          Efectivo Final
                         </span>
                       </div>
-                    </div>
-                  </div>
+                    </td>
+                  </tr>
                 );
 
                 return (
                   <div className="pt-8 border-t border-white/10 space-y-4">
                     <div className="flex items-center gap-3">
                       <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.1em]">
-                        Escenarios de PnL WIN
+                        Escenarios de PnL WIN (Consolidado)
                       </h3>
                       <div className="flex-1 h-[1px] bg-white/5" />
                       <div className="group relative">
                         <span className="cursor-help text-xs text-gray-500">ⓘ</span>
                         <div className="absolute bottom-full right-0 mb-2 w-72 p-3 bg-[#1a1a1a] text-[10px] text-gray-400 rounded-xl border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-                          Muestra qué le pasaría a WIN en cada outcome. El PnL real depende de cuál escenario resuelve.
-                          Fórmula: Pool Neto − Seed Cost − Pago Ganadores (± Fee)
+                          Muestra el impacto financiero para la plataforma. PnL = Pool − Payout (± Fees).
                         </div>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                      <ScenarioCard
-                        label="YES"
-                        color="text-[#64c883]"
-                        borderColor="border-[#64c883]/15"
-                        payout={qYes}
-                        pnlSin={pnlYesSinFee}
-                        pnlCon={pnlYesConFee}
-                        vol={totalVolume}
-                        seed={seedCost}
-                        fees={collectedFees}
-                      />
-                      <ScenarioCard
-                        label="NO"
-                        color="text-[#e16464]"
-                        borderColor="border-[#e16464]/15"
-                        payout={qNo}
-                        pnlSin={pnlNoSinFee}
-                        pnlCon={pnlNoConFee}
-                        vol={totalVolume}
-                        seed={seedCost}
-                        fees={collectedFees}
-                      />
+                    <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl overflow-hidden">
+                      <table className="w-full text-left">
+                        <thead>
+                          <tr className="bg-[#171717] border-b border-white/5 h-10 text-[9px] font-bold text-gray-500 uppercase tracking-widest">
+                            <th className="pl-6">OUTCOME</th>
+                            <th className="text-center">VOLUMEN NETO</th>
+                            <th className="text-center">PAGO GANADORES</th>
+                            <th className="text-center">FEES (10%)</th>
+                            <th className="text-center">PNL (SIN FEE)</th>
+                            <th className="text-center text-white">PNL (CON FEE)</th>
+                            <th className="pr-6 text-right text-[#64c883]">TESORERIA WIN</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-white/5">
+                          {renderScenarioRow("YES", "text-[#64c883]", qYes, pnlYesSinFee, pnlYesConFee, totalVolume, collectedFees, seedCost)}
+                          {renderScenarioRow("NO", "text-[#e16464]", qNo, pnlNoSinFee, pnlNoConFee, totalVolume, collectedFees, seedCost)}
+                        </tbody>
+                      </table>
                     </div>
                   </div>
                 );
@@ -1119,62 +1076,50 @@ function AdminPage() {
                             <th className="p-4 text-[9px] font-bold text-gray-400 uppercase tracking-wider">
                               Lado
                             </th>
-                            <th className="p-4 text-[9px] font-bold text-gray-400 uppercase tracking-wider">
-                              Inversión
+                            <th className="p-4 text-[9px] font-bold text-gray-400 uppercase tracking-wider text-right">
+                              Inversión (Usuario)
                             </th>
-                            <th className="p-4 text-[9px] font-bold text-gray-400 uppercase tracking-wider">
-                              Pago Final
+                            <th className="p-4 text-[9px] font-bold text-gray-400 uppercase tracking-wider text-right">
+                              Pago Realizado
                             </th>
-                            <th className="p-4 text-[9px] font-bold text-gray-400 uppercase tracking-wider">
-                              Resultado
+                            <th className="p-4 text-[9px] font-bold text-white uppercase tracking-wider text-right bg-white/5">
+                              RESULTADO WIN
                             </th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
                           {selectedMarketStats.resolutionReport.positions.map(
-                            (pos: any) => (
-                              <tr key={pos.id} className="hover:bg-white/5">
-                                <td className="p-4 text-xs font-bold text-white">
-                                  @{pos.currentOwner}
-                                </td>
-                                <td className="p-4">
-                                  <span
-                                    className={`px-2 py-0.5 text-[9px] font-bold rounded-full uppercase ${
-                                      pos.side === "YES"
-                                        ? "text-[#64c883]"
-                                        : "text-[#e16464]"
-                                    }`}
-                                  >
-                                    {pos.side}
-                                  </span>
-                                </td>
-                                <td className="p-4 text-sm font-bold text-white/60">
-                                  $ {pos.amount.toFixed(2)}
-                                </td>
-                                <td
-                                  className={`p-4 text-sm font-extrabold ${
-                                    pos.payout > 0
-                                      ? "text-[#64c883]"
-                                      : "text-gray-500"
-                                  }`}
-                                >
-                                  $ {pos.payout.toFixed(2)}
-                                </td>
-                                <td className="p-4">
-                                  <span
-                                    className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-full ${
-                                      pos.status === "WON"
-                                        ? "bg-[#64c883]/10 text-[#64c883]"
-                                        : pos.status === "LOST"
-                                          ? "bg-white/5 text-gray-500"
-                                          : "bg-yellow-500/10 text-yellow-500"
-                                    }`}
-                                  >
-                                    {pos.status}
-                                  </span>
-                                </td>
-                              </tr>
-                            ),
+                            (pos: any) => {
+                              const winResult = pos.amount - pos.payout;
+                              return (
+                                <tr key={pos.id} className="hover:bg-white/5">
+                                  <td className="p-4 text-xs font-bold text-white">
+                                    @{pos.currentOwner}
+                                  </td>
+                                  <td className="p-4">
+                                    <span
+                                      className={`px-2 py-0.5 text-[9px] font-bold rounded-full uppercase ${
+                                        pos.side === "YES"
+                                          ? "text-[#64c883] bg-[#64c883]/5"
+                                          : "text-[#e16464] bg-[#e16464]/5"
+                                      }`}
+                                    >
+                                      {pos.side}
+                                    </span>
+                                  </td>
+                                  <td className="p-4 text-sm font-bold text-white/40 text-right">
+                                    $ {pos.amount.toFixed(2)}
+                                  </td>
+                                  <td className="p-4 text-sm font-bold text-[#e16464] text-right">
+                                    – $ {pos.payout.toFixed(2)}
+                                  </td>
+                                  <td className={`p-4 text-sm font-black text-right bg-white/[0.02] ${winResult >= 0 ? "text-[#64c883]" : "text-[#e16464]"}`}>
+                                    {winResult >= 0 ? "+" : ""}$ {winResult.toFixed(2)}
+                                  </td>
+                                </tr>
+                              );
+
+                            }
                           )}
                         </tbody>
                       </table>
@@ -1496,21 +1441,36 @@ function AdminPage() {
             <div className="grid grid-cols-3 gap-4">
               <button
                 onClick={() => handleResolve("YES")}
-                className="h-16 bg-[#64c883] text-[#0a0a0a] text-[10px] font-bold uppercase tracking-wider rounded-2xl transition-all hover:scale-[1.05]"
+                disabled={resolving}
+                className="h-16 bg-[#64c883] text-[#0a0a0a] text-[10px] font-bold uppercase tracking-wider rounded-2xl transition-all hover:scale-[1.05] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                SÍ Gana
+                {resolving ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-[#0a0a0a] border-t-transparent" />
+                ) : (
+                  "SÍ Gana"
+                )}
               </button>
               <button
                 onClick={() => handleResolve("NO")}
-                className="h-16 bg-[#e16464] text-[#0a0a0a] text-[10px] font-bold uppercase tracking-wider rounded-2xl transition-all hover:scale-[1.05]"
+                disabled={resolving}
+                className="h-16 bg-[#e16464] text-[#0a0a0a] text-[10px] font-bold uppercase tracking-wider rounded-2xl transition-all hover:scale-[1.05] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                NO Gana
+                {resolving ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-[#0a0a0a] border-t-transparent" />
+                ) : (
+                  "NO Gana"
+                )}
               </button>
               <button
                 onClick={() => handleResolve("VOID")}
-                className="h-16 bg-white/5 text-gray-400 text-[10px] font-bold uppercase tracking-wider rounded-2xl transition-all hover:bg-white/10"
+                disabled={resolving}
+                className="h-16 bg-white/5 text-gray-400 text-[10px] font-bold uppercase tracking-wider rounded-2xl transition-all hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                Anular
+                {resolving ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-400 border-t-transparent" />
+                ) : (
+                  "Anular"
+                )}
               </button>
             </div>
           </div>

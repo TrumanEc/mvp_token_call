@@ -146,6 +146,7 @@ export class PositionService {
             playerName: p.market.playerName,
             question: p.market.question,
             status: p.market.status,
+            outcome: p.market.outcome,
             yesPool: p.market.yesPool.toNumber(),
             noPool: p.market.noPool.toNumber(),
           },
@@ -158,6 +159,7 @@ export class PositionService {
             invested: new Decimal(0),
             netCost: new Decimal(0),
             fees: new Decimal(0),
+            payout: new Decimal(0),
             history: [],
           },
           no: {
@@ -165,11 +167,13 @@ export class PositionService {
             invested: new Decimal(0),
             netCost: new Decimal(0),
             fees: new Decimal(0),
+            payout: new Decimal(0),
             history: [],
           },
           shares: new Decimal(0), // Total legacy sum (ref only)
           amount: new Decimal(0), // Total amount (invested)
           totalFees: new Decimal(0),
+          payout: new Decimal(0),
           status: p.status,
           isForSale: false,
           createdAt: p.createdAt,
@@ -181,36 +185,34 @@ export class PositionService {
       const feeAmount = p.amount.minus(new Decimal((p as any).totalCost || 0));
       const sideKey = p.side.toLowerCase() as "yes" | "no";
 
-      if (p.status === "ACTIVE") {
-        groups[key][sideKey].shares = groups[key][sideKey].shares.plus(pShares);
-        groups[key][sideKey].invested = groups[key][sideKey].invested.plus(
-          p.amount,
-        );
-        groups[key][sideKey].netCost = groups[key][sideKey].netCost.plus(
-          new Decimal((p as any).totalCost || 0),
-        );
-        groups[key][sideKey].fees = groups[key][sideKey].fees.plus(feeAmount);
-        groups[key][sideKey].history.push({
-          id: p.id,
-          amount: p.amount.toNumber(),
-          shares: pShares.toNumber(),
-          createdAt: p.createdAt,
-          purchasePrice: (p as any).purchasePrice?.toNumber(),
-        });
+      // We populate side-specific data for ALL statuses now, so the UI can show history
+      groups[key][sideKey].shares = groups[key][sideKey].shares.plus(pShares);
+      groups[key][sideKey].invested = groups[key][sideKey].invested.plus(p.amount);
+      groups[key][sideKey].netCost = groups[key][sideKey].netCost.plus(
+        new Decimal((p as any).totalCost || 0),
+      );
+      groups[key][sideKey].fees = groups[key][sideKey].fees.plus(feeAmount);
+      
+      if (p.payout) {
+        groups[key][sideKey].payout = groups[key][sideKey].payout.plus(p.payout);
+        groups[key].payout = groups[key].payout.plus(p.payout);
       }
+
+      groups[key].history.push({
+        id: p.id,
+        amount: p.amount.toNumber(),
+        shares: pShares.toNumber(),
+        createdAt: p.createdAt,
+        purchasePrice: (p as any).purchasePrice?.toNumber(),
+        side: p.side,
+        status: p.status,
+        payout: p.payout?.toNumber(),
+      });
 
       // Legacy support/Global aggregates
       groups[key].shares = groups[key].shares.plus(pShares);
       groups[key].amount = groups[key].amount.plus(p.amount);
       groups[key].totalFees = groups[key].totalFees.plus(feeAmount);
-      groups[key].history.push({
-        id: p.id,
-        side: p.side,
-        amount: p.amount.toNumber(),
-        shares: pShares.toNumber(),
-        createdAt: p.createdAt,
-        purchasePrice: (p as any).purchasePrice?.toNumber(),
-      });
 
       if (p.isForSale) groups[key].isForSale = true;
     }
@@ -222,15 +224,25 @@ export class PositionService {
       const marketQYes = (g as any)._qYes || 0;
       const marketQNo = (g as any)._qNo || 0;
       const lmsrReal = lmsrService.getPrice(marketQYes, marketQNo, marketB);
-      const probYes = new Decimal(lmsrReal.pYes);
-      const probNo = new Decimal(lmsrReal.pNo);
+      const marketOutcome = (g as any).market.outcome;
+      const isResolved = (g as any).market.status === "RESOLVED";
+
+      let probYes = new Decimal(lmsrReal.pYes);
+      let probNo = new Decimal(lmsrReal.pNo);
+
+      if (isResolved) {
+        probYes = new Decimal(marketOutcome === "YES" ? 1 : 0);
+        probNo = new Decimal(marketOutcome === "NO" ? 1 : 0);
+      }
 
       const yesShares = g.yes.shares.toNumber();
       const yesInvested = g.yes.invested.toNumber();           // bruto (con fee)
       const yesNetCost = g.yes.netCost.toNumber();             // neto (sin fee, lo que fue al LMSR)
       const yesAvgPrice    = yesShares > 0 ? yesInvested / yesShares : 0;  // bruto/share
       const yesAvgPriceNet = yesShares > 0 ? yesNetCost  / yesShares : 0;  // neto/share
-      const yesFairValue = yesShares * probYes.toNumber();
+      
+      // If resolved, fair value is what was actually paid out (or what will be: shares * prob)
+      const yesFairValue = isResolved ? Math.max(g.yes.payout.toNumber(), yesShares * probYes.toNumber()) : (yesShares * probYes.toNumber());
       const yesPnL = yesFairValue - yesInvested;
       const yesROI = yesInvested > 0 ? (yesPnL / yesInvested) * 100 : 0;
 
@@ -240,7 +252,8 @@ export class PositionService {
       const noNetCost = g.no.netCost.toNumber();               // neto (sin fee)
       const noAvgPrice    = noShares > 0 ? noInvested / noShares : 0;  // bruto/share
       const noAvgPriceNet = noShares > 0 ? noNetCost  / noShares : 0;  // neto/share
-      const noFairValue = noShares * probNo.toNumber();
+      
+      const noFairValue = isResolved ? Math.max(g.no.payout.toNumber(), noShares * probNo.toNumber()) : (noShares * probNo.toNumber());
       const noPnL = noFairValue - noInvested;
       const noROI = noInvested > 0 ? (noPnL / noInvested) * 100 : 0;
 
@@ -300,6 +313,7 @@ export class PositionService {
 
         amount: totalInvested,
         fairValue: totalFairValue,
+        payout: isResolved ? totalFairValue : 0, // In resolved mode, payout is the total fair value
         totalPnL,
         totalROI,
         scenarios: {

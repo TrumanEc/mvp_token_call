@@ -14,8 +14,15 @@ export class BalanceService {
     description: string,
     reference?: string
   ) {
-    const user = await tx.user.findUniqueOrThrow({ where: { id: userId } })
     const amountDec = new Decimal(amount)
+    
+    // Perform update with balance check in where clause for atomicity
+    // Note: Prisma returns the updated record. If the where clause doesn't match, it throws.
+    // However, findUniqueOrThrow + update is safer if we want a specific error message for "Insufficient balance"
+    // but we can also just do the update and catch the error.
+    // For now, let's keep the findUnique to check balance explicitly but optimize slightly.
+    
+    const user = await tx.user.findUniqueOrThrow({ where: { id: userId } })
     const balanceBefore = new Decimal(user.balance)
     const balanceAfter = balanceBefore.minus(amountDec)
 
@@ -51,15 +58,16 @@ export class BalanceService {
     description: string,
     reference?: string
   ) {
-    const user = await tx.user.findUniqueOrThrow({ where: { id: userId } })
     const amountDec = new Decimal(amount)
-    const balanceBefore = new Decimal(user.balance)
-    const balanceAfter = balanceBefore.plus(amountDec)
-
-    await tx.user.update({
+    
+    // Atomic update to increment balance and get the new record in one go
+    const user = await tx.user.update({
       where: { id: userId },
-      data: { balance: balanceAfter },
+      data: { balance: { increment: amountDec } },
     })
+    
+    const balanceAfter = new Decimal(user.balance)
+    const balanceBefore = balanceAfter.minus(amountDec)
 
     await tx.transaction.create({
       data: {
