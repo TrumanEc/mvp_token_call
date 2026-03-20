@@ -48,6 +48,7 @@ export class RouterService {
       let obNetSpent = 0;
       let lmsrFeeAmount = 0;
       let obFeeAmount = 0;
+      let selfMatchSpentNet = 0; // Tracks the net proceeds paid to the user themselves during wash trades
       
       const lmsrFeeRate = market.platformFee ? Number(market.platformFee) : 0.1;
       const obFeeRate = 0.02; // 2% P2P
@@ -172,6 +173,10 @@ export class RouterService {
              }
           }
 
+          if (bestAsk.userId === data.userId) {
+             selfMatchSpentNet += spentNet;
+          }
+
           await BalanceService.credit(
             tx, bestAsk.userId, spentNet, "POSITION_SOLD", 
             `Sold ${sharesBought.toFixed(2)} ${data.side} shares via Limit Order`, data.marketId
@@ -198,18 +203,21 @@ export class RouterService {
         data.marketId
       );
 
+      const netAmountForPosition = realSpentGross - selfMatchSpentNet;
+      const netTotalCostForPosition = lmsrNetSpent + obNetSpent - selfMatchSpentNet;
+
       const userPosition = await tx.position.create({
         data: {
           marketId: data.marketId,
           originalOwnerId: data.userId,
           currentOwnerId: data.userId,
           side: data.side,
-          amount: new Decimal(realSpentGross),
+          amount: new Decimal(netAmountForPosition),
           status: "ACTIVE",
           shares: totalSharesCollected,
           purchasePrice: new Decimal(avgPriceOverall),
-          totalCost: lmsrNetSpent + obNetSpent,
-          avgCostPerShare: totalSharesCollected > 0 ? (lmsrNetSpent + obNetSpent) / totalSharesCollected : 0
+          totalCost: netTotalCostForPosition,
+          avgCostPerShare: totalSharesCollected > 0 ? netTotalCostForPosition / totalSharesCollected : 0
         },
         include: { market: true, currentOwner: true }
       });
