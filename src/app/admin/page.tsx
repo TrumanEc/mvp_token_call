@@ -274,7 +274,7 @@ function AdminPage() {
 
   return (
     <Shell>
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto px-4 py-8 md:px-6">
         {/* Admin Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12">
           <div>
@@ -286,7 +286,7 @@ function AdminPage() {
             </div>
           </div>
 
-          <div className="flex bg-[#121212] p-1 rounded-xl border border-white/5">
+          <div className="flex overflow-x-auto bg-[#121212] p-1 rounded-xl border border-white/5">
             {[
               { id: "markets", label: "Mercados" },
               { id: "users", label: "Usuarios" },
@@ -301,7 +301,7 @@ function AdminPage() {
                   setActiveTab(tab.id as any);
                   setSelectedMarketId("");
                 }}
-                className={`px-5 py-2 rounded-lg text-[10px] font-bold uppercase tracking-[0.1em] transition-all ${
+                className={`flex-shrink-0 whitespace-nowrap px-5 py-2 rounded-lg text-[10px] font-bold uppercase tracking-[0.1em] transition-all ${
                   activeTab === tab.id
                     ? "bg-[#64c883] text-[#0a0a0a] shadow-lg shadow-[#64c883]/10"
                     : "text-gray-400 hover:text-white"
@@ -329,7 +329,9 @@ function AdminPage() {
                       : "Simulador LMSR"}
           </h2>
           <div className="flex items-center gap-4">
-            {(activeTab === "purchases" || activeTab === "payments" || activeTab === "router_logs") && (
+            {(activeTab === "purchases" ||
+              activeTab === "payments" ||
+              activeTab === "router_logs") && (
               <select
                 className="bg-[#0a0a0a] text-white text-[10px] font-bold uppercase tracking-[0.1em] px-4 py-2 border border-white/5 rounded-xl outline-none focus:border-[#64c883] transition-all"
                 value={selectedMarketId}
@@ -524,7 +526,9 @@ function AdminPage() {
             ))}
 
           {/* Table-based views for Purchases & Payments & RouterLogs updated to Dark Theme */}
-          {(activeTab === "purchases" || activeTab === "payments" || activeTab === "router_logs") && (
+          {(activeTab === "purchases" ||
+            activeTab === "payments" ||
+            activeTab === "router_logs") && (
             <div className="bg-[#121212] border border-white/5 rounded-3xl overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
@@ -565,11 +569,21 @@ function AdminPage() {
                         </>
                       ) : (
                         <>
-                          <th className="p-4 text-[9px] font-bold text-gray-400 uppercase tracking-[0.1em]">Side</th>
-                          <th className="p-4 text-[9px] font-bold text-gray-400 uppercase tracking-[0.1em]">Trader</th>
-                          <th className="p-4 text-[9px] font-bold text-gray-400 uppercase tracking-[0.1em]">Resultado</th>
-                          <th className="p-4 text-[9px] font-bold text-gray-400 uppercase tracking-[0.1em]">Routing Path</th>
-                          <th className="p-4 text-[9px] font-bold text-gray-400 uppercase tracking-[0.1em]">Fecha</th>
+                          <th className="p-4 text-[9px] font-bold text-gray-400 uppercase tracking-[0.1em]">
+                            Side
+                          </th>
+                          <th className="p-4 text-[9px] font-bold text-gray-400 uppercase tracking-[0.1em]">
+                            Trader
+                          </th>
+                          <th className="p-4 text-[9px] font-bold text-gray-400 uppercase tracking-[0.1em]">
+                            Resultado
+                          </th>
+                          <th className="p-4 text-[9px] font-bold text-gray-400 uppercase tracking-[0.1em]">
+                            Routing Path
+                          </th>
+                          <th className="p-4 text-[9px] font-bold text-gray-400 uppercase tracking-[0.1em]">
+                            Fecha
+                          </th>
                         </>
                       )}
                     </tr>
@@ -606,67 +620,105 @@ function AdminPage() {
                           </tr>
                         ))
                       : activeTab === "payments"
-                      ? transactions.map((t) => (
-                          <tr
-                            key={t.id}
-                            className="hover:bg-white/5 transition-colors"
-                          >
-                            <td className="p-4 text-xs font-bold text-white">
-                              @{t.user.username}
-                            </td>
-                            <td className="p-4">
-                              <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">
-                                {t.type}
-                              </span>
-                            </td>
-                            <td className="p-4 text-sm font-extrabold text-[#64c883]">
-                              $ {Math.abs(parseFloat(t.amount)).toFixed(2)}
-                            </td>
-                            <td className="p-4 text-[10px] font-bold text-gray-400">
-                              {new Date(t.createdAt).toLocaleDateString()}
-                            </td>
-                          </tr>
-                        ))
-                      : routerLogs.map((log) => (
-                          <tr
-                            key={log.id}
-                            className="hover:bg-white/5 transition-colors group cursor-pointer"
-                            onClick={() => {
-                               // Can add expansion logic here later if wanted
-                            }}
-                          >
-                             <td className="p-4">
-                                <span className={`px-2 py-0.5 text-[9px] font-bold rounded-full uppercase tracking-wider ${log.side === "YES" ? "bg-[#64c883]/10 text-[#64c883]" : "bg-[#e16464]/10 text-[#e16464]"}`}>
-                                   {log.side}
+                        ? transactions.map((t) => (
+                            <tr
+                              key={t.id}
+                              className="hover:bg-white/5 transition-colors"
+                            >
+                              <td className="p-4 text-xs font-bold text-white">
+                                @{t.user.username}
+                              </td>
+                              <td className="p-4">
+                                <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">
+                                  {t.type}
                                 </span>
-                             </td>
-                             <td className="p-4 text-xs font-bold text-white/70">
-                                @{log.user?.username || 'Sistema'}
-                             </td>
-                             <td className="p-4 text-[10px] font-bold text-white">
-                                {log.executionSummary && (log.executionSummary as any).spent && (
-                                   <div className="flex flex-col gap-1">
-                                      <span className="text-gray-400">Presupuesto/Gasto: <span className="text-white">${(log.executionSummary as any).spent?.toFixed(2) || 0}</span></span>
-                                      <span className="text-gray-400">Shares Obt: <span className="text-white">${(log.executionSummary as any).sharesCollected?.toFixed(2) || 0}</span></span>
-                                   </div>
-                                )}
-                             </td>
-                             <td className="p-4">
-                               {log.executionSummary && (log.executionSummary as any).path && (
-                                  <div className="flex flex-col gap-1 max-h-24 overflow-y-auto w-72 pr-2">
-                                     {((log.executionSummary as any).path as any[]).map((step, idx) => (
-                                        <div key={idx} className="flex justify-between items-center text-[9px] font-bold text-gray-500 bg-[#0a0a0a] border border-white/5 p-1 rounded">
-                                            <span>${(step as any).invertido?.toFixed(2)} {"->"} {(step as any).shares?.toFixed(1)}sh (Prom. ${(step as any).precioPromedio?.toFixed(2)})</span>
+                              </td>
+                              <td className="p-4 text-sm font-extrabold text-[#64c883]">
+                                $ {Math.abs(parseFloat(t.amount)).toFixed(2)}
+                              </td>
+                              <td className="p-4 text-[10px] font-bold text-gray-400">
+                                {new Date(t.createdAt).toLocaleDateString()}
+                              </td>
+                            </tr>
+                          ))
+                        : routerLogs.map((log) => (
+                            <tr
+                              key={log.id}
+                              className="hover:bg-white/5 transition-colors group cursor-pointer"
+                              onClick={() => {
+                                // Can add expansion logic here later if wanted
+                              }}
+                            >
+                              <td className="p-4">
+                                <span
+                                  className={`px-2 py-0.5 text-[9px] font-bold rounded-full uppercase tracking-wider ${log.side === "YES" ? "bg-[#64c883]/10 text-[#64c883]" : "bg-[#e16464]/10 text-[#e16464]"}`}
+                                >
+                                  {log.side}
+                                </span>
+                              </td>
+                              <td className="p-4 text-xs font-bold text-white/70">
+                                @{log.user?.username || "Sistema"}
+                              </td>
+                              <td className="p-4 text-[10px] font-bold text-white">
+                                {log.executionSummary &&
+                                  (log.executionSummary as any).spent && (
+                                    <div className="flex flex-col gap-1">
+                                      <span className="text-gray-400">
+                                        Presupuesto/Gasto:{" "}
+                                        <span className="text-white">
+                                          $
+                                          {(
+                                            log.executionSummary as any
+                                          ).spent?.toFixed(2) || 0}
+                                        </span>
+                                      </span>
+                                      <span className="text-gray-400">
+                                        Shares Obt:{" "}
+                                        <span className="text-white">
+                                          $
+                                          {(
+                                            log.executionSummary as any
+                                          ).sharesCollected?.toFixed(2) || 0}
+                                        </span>
+                                      </span>
+                                    </div>
+                                  )}
+                              </td>
+                              <td className="p-4">
+                                {log.executionSummary &&
+                                  (log.executionSummary as any).path && (
+                                    <div className="flex flex-col gap-1 max-h-24 overflow-y-auto w-72 pr-2">
+                                      {(
+                                        (log.executionSummary as any)
+                                          .path as any[]
+                                      ).map((step, idx) => (
+                                        <div
+                                          key={idx}
+                                          className="flex justify-between items-center text-[9px] font-bold text-gray-500 bg-[#0a0a0a] border border-white/5 p-1 rounded"
+                                        >
+                                          <span>
+                                            $
+                                            {(step as any).invertido?.toFixed(
+                                              2,
+                                            )}{" "}
+                                            {"->"}{" "}
+                                            {(step as any).shares?.toFixed(1)}sh
+                                            (Prom. $
+                                            {(
+                                              step as any
+                                            ).precioPromedio?.toFixed(2)}
+                                            )
+                                          </span>
                                         </div>
-                                     ))}
-                                  </div>
-                               )}
-                             </td>
-                             <td className="p-4 text-[10px] font-bold text-gray-400">
-                               {new Date(log.timestamp).toLocaleString()}
-                             </td>
-                          </tr>
-                      ))}
+                                      ))}
+                                    </div>
+                                  )}
+                              </td>
+                              <td className="p-4 text-[10px] font-bold text-gray-400">
+                                {new Date(log.timestamp).toLocaleString()}
+                              </td>
+                            </tr>
+                          ))}
                   </tbody>
                 </table>
                 {((activeTab === "purchases" && purchases.length === 0) ||
@@ -788,16 +840,31 @@ function AdminPage() {
               {/* Header de Info Base */}
               <div className="flex items-center gap-4 px-1">
                 <div className="bg-[#121212] px-4 py-2 rounded-xl border border-white/5">
-                  <div className="text-[9px] font-bold text-gray-500 uppercase tracking-wider mb-0.5">ID Mercado</div>
-                  <div className="text-xs font-mono text-gray-400">{selectedMarketStats.id}</div>
+                  <div className="text-[9px] font-bold text-gray-500 uppercase tracking-wider mb-0.5">
+                    ID Mercado
+                  </div>
+                  <div className="text-xs font-mono text-gray-400">
+                    {selectedMarketStats.id}
+                  </div>
                 </div>
                 <div className="bg-[#121212] px-4 py-2 rounded-xl border border-white/5">
-                  <div className="text-[9px] font-bold text-[#64c883] uppercase tracking-wider mb-0.5">Liquidez (b)</div>
-                  <div className="text-xs font-mono text-white">{selectedMarketStats.b || 100}</div>
+                  <div className="text-[9px] font-bold text-[#64c883] uppercase tracking-wider mb-0.5">
+                    Liquidez (b)
+                  </div>
+                  <div className="text-xs font-mono text-white">
+                    {selectedMarketStats.b || 100}
+                  </div>
                 </div>
                 <div className="bg-[#121212] px-4 py-2 rounded-xl border border-white/5">
-                  <div className="text-[9px] font-bold text-gray-500 uppercase tracking-wider mb-0.5">Seed Cost Inicial</div>
-                  <div className="text-xs font-mono text-gray-400">$ {Number(selectedMarketStats.liquidity?.initialSeed || 0).toFixed(2)}</div>
+                  <div className="text-[9px] font-bold text-gray-500 uppercase tracking-wider mb-0.5">
+                    Seed Cost Inicial
+                  </div>
+                  <div className="text-xs font-mono text-gray-400">
+                    ${" "}
+                    {Number(
+                      selectedMarketStats.liquidity?.initialSeed || 0,
+                    ).toFixed(2)}
+                  </div>
                 </div>
               </div>
 
@@ -834,8 +901,12 @@ function AdminPage() {
                       </span>
                     </div>
                     <div className="flex justify-between items-center px-4 py-2 bg-white/5 rounded-lg border border-white/5">
-                      <span className="text-[9px] font-bold text-gray-500 uppercase">Liquidez (b)</span>
-                      <span className="text-xs font-mono text-gray-300">{selectedMarketStats.b || 100}</span>
+                      <span className="text-[9px] font-bold text-gray-500 uppercase">
+                        Liquidez (b)
+                      </span>
+                      <span className="text-xs font-mono text-gray-300">
+                        {selectedMarketStats.b || 100}
+                      </span>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="p-4 bg-[#64c883]/5 rounded-xl border border-[#64c883]/10">
@@ -895,7 +966,6 @@ function AdminPage() {
                     <div className="text-3xl font-extrabold">
                       $ {Number(selectedMarketStats.totalPool || 0).toFixed(0)}
                     </div>
-
                   </div>
                 </div>
               </div>
@@ -910,7 +980,9 @@ function AdminPage() {
                   Number(selectedMarketStats.noPool || 0);
                 // Fee correcto: se cobra sobre el bruto → vol / (1-fee) * fee
                 const collectedFees = (totalVolume / (1 - fee)) * fee;
-                const seedCost = Number(selectedMarketStats.liquidity?.initialSeed || 0);
+                const seedCost = Number(
+                  selectedMarketStats.liquidity?.initialSeed || 0,
+                );
 
                 // Payout máximo por escenario
                 const qYes = Number(selectedMarketStats.qYes || 0);
@@ -928,33 +1000,58 @@ function AdminPage() {
                   pnlCon: number,
                   vol: number,
                   fees: number,
-                  seed: number
+                  seed: number,
                 ) => (
                   <tr className="border-b border-white/5 hover:bg-white/[0.02] transition-colors h-16">
                     <td className="pl-6">
-                      <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full tracking-wider ${color === "text-[#64c883]" ? "bg-[#64c883]/10 text-[#64c883]" : "bg-[#e16464]/10 text-[#e16464]"}`}>
+                      <span
+                        className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full tracking-wider ${color === "text-[#64c883]" ? "bg-[#64c883]/10 text-[#64c883]" : "bg-[#e16464]/10 text-[#e16464]"}`}
+                      >
                         GANA {label}
                       </span>
                     </td>
                     <td className="text-center text-xs font-bold text-white">
-                      ${vol.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      $
+                      {vol.toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                      })}
                     </td>
                     <td className="text-center text-xs font-bold text-[#e16464]">
-                      -${payout.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      -$
+                      {payout.toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                      })}
                     </td>
                     <td className="text-center text-xs font-bold text-[#64c883]">
-                      +${fees.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      +$
+                      {fees.toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                      })}
                     </td>
-                    <td className={`text-center text-sm font-black ${pnlSin >= 0 ? "text-[#64c883]" : "text-[#e16464]"}`}>
-                      {pnlSin >= 0 ? "+" : ""}${pnlSin.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    <td
+                      className={`text-center text-sm font-black ${pnlSin >= 0 ? "text-[#64c883]" : "text-[#e16464]"}`}
+                    >
+                      {pnlSin >= 0 ? "+" : ""}$
+                      {pnlSin.toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                      })}
                     </td>
-                    <td className={`text-center text-sm font-black ${pnlCon >= 0 ? "text-[#64c883]" : "text-[#e16464]"}`}>
-                      {pnlCon >= 0 ? "+" : ""}${pnlCon.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    <td
+                      className={`text-center text-sm font-black ${pnlCon >= 0 ? "text-[#64c883]" : "text-[#e16464]"}`}
+                    >
+                      {pnlCon >= 0 ? "+" : ""}$
+                      {pnlCon.toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                      })}
                     </td>
                     <td className="pr-6 text-right">
                       <div className="flex flex-col items-end">
                         <span className="text-sm font-bold text-white">
-                          ${(vol + fees + seed - payout).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          $
+                          {(vol + fees + seed - payout).toLocaleString(
+                            undefined,
+                            { minimumFractionDigits: 2 },
+                          )}
                         </span>
                         <span className="text-[8px] text-gray-600 uppercase font-bold tracking-tighter mt-0.5">
                           Efectivo Final
@@ -972,9 +1069,12 @@ function AdminPage() {
                       </h3>
                       <div className="flex-1 h-[1px] bg-white/5" />
                       <div className="group relative">
-                        <span className="cursor-help text-xs text-gray-500">ⓘ</span>
+                        <span className="cursor-help text-xs text-gray-500">
+                          ⓘ
+                        </span>
                         <div className="absolute bottom-full right-0 mb-2 w-72 p-3 bg-[#1a1a1a] text-[10px] text-gray-400 rounded-xl border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-                          Muestra el impacto financiero para la plataforma. PnL = Pool − Payout (± Fees).
+                          Muestra el impacto financiero para la plataforma. PnL
+                          = Pool − Payout (± Fees).
                         </div>
                       </div>
                     </div>
@@ -988,13 +1088,35 @@ function AdminPage() {
                             <th className="text-center">PAGO GANADORES</th>
                             <th className="text-center">FEES (10%)</th>
                             <th className="text-center">PNL (SIN FEE)</th>
-                            <th className="text-center text-white">PNL (CON FEE)</th>
-                            <th className="pr-6 text-right text-[#64c883]">TESORERIA WIN</th>
+                            <th className="text-center text-white">
+                              PNL (CON FEE)
+                            </th>
+                            <th className="pr-6 text-right text-[#64c883]">
+                              TESORERIA WIN
+                            </th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
-                          {renderScenarioRow("YES", "text-[#64c883]", qYes, pnlYesSinFee, pnlYesConFee, totalVolume, collectedFees, seedCost)}
-                          {renderScenarioRow("NO", "text-[#e16464]", qNo, pnlNoSinFee, pnlNoConFee, totalVolume, collectedFees, seedCost)}
+                          {renderScenarioRow(
+                            "YES",
+                            "text-[#64c883]",
+                            qYes,
+                            pnlYesSinFee,
+                            pnlYesConFee,
+                            totalVolume,
+                            collectedFees,
+                            seedCost,
+                          )}
+                          {renderScenarioRow(
+                            "NO",
+                            "text-[#e16464]",
+                            qNo,
+                            pnlNoSinFee,
+                            pnlNoConFee,
+                            totalVolume,
+                            collectedFees,
+                            seedCost,
+                          )}
                         </tbody>
                       </table>
                     </div>
@@ -1113,13 +1235,15 @@ function AdminPage() {
                                   <td className="p-4 text-sm font-bold text-[#e16464] text-right">
                                     – $ {pos.payout.toFixed(2)}
                                   </td>
-                                  <td className={`p-4 text-sm font-black text-right bg-white/[0.02] ${winResult >= 0 ? "text-[#64c883]" : "text-[#e16464]"}`}>
-                                    {winResult >= 0 ? "+" : ""}$ {winResult.toFixed(2)}
+                                  <td
+                                    className={`p-4 text-sm font-black text-right bg-white/[0.02] ${winResult >= 0 ? "text-[#64c883]" : "text-[#e16464]"}`}
+                                  >
+                                    {winResult >= 0 ? "+" : ""}${" "}
+                                    {winResult.toFixed(2)}
                                   </td>
                                 </tr>
                               );
-
-                            }
+                            },
                           )}
                         </tbody>
                       </table>
@@ -1215,24 +1339,48 @@ function AdminPage() {
                     return (
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                         <div className="bg-[#121212] border border-white/5 rounded-2xl p-4">
-                          <div className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">Vol. P2P Ejecutado</div>
-                          <div className="text-xl font-extrabold text-white mt-1">${sm.totalP2PVolumeExecuted.toFixed(2)}</div>
-                          <div className="text-[9px] text-gray-600 mt-0.5">{sm.p2pTradeCount} trades completados</div>
+                          <div className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">
+                            Vol. P2P Ejecutado
+                          </div>
+                          <div className="text-xl font-extrabold text-white mt-1">
+                            ${sm.totalP2PVolumeExecuted.toFixed(2)}
+                          </div>
+                          <div className="text-[9px] text-gray-600 mt-0.5">
+                            {sm.p2pTradeCount} trades completados
+                          </div>
                         </div>
                         <div className="bg-[#64c883]/10 border border-[#64c883]/20 rounded-2xl p-4">
-                          <div className="text-[9px] font-bold text-[#64c883] uppercase tracking-wider">Ganancia WIN (FEE P2P)</div>
-                          <div className="text-xl font-extrabold text-[#64c883] mt-1">+ ${sm.totalP2PFeeCollected.toFixed(2)}</div>
-                          <div className="text-[9px] text-[#64c883]/60 mt-0.5">2% sobre el Orderbook</div>
+                          <div className="text-[9px] font-bold text-[#64c883] uppercase tracking-wider">
+                            Ganancia WIN (FEE P2P)
+                          </div>
+                          <div className="text-xl font-extrabold text-[#64c883] mt-1">
+                            + ${sm.totalP2PFeeCollected.toFixed(2)}
+                          </div>
+                          <div className="text-[9px] text-[#64c883]/60 mt-0.5">
+                            2% sobre el Orderbook
+                          </div>
                         </div>
                         <div className="bg-[#121212] border border-blue-500/10 rounded-2xl p-4">
-                          <div className="text-[9px] font-bold text-blue-400 uppercase tracking-wider">Órdenes Abiertas</div>
-                          <div className="text-xl font-extrabold text-white mt-1">{sm.openOrderCount}</div>
-                          <div className="text-[9px] text-gray-600 mt-0.5">{sm.totalOpenShares.toFixed(2)} sh en el libro</div>
+                          <div className="text-[9px] font-bold text-blue-400 uppercase tracking-wider">
+                            Órdenes Abiertas
+                          </div>
+                          <div className="text-xl font-extrabold text-white mt-1">
+                            {sm.openOrderCount}
+                          </div>
+                          <div className="text-[9px] text-gray-600 mt-0.5">
+                            {sm.totalOpenShares.toFixed(2)} sh en el libro
+                          </div>
                         </div>
                         <div className="bg-[#121212] border border-blue-500/10 rounded-2xl p-4">
-                          <div className="text-[9px] font-bold text-blue-400 uppercase tracking-wider">Val. en el Libro</div>
-                          <div className="text-xl font-extrabold text-white mt-1">${sm.totalOpenOrderValue.toFixed(2)}</div>
-                          <div className="text-[9px] text-gray-600 mt-0.5">si se ejecutan todas</div>
+                          <div className="text-[9px] font-bold text-blue-400 uppercase tracking-wider">
+                            Val. en el Libro
+                          </div>
+                          <div className="text-xl font-extrabold text-white mt-1">
+                            ${sm.totalOpenOrderValue.toFixed(2)}
+                          </div>
+                          <div className="text-[9px] text-gray-600 mt-0.5">
+                            si se ejecutan todas
+                          </div>
                         </div>
                       </div>
                     );
@@ -1247,32 +1395,85 @@ function AdminPage() {
                       <table className="w-full text-left">
                         <thead>
                           <tr className="bg-[#171717] border-b border-white/5">
-                            {["Usuario","Lado","Shares","Fills","Pendientes","Precio/sh","Val. Pend.","Estado","Fecha"].map((h) => (
-                              <th key={h} className="p-3 text-[9px] font-bold text-gray-400 uppercase tracking-wider whitespace-nowrap">{h}</th>
+                            {[
+                              "Usuario",
+                              "Lado",
+                              "Shares",
+                              "Fills",
+                              "Pendientes",
+                              "Precio/sh",
+                              "Val. Pend.",
+                              "Estado",
+                              "Fecha",
+                            ].map((h) => (
+                              <th
+                                key={h}
+                                className="p-3 text-[9px] font-bold text-gray-400 uppercase tracking-wider whitespace-nowrap"
+                              >
+                                {h}
+                              </th>
                             ))}
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
-                          {selectedMarketStats.secondaryMarket.openOrders.length === 0 ? (
-                            <tr><td colSpan={9} className="p-8 text-center text-[10px] font-bold text-white/20 uppercase">No hay órdenes abiertas</td></tr>
+                          {selectedMarketStats.secondaryMarket.openOrders
+                            .length === 0 ? (
+                            <tr>
+                              <td
+                                colSpan={9}
+                                className="p-8 text-center text-[10px] font-bold text-white/20 uppercase"
+                              >
+                                No hay órdenes abiertas
+                              </td>
+                            </tr>
                           ) : (
-                            selectedMarketStats.secondaryMarket.openOrders.map((o: any) => (
-                              <tr key={o.id} className="hover:bg-white/5 transition-colors">
-                                <td className="p-3 text-xs font-bold text-white">@{o.username}</td>
-                                <td className="p-3">
-                                  <span className={`px-2 py-0.5 text-[9px] font-bold rounded-full uppercase ${o.side === "YES" ? "bg-[#64c883]/10 text-[#64c883]" : "bg-[#e16464]/10 text-[#e16464]"}`}>{o.side}</span>
-                                </td>
-                                <td className="p-3 text-xs font-bold text-white">{o.initialShares.toFixed(2)}</td>
-                                <td className="p-3 text-xs font-bold text-[#64c883]">{o.filledShares.toFixed(2)}</td>
-                                <td className="p-3 text-xs font-bold text-blue-400">{o.remainingShares.toFixed(2)}</td>
-                                <td className="p-3 text-xs font-bold text-white">${o.pricePerShare.toFixed(4)}</td>
-                                <td className="p-3 text-xs font-bold text-white">${(o.remainingShares * o.pricePerShare).toFixed(2)}</td>
-                                <td className="p-3">
-                                  <span className={`px-2 py-0.5 text-[9px] font-bold rounded-full uppercase ${o.status === "PARTIAL" ? "bg-yellow-500/10 text-yellow-400" : "bg-blue-500/10 text-blue-400"}`}>{o.status}</span>
-                                </td>
-                                <td className="p-3 text-[10px] font-bold text-gray-400">{new Date(o.createdAt).toLocaleDateString()}</td>
-                              </tr>
-                            ))
+                            selectedMarketStats.secondaryMarket.openOrders.map(
+                              (o: any) => (
+                                <tr
+                                  key={o.id}
+                                  className="hover:bg-white/5 transition-colors"
+                                >
+                                  <td className="p-3 text-xs font-bold text-white">
+                                    @{o.username}
+                                  </td>
+                                  <td className="p-3">
+                                    <span
+                                      className={`px-2 py-0.5 text-[9px] font-bold rounded-full uppercase ${o.side === "YES" ? "bg-[#64c883]/10 text-[#64c883]" : "bg-[#e16464]/10 text-[#e16464]"}`}
+                                    >
+                                      {o.side}
+                                    </span>
+                                  </td>
+                                  <td className="p-3 text-xs font-bold text-white">
+                                    {o.initialShares.toFixed(2)}
+                                  </td>
+                                  <td className="p-3 text-xs font-bold text-[#64c883]">
+                                    {o.filledShares.toFixed(2)}
+                                  </td>
+                                  <td className="p-3 text-xs font-bold text-blue-400">
+                                    {o.remainingShares.toFixed(2)}
+                                  </td>
+                                  <td className="p-3 text-xs font-bold text-white">
+                                    ${o.pricePerShare.toFixed(4)}
+                                  </td>
+                                  <td className="p-3 text-xs font-bold text-white">
+                                    $
+                                    {(
+                                      o.remainingShares * o.pricePerShare
+                                    ).toFixed(2)}
+                                  </td>
+                                  <td className="p-3">
+                                    <span
+                                      className={`px-2 py-0.5 text-[9px] font-bold rounded-full uppercase ${o.status === "PARTIAL" ? "bg-yellow-500/10 text-yellow-400" : "bg-blue-500/10 text-blue-400"}`}
+                                    >
+                                      {o.status}
+                                    </span>
+                                  </td>
+                                  <td className="p-3 text-[10px] font-bold text-gray-400">
+                                    {new Date(o.createdAt).toLocaleDateString()}
+                                  </td>
+                                </tr>
+                              ),
+                            )
                           )}
                         </tbody>
                       </table>
@@ -1288,25 +1489,62 @@ function AdminPage() {
                       <table className="w-full text-left">
                         <thead>
                           <tr className="bg-[#171717] border-b border-white/5">
-                            {["Comprador","Vendedor (Recibe Neto)","Monto Bruto","Monto Neto","Fee WIN (2%)","Fecha"].map((h) => (
-                              <th key={h} className="p-3 text-[9px] font-bold text-gray-400 uppercase tracking-wider whitespace-nowrap">{h}</th>
+                            {[
+                              "Comprador",
+                              "Vendedor (Recibe Neto)",
+                              "Monto Bruto",
+                              "Monto Neto",
+                              "Fee WIN (2%)",
+                              "Fecha",
+                            ].map((h) => (
+                              <th
+                                key={h}
+                                className="p-3 text-[9px] font-bold text-gray-400 uppercase tracking-wider whitespace-nowrap"
+                              >
+                                {h}
+                              </th>
                             ))}
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
-                          {selectedMarketStats.secondaryMarket.obFills.length === 0 ? (
-                            <tr><td colSpan={7} className="p-8 text-center text-[10px] font-bold text-white/20 uppercase">No hay transacciones P2P ejecutadas aún</td></tr>
+                          {selectedMarketStats.secondaryMarket.obFills
+                            .length === 0 ? (
+                            <tr>
+                              <td
+                                colSpan={7}
+                                className="p-8 text-center text-[10px] font-bold text-white/20 uppercase"
+                              >
+                                No hay transacciones P2P ejecutadas aún
+                              </td>
+                            </tr>
                           ) : (
-                            selectedMarketStats.secondaryMarket.obFills.map((f: any, idx: number) => (
-                              <tr key={f.id || idx} className="hover:bg-white/5 transition-colors">
-                                <td className="p-3 text-xs font-bold text-[#64c883]">@{f.buyer}</td>
-                                <td className="p-3 text-xs font-bold text-gray-400">@{f.seller}</td>
-                                <td className="p-3 text-xs text-white">${f.grossAmount.toFixed(2)}</td>
-                                <td className="p-3 text-xs font-bold text-blue-300">${f.netAmount.toFixed(2)}</td>
-                                <td className="p-3 text-sm font-extrabold text-[#64c883]">+ ${f.fee.toFixed(2)}</td>
-                                <td className="p-3 text-[10px] font-bold text-gray-400 whitespace-nowrap">{new Date(f.timestamp).toLocaleDateString()}</td>
-                              </tr>
-                            ))
+                            selectedMarketStats.secondaryMarket.obFills.map(
+                              (f: any, idx: number) => (
+                                <tr
+                                  key={f.id || idx}
+                                  className="hover:bg-white/5 transition-colors"
+                                >
+                                  <td className="p-3 text-xs font-bold text-[#64c883]">
+                                    @{f.buyer}
+                                  </td>
+                                  <td className="p-3 text-xs font-bold text-gray-400">
+                                    @{f.seller}
+                                  </td>
+                                  <td className="p-3 text-xs text-white">
+                                    ${f.grossAmount.toFixed(2)}
+                                  </td>
+                                  <td className="p-3 text-xs font-bold text-blue-300">
+                                    ${f.netAmount.toFixed(2)}
+                                  </td>
+                                  <td className="p-3 text-sm font-extrabold text-[#64c883]">
+                                    + ${f.fee.toFixed(2)}
+                                  </td>
+                                  <td className="p-3 text-[10px] font-bold text-gray-400 whitespace-nowrap">
+                                    {new Date(f.timestamp).toLocaleDateString()}
+                                  </td>
+                                </tr>
+                              ),
+                            )
                           )}
                         </tbody>
                       </table>
@@ -1314,7 +1552,6 @@ function AdminPage() {
                   </div>
                 </div>
               )}
-
             </div>
           )
         )}

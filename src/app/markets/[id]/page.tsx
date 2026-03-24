@@ -24,6 +24,9 @@ function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
     price: number;
     shares: number;
   } | null>(null);
+  const [activeTab, setActiveTab] = useState<
+    "trade" | "orderbook" | "activity"
+  >("trade");
 
   const fetchMarket = () => {
     fetch(`/api/markets/${id}`)
@@ -71,19 +74,27 @@ function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
 
   return (
     <Shell>
-      <div className="max-w-[1200px] mx-auto pt-4 px-4">
-
+      <div className="max-w-[1200px] mx-auto pt-0 px-0">
         {/* Hero banner */}
         <div
           className="relative rounded-3xl overflow-hidden mb-10 h-48 flex items-end"
           style={{ background: visual.gradient }}
         >
           {/* Decorative blobs */}
-          <div className="absolute -top-10 -right-10 w-64 h-64 rounded-full opacity-20 blur-3xl" style={{ background: visual.to }} />
-          <div className="absolute -bottom-8 -left-8 w-48 h-48 rounded-full opacity-15 blur-2xl" style={{ background: visual.to }} />
+          <div
+            className="absolute -top-10 -right-10 w-64 h-64 rounded-full opacity-20 blur-3xl"
+            style={{ background: visual.to }}
+          />
+          <div
+            className="absolute -bottom-8 -left-8 w-48 h-48 rounded-full opacity-15 blur-2xl"
+            style={{ background: visual.to }}
+          />
 
           {/* Emoji centered */}
-          <span className="absolute top-1/2 right-10 -translate-y-1/2 text-[80px] opacity-30 select-none drop-shadow-2xl" aria-hidden>
+          <span
+            className="absolute top-1/2 right-10 -translate-y-1/2 text-[80px] opacity-30 select-none drop-shadow-2xl"
+            aria-hidden
+          >
             {visual.emoji}
           </span>
 
@@ -138,10 +149,34 @@ function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
               </div>
             </div>
 
+            {/* Mobile Tabs */}
+            <div className="flex border-b border-white/10 lg:hidden mt-0 mb-4">
+              <button
+                onClick={() => setActiveTab("trade")}
+                className={`py-3 px-4 text-[10px] font-bold uppercase tracking-wider flex-1 text-center border-b-2 transition-colors ${activeTab === "trade" ? "border-[#64c883] text-[#64c883]" : "border-transparent text-gray-400 hover:text-white"}`}
+              >
+                Operar
+              </button>
+              <button
+                onClick={() => setActiveTab("orderbook")}
+                className={`py-3 px-4 text-[10px] font-bold uppercase tracking-wider flex-1 text-center border-b-2 transition-colors ${activeTab === "orderbook" ? "border-[#64c883] text-[#64c883]" : "border-transparent text-gray-400 hover:text-white"}`}
+              >
+                Orderbook
+              </button>
+              <button
+                onClick={() => setActiveTab("activity")}
+                className={`py-3 px-4 text-[10px] font-bold uppercase tracking-wider flex-1 text-center border-b-2 transition-colors ${activeTab === "activity" ? "border-[#64c883] text-[#64c883]" : "border-transparent text-gray-400 hover:text-white"}`}
+              >
+                Actividad
+              </button>
+            </div>
+
             {/* Active Positions - other users only (own positions shown in right column) */}
             {market.positions.filter((p: any) => p.currentOwner.id !== user.id)
               .length > 0 && (
-              <div className="space-y-6 pt-8 border-t border-white/5">
+              <div
+                className={`space-y-6 lg:pt-8 lg:block ${activeTab === "activity" ? "block pt-4" : "hidden"}`}
+              >
                 <h2 className="text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400">
                   Posiciones Activas (
                   {
@@ -236,19 +271,26 @@ function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
             )}
 
             {/* Orderbook Depth Display */}
-            <div className="pt-8 border-t border-white/5 space-y-6">
+            <div
+              className={`lg:pt-8 space-y-6 lg:border-t border-white/5 lg:block ${activeTab === "orderbook" ? "block pt-4 border-t-0" : "hidden"}`}
+            >
               <h2 className="text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400">
                 Profundidad del Mercado (Orderbook Limit)
               </h2>
-              <OrderbookDisplay 
-                orders={market.orders || []} 
-                onOrderClick={(side, price, shares) => setPrefillOrder({ side, price, shares })}
+              <OrderbookDisplay
+                orders={market.orders || []}
+                onOrderClick={(side, price, shares) => {
+                  setPrefillOrder({ side, price, shares });
+                  setActiveTab("trade");
+                }}
               />
             </div>
           </div>
 
           {/* Right Column: Prediction Interaction + My Positions */}
-          <div className="sticky top-24 space-y-6">
+          <div
+            className={`sticky top-24 space-y-6 lg:block ${activeTab === "trade" ? "block" : "hidden"}`}
+          >
             <Suspense fallback={null}>
               <PredictionCard
                 market={market}

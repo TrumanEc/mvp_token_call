@@ -121,10 +121,10 @@ export function PositionCard({ position, userId, onSell }: PositionCardProps) {
   return (
     <div className="bg-[#121212] border border-white/5 rounded-3xl overflow-hidden transition-all hover:border-white/10 group col-span-1 md:col-span-2 shadow-2xl shadow-black/20">
       {/* Header */}
-      <div className="p-6 md:px-8 md:py-7 flex justify-between items-center bg-white/[0.01]">
-        <div>
+      <div className="p-6 md:px-8 md:py-7 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-0 bg-white/[0.01]">
+        <div className="w-full md:w-auto">
           <div className="flex flex-wrap items-center gap-2 mb-1">
-            <h4 className="text-xl md:text-2xl font-bold text-white transition-colors leading-tight">
+            <h4 className="text-xl md:text-2xl font-bold text-white transition-colors leading-tight w-full md:w-auto mb-2 md:mb-0">
               {market.question}
             </h4>
             <span className="text-[10px] font-bold text-gray-600 uppercase tracking-widest mt-1">
@@ -146,13 +146,13 @@ export function PositionCard({ position, userId, onSell }: PositionCardProps) {
 
         {/* Probability Bar at Top Right (only if active or show final result) */}
         {!isActive ? (
-          <div className="flex flex-col items-end gap-1">
+          <div className="flex flex-col items-start md:items-end gap-1 w-full md:w-auto border-t border-white/5 md:border-t-0 pt-4 md:pt-0 mt-2 md:mt-0">
              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">RESULTADO FINAL</span>
              <span className="text-xl font-black text-white">{market.outcome}</span>
           </div>
         ) : (
-          <div className="flex flex-col items-end gap-2 pr-2">
-            <div className="flex gap-4 mb-0.5">
+          <div className="flex flex-col items-start md:items-end gap-2 pr-0 md:pr-2 w-full md:w-auto border-t border-white/5 md:border-t-0 pt-4 md:pt-0 mt-2 md:mt-0">
+            <div className="flex gap-4 mb-0.5 justify-start md:justify-end w-full">
               <div className="flex items-center gap-1.5">
                 <div className="w-1.5 h-1.5 rounded-full bg-[#64c883]" />
                 <span className="text-[10px] font-extrabold text-[#64c883]">
@@ -166,7 +166,7 @@ export function PositionCard({ position, userId, onSell }: PositionCardProps) {
                 </span>
               </div>
             </div>
-            <div className="w-40 h-1.5 bg-white/5 rounded-full overflow-hidden flex">
+            <div className="w-full md:w-40 h-1.5 bg-white/5 rounded-full overflow-hidden flex">
               <div
                 className="h-full bg-[#64c883] transition-all duration-1000"
                 style={{ width: `${yes.prob * 100}%` }}
