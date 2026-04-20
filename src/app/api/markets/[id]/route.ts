@@ -14,7 +14,8 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const { action } = await request.json()
+  const body = await request.json()
+  const { action, scheduledAt } = body
 
   if (action === 'activate') {
     const market = await MarketService.activate(id)
@@ -23,6 +24,17 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
   if (action === 'close') {
     const market = await MarketService.close(id)
+    return NextResponse.json(market)
+  }
+
+  if (action === 'pausePrimary') {
+    const opts = scheduledAt ? { scheduledAt: new Date(scheduledAt) } : {}
+    const market = await MarketService.pausePrimary(id, opts)
+    return NextResponse.json(market)
+  }
+
+  if (action === 'unpausePrimary') {
+    const market = await MarketService.unpausePrimary(id)
     return NextResponse.json(market)
   }
 

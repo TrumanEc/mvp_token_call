@@ -23,11 +23,19 @@ export class RouterService {
 
       const market = await tx.market.findUnique({
         where: { id: data.marketId },
-        select: { id: true, qYes: true, qNo: true, b: true, status: true, yesPool: true, noPool: true, platformFee: true },
+        select: { id: true, qYes: true, qNo: true, b: true, status: true, yesPool: true, noPool: true, platformFee: true, primaryMarketPaused: true, primaryPauseScheduledAt: true },
       });
 
       if (!market || market.status !== "ACTIVE") {
         throw new Error("El mercado no está activo");
+      }
+
+      const isPrimaryPaused =
+        market.primaryMarketPaused ||
+        (market.primaryPauseScheduledAt &&
+          new Date(market.primaryPauseScheduledAt) <= new Date());
+      if (isPrimaryPaused) {
+        throw new Error("El mercado primario está pausado. Solo el mercado secundario está disponible.");
       }
 
       const user = await tx.user.findUnique({ where: { id: data.userId } });

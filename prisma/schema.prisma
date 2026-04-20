@@ -53,9 +53,11 @@ model Market {
   resolvedAt     DateTime?
   createdAt      DateTime               @default(now())
   updatedAt      DateTime               @updatedAt
-  maxBetAmount   Float?
-  maxPriceImpact Float?
-  lmsrSnapshots  LmsrSnapshot[]
+  maxBetAmount              Float?
+  maxPriceImpact            Float?
+  primaryMarketPaused       Boolean   @default(false)
+  primaryPauseScheduledAt   DateTime?
+  lmsrSnapshots             LmsrSnapshot[]
   history        MarketHistory[]
   routerLogs     MarketRouterAuditLog[]
   listings       MarketplaceListing[]
