@@ -18,8 +18,11 @@ function AdminPage() {
   const [creating, setCreating] = useState(false);
   const [resolving, setResolving] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    "markets" | "users" | "purchases" | "payments" | "simulator" | "router_logs"
+    "markets" | "users" | "purchases" | "payments" | "simulator" | "router_logs" | "inactive"
   >("markets");
+  const [inactiveMarkets, setInactiveMarkets] = useState<any[]>([]);
+  const [loadingInactive, setLoadingInactive] = useState(false);
+  const [recoveringId, setRecoveringId] = useState<string | null>(null);
   const [users, setUsers] = useState<any[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [purchases, setPurchases] = useState<any[]>([]);
@@ -47,6 +50,7 @@ function AdminPage() {
     b: "100",
     maxBetAmount: "",
     maxPriceImpact: "",
+    initialProbabilityYes: "50",
   });
 
   useEffect(() => {
@@ -163,7 +167,41 @@ function AdminPage() {
     if (activeTab === "purchases") fetchPurchases(selectedMarketId);
     if (activeTab === "payments") fetchTransactions(selectedMarketId);
     if (activeTab === "router_logs") fetchRouterLogs(selectedMarketId);
+    if (activeTab === "inactive") fetchInactiveMarkets();
   }, [activeTab, selectedMarketId]);
+
+  const fetchInactiveMarkets = async () => {
+    setLoadingInactive(true);
+    try {
+      const res = await fetch("/api/admin/inactive-markets?minDays=0");
+      const data = await res.json();
+      setInactiveMarkets(data);
+    } finally {
+      setLoadingInactive(false);
+    }
+  };
+
+  const handleRecoverSeed = async (marketId: string) => {
+    if (!confirm("¿Recuperar seed de este mercado inactivo? El mercado quedará VOIDED.")) return;
+    setRecoveringId(marketId);
+    try {
+      const res = await fetch("/api/admin/inactive-markets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ marketId }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert(data.message);
+        fetchInactiveMarkets();
+        fetchMarkets();
+      } else {
+        alert(`Error: ${data.error}`);
+      }
+    } finally {
+      setRecoveringId(null);
+    }
+  };
 
   const handleCreate = async () => {
     setCreating(true);
@@ -183,6 +221,7 @@ function AdminPage() {
           maxPriceImpact: newMarket.maxPriceImpact
             ? parseFloat(newMarket.maxPriceImpact)
             : undefined,
+          initialProbabilityYes: parseFloat(newMarket.initialProbabilityYes) / 100 || 0.5,
         }),
       });
       if (res.ok) {
@@ -196,6 +235,7 @@ function AdminPage() {
           b: "100",
           maxBetAmount: "",
           maxPriceImpact: "",
+          initialProbabilityYes: "50",
         });
         fetchMarkets();
       }
@@ -294,6 +334,7 @@ function AdminPage() {
               { id: "payments", label: "Pagos" },
               { id: "router_logs", label: "Router" },
               { id: "simulator", label: "Simulador" },
+              { id: "inactive", label: "Sin Actividad" },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -369,6 +410,48 @@ function AdminPage() {
           {activeTab === "simulator" && (
             <div className="max-w-3xl mx-auto">
               <LmsrCalculator />
+            </div>
+          )}
+
+          {activeTab === "inactive" && (
+            <div className="space-y-4">
+              <div className="bg-[#121212] border border-yellow-500/20 rounded-2xl p-4 text-[11px] text-yellow-400">
+                Mercados sin actividad (sin posiciones). Podés recuperar el seed voidando el mercado.
+              </div>
+              {loadingInactive ? (
+                <div className="flex justify-center py-20">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#64c883]" />
+                </div>
+              ) : inactiveMarkets.length === 0 ? (
+                <div className="text-center py-20 text-gray-500 text-sm">
+                  No hay mercados inactivos
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {inactiveMarkets.map((m) => (
+                    <div
+                      key={m.id}
+                      className="bg-[#0f0f0f] border border-white/5 rounded-2xl p-5 flex items-center justify-between gap-4"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white font-bold text-sm truncate">{m.question}</p>
+                        <div className="flex gap-4 mt-1 text-[10px] text-gray-400 uppercase tracking-wider">
+                          <span>{m.status}</span>
+                          <span>{m.daysSinceCreation} días abierto</span>
+                          <span className="text-yellow-400">Seed: ${Number(m.seedCost).toFixed(2)}</span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleRecoverSeed(m.id)}
+                        disabled={recoveringId === m.id}
+                        className="shrink-0 h-10 px-4 bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 text-[10px] font-bold uppercase tracking-wider rounded-xl hover:bg-yellow-500/20 transition-all disabled:opacity-50"
+                      >
+                        {recoveringId === m.id ? "Recuperando..." : "Recuperar Seed"}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -1643,6 +1726,34 @@ function AdminPage() {
                   placeholder="Global"
                   step="0.1"
                 />
+              </div>
+            </div>
+
+            {/* Probabilidad inicial configurable (Option B advantage) */}
+            <div className="space-y-3">
+              <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400">
+                Probabilidad inicial YES (%)
+              </label>
+              <div className="flex items-center gap-4">
+                <input
+                  type="range"
+                  min="5"
+                  max="95"
+                  step="5"
+                  className="flex-1 accent-[#64c883]"
+                  value={newMarket.initialProbabilityYes}
+                  onChange={(e) =>
+                    setNewMarket({ ...newMarket, initialProbabilityYes: e.target.value })
+                  }
+                />
+                <span className="text-white font-bold w-20 text-right text-sm">
+                  {newMarket.initialProbabilityYes}% / {100 - parseInt(newMarket.initialProbabilityYes)}%
+                </span>
+              </div>
+              <div className="flex justify-between text-[9px] text-gray-500 uppercase tracking-wider">
+                <span>Poco probable</span>
+                <span>50/50</span>
+                <span>Probable</span>
               </div>
             </div>
           </div>

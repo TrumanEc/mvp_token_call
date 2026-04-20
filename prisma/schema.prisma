@@ -48,7 +48,7 @@ model Market {
   yesPool        Decimal                @default(0)
   noPool         Decimal                @default(0)
   maxPool        Decimal?
-  platformFee    Decimal                @default(0.10)
+  platformFee    Decimal                @default(0.015)
   resolutionDate DateTime
   resolvedAt     DateTime?
   createdAt      DateTime               @default(now())

@@ -108,11 +108,16 @@ export class MarketService {
     b?: number;
     maxBetAmount?: number;
     maxPriceImpact?: number;
+    initialProbabilityYes?: number; // 0.01–0.99, defaults to 0.5
   }) {
-    // Default liquidity parameter b = 100 if not provided
     const b = data.b || 100;
     const lmsrService = new LmsrService();
     const seedCost = lmsrService.getMaxLoss(b);
+
+    // Compute starting q values from target probability (defaults to 50/50)
+    const pYesInit = data.initialProbabilityYes ?? 0.5;
+    const { qYes: initQYes, qNo: initQNo } = lmsrService.getInitialQValues(b, pYesInit);
+    const pNoInit = 1 - pYesInit;
 
     return prisma.market.create({
       data: {
@@ -126,16 +131,15 @@ export class MarketService {
           ? Number(data.maxPriceImpact)
           : undefined,
         status: "DRAFT",
-        // LMSR Initialization
+        // LMSR Initialization at target probability
         b,
-        qYes: 0,
-        qNo: 0,
+        qYes: initQYes,
+        qNo: initQNo,
         seedCost,
-        // Legacy/Audit history
         history: {
           create: {
-            yesOdds: new Decimal(50),
-            noOdds: new Decimal(50),
+            yesOdds: new Decimal(pYesInit * 100),
+            noOdds: new Decimal(pNoInit * 100),
             totalPool: new Decimal(0),
           },
         },
@@ -147,9 +151,9 @@ export class MarketService {
             side: "INIT",
             deltaShares: 0,
             cost: seedCost,
-            qYesAfter: 0,
-            qNoAfter: 0,
-            pYesAfter: 0.5,
+            qYesAfter: initQYes,
+            qNoAfter: initQNo,
+            pYesAfter: pYesInit,
             triggerType: "INIT",
             userId: "SYSTEM",
           },
@@ -170,5 +174,106 @@ export class MarketService {
       where: { id },
       data: { status: "CLOSED" },
     });
+  }
+
+  /**
+   * Recover seed from an inactive market (no trades since creation).
+   * Voids the market and returns the seed cost to a designated admin wallet / reserve.
+   * Only allowed when:
+   *   - Market is DRAFT or ACTIVE
+   *   - No positions have been created (zero trading activity)
+   *   - Market has been open for at least `minDaysOpen` days without trades
+   */
+  static async recoverInactiveSeed(
+    id: string,
+    options: { minDaysOpen?: number } = {},
+  ) {
+    const minDaysOpen = options.minDaysOpen ?? 0;
+
+    return prisma.$transaction(async (tx) => {
+      const market = await tx.market.findUnique({
+        where: { id },
+        include: {
+          positions: { select: { id: true }, take: 1 },
+        },
+      });
+
+      if (!market) throw new Error("Market not found");
+
+      if (!["DRAFT", "ACTIVE"].includes(market.status)) {
+        throw new Error("Only DRAFT or ACTIVE markets can be recovered");
+      }
+
+      if (market.positions.length > 0) {
+        throw new Error(
+          "Market has trading activity — use resolve/void instead",
+        );
+      }
+
+      const daysSinceCreation =
+        (Date.now() - market.createdAt.getTime()) / (1000 * 60 * 60 * 24);
+
+      if (daysSinceCreation < minDaysOpen) {
+        throw new Error(
+          `Market must be open at least ${minDaysOpen} days before seed recovery (currently ${daysSinceCreation.toFixed(1)} days)`,
+        );
+      }
+
+      // Cancel any open orders (safety check)
+      await tx.order.updateMany({
+        where: { marketId: id, status: { in: ["OPEN", "PARTIAL"] } },
+        data: { status: "CANCELLED" },
+      });
+
+      await tx.market.update({
+        where: { id },
+        data: { status: "VOIDED", resolvedAt: new Date() },
+      });
+
+      return {
+        marketId: id,
+        seedRecovered: market.seedCost,
+        daysSinceCreation: parseFloat(daysSinceCreation.toFixed(1)),
+        message: `Seed of $${market.seedCost.toFixed(2)} recovered from inactive market`,
+      };
+    });
+  }
+
+  /**
+   * Find all markets eligible for seed recovery:
+   * ACTIVE markets with zero positions older than minDaysOpen.
+   */
+  static async getInactiveMarkets(minDaysOpen: number = 7) {
+    const cutoffDate = new Date(
+      Date.now() - minDaysOpen * 24 * 60 * 60 * 1000,
+    );
+
+    const markets = await prisma.market.findMany({
+      where: {
+        status: { in: ["DRAFT", "ACTIVE"] },
+        createdAt: { lte: cutoffDate },
+      },
+      include: {
+        _count: { select: { positions: true } },
+      },
+      orderBy: { createdAt: "asc" },
+    });
+
+    return markets
+      .filter((m) => m._count.positions === 0)
+      .map((m) => ({
+        id: m.id,
+        playerName: m.playerName,
+        question: m.question,
+        status: m.status,
+        createdAt: m.createdAt,
+        seedCost: m.seedCost,
+        daysSinceCreation: parseFloat(
+          (
+            (Date.now() - m.createdAt.getTime()) /
+            (1000 * 60 * 60 * 24)
+          ).toFixed(1),
+        ),
+      }));
   }
 }

@@ -60,7 +60,9 @@ export class SettlementService {
         return { type: "VOID" as const, refunded: activePositions.length };
       }
 
-      // LMSR Settlement: Winning Share = $1
+      // Option B: Proportional Payout
+      // Winners share the full user pool (yesPool + noPool) proportionally by shares.
+      // Seed cost always returns to WIN — only user money is distributed.
       let winnersCount = 0;
       let losersCount = 0;
       let totalPaidOut = new Decimal(0);
@@ -68,7 +70,21 @@ export class SettlementService {
       const winningPositions = activePositions.filter(p => p.side === outcome);
       const losingPositions = activePositions.filter(p => p.side !== outcome);
 
-      // 1. Batch Update Losers (High performance win)
+      // Total user pool (net amounts contributed by traders, excluding seed)
+      const totalPool = new Decimal(market.yesPool).plus(market.noPool);
+
+      // Total winning shares across all winning positions
+      const totalWinningShares = winningPositions.reduce(
+        (sum, p) => sum + p.shares,
+        0,
+      );
+
+      // Payout per winning share = totalPool / totalWinningShares
+      const payoutPerShare = totalWinningShares > 0
+        ? totalPool.dividedBy(totalWinningShares)
+        : new Decimal(0);
+
+      // 1. Batch Update Losers
       if (losingPositions.length > 0) {
         await tx.position.updateMany({
           where: { id: { in: losingPositions.map(p => p.id) } },
@@ -77,16 +93,16 @@ export class SettlementService {
         losersCount = losingPositions.length;
       }
 
-      // 2. Process Winners individually for balance updates
+      // 2. Process Winners — each winner receives shares × payoutPerShare
       for (const position of winningPositions) {
-        const payout = new Decimal(position.shares).times(1);
+        const payout = payoutPerShare.times(position.shares);
 
         await BalanceService.credit(
           tx,
           position.currentOwnerId,
           payout,
           "PAYOUT_RECEIVED",
-          "Winnings from market resolution",
+          "Winnings from market resolution (proportional payout)",
           marketId,
         );
 
@@ -99,10 +115,6 @@ export class SettlementService {
         winnersCount++;
       }
 
-      // In LMSR, "platform fee" is effectively (Net Revenue - Paid Out), captured implicitly in the reserves.
-      // But for report consistency, we might want to calculate the theoretical fee or just track net PnL.
-      // For now, let's keep it simple.
-
       await tx.market.update({
         where: { id: marketId },
         data: { status: "RESOLVED", outcome, resolvedAt: new Date() },
@@ -114,9 +126,11 @@ export class SettlementService {
         winnersCount,
         losersCount,
         totalPaidOut: totalPaidOut.toNumber(),
-        // Platform fee is implicit in LMSR (spread + net outcome difference)
+        payoutPerShare: payoutPerShare.toNumber(),
+        totalPool: totalPool.toNumber(),
+        // WIN revenue = accumulated fees (seed always recovered separately)
         platformFee: 0,
-        payoutMultiplier: 1,
+        payoutMultiplier: payoutPerShare.toNumber(),
       };
     }, {
       timeout: 60000,
@@ -152,14 +166,21 @@ export class SettlementService {
       new Decimal(0),
     );
     const totalPool = new Decimal(market.yesPool).plus(market.noPool);
-    const platformFee = totalPool.times(market.platformFee);
 
     const allTransfers = market.positions.flatMap((p) => p.transfers);
     const secondaryVolume = allTransfers.reduce(
       (sum, t) => sum.plus(t.price),
       new Decimal(0),
     );
+    // P2P fee: 2% on secondary volume
     const secondaryFees = secondaryVolume.times(0.02);
+
+    // Option B: WIN revenue = accumulated fees only (seed always returned to WIN)
+    // Primary market fees are embedded in the LMSR spread (platformFee rate × volume)
+    const totalWinningShares = winners.reduce((sum, p) => sum + Number(p.shares || 0), 0);
+    const payoutPerShare = totalWinningShares > 0
+      ? totalPool.dividedBy(totalWinningShares)
+      : new Decimal(0);
 
     return {
       market: {
@@ -182,17 +203,23 @@ export class SettlementService {
         refunded: refunded.length,
         totalWinnings: totalWinnings.toNumber(),
         totalLosses: totalLosses.toNumber(),
+        payoutPerShare: payoutPerShare.toNumber(),
       },
       fees: {
-        primaryMarket: platformFee.toNumber(),
+        // Under Option B, primary market revenue = fees collected during trading (implicit in pool)
+        // Secondary market fees are explicit
+        primaryMarket: 0,
         secondaryMarket: secondaryFees.toNumber(),
-        total: platformFee.plus(secondaryFees).toNumber(),
+        total: secondaryFees.toNumber(),
       },
       liquidity: {
         b: market.b,
         initialSeed: market.seedCost,
+        seedRecovered: true, // Option B always recovers seed (never distributed to users)
         netInvestments: totalPool.toNumber(),
         totalPayouts: totalWinnings.toNumber(),
+        // Under Option B, WIN net P&L = totalPool - totalWinnings (should be ~0 since all pool goes to winners)
+        // Real WIN profit = fees accumulated during trading
         netProfitLoss: totalPool.minus(totalWinnings).toNumber(),
       },
       secondaryMarket: {

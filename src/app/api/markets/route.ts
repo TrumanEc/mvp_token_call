@@ -20,11 +20,25 @@ export async function POST(request: NextRequest) {
     maxBetAmount,
     maxPriceImpact,
     b,
+    initialProbabilityYes,
   } = body;
 
   if (!question || !resolutionDate) {
     return NextResponse.json(
       { error: "Missing required fields" },
+      { status: 400 },
+    );
+  }
+
+  // Validate initialProbabilityYes if provided
+  if (
+    initialProbabilityYes !== undefined &&
+    (typeof initialProbabilityYes !== "number" ||
+      initialProbabilityYes <= 0 ||
+      initialProbabilityYes >= 1)
+  ) {
+    return NextResponse.json(
+      { error: "initialProbabilityYes must be a number between 0 and 1 (exclusive)" },
       { status: 400 },
     );
   }
@@ -38,6 +52,7 @@ export async function POST(request: NextRequest) {
     maxBetAmount,
     maxPriceImpact,
     b,
+    initialProbabilityYes,
   });
 
   return NextResponse.json(market, { status: 201 });

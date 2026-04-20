@@ -50,7 +50,7 @@ export class RouterService {
       let obFeeAmount = 0;
       let selfMatchSpentNet = 0; // Tracks the net proceeds paid to the user themselves during wash trades
       
-      const lmsrFeeRate = market.platformFee ? Number(market.platformFee) : 0.1;
+      const lmsrFeeRate = market.platformFee ? Number(market.platformFee) : 0.015;
       const obFeeRate = 0.02; // 2% P2P
 
       // Estado mutado del LMSR en memoria
@@ -286,7 +286,7 @@ export class RouterService {
     const lmsrService = new LmsrService();
     let remainingGross = budgetNum;
     
-    const lmsrFeeRate = market.platformFee ? Number(market.platformFee) : 0.1;
+    const lmsrFeeRate = market.platformFee ? Number(market.platformFee) : 0.015;
     const obFeeRate = 0.02;
 
     let lmsrSharesCollected = 0;

@@ -212,6 +212,23 @@ export class LmsrService {
   }
 
   /**
+   * Compute initial q values to start a market at a target probability.
+   * Formula: qYes - qNo = b × ln(pYes / pNo)
+   * We set qNo = 0, qYes = b × ln(pYes / (1 - pYes)).
+   * For pYes < 0.5, qYes will be negative — this is valid and correct.
+   */
+  getInitialQValues(b: number, pYes: number): { qYes: number; qNo: number } {
+    if (pYes <= 0 || pYes >= 1) {
+      throw new Error("initialProbabilityYes must be between 0 and 1 (exclusive)");
+    }
+    if (Math.abs(pYes - 0.5) < 1e-6) {
+      return { qYes: 0, qNo: 0 };
+    }
+    const qYes = b * Math.log(pYes / (1 - pYes));
+    return { qYes, qNo: 0 };
+  }
+
+  /**
    * Max loss (initial funding required) for the market maker
    * Max Loss = b * ln(2) for binary market
    */
