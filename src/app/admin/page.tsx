@@ -1053,112 +1053,56 @@ function AdminPage() {
                 </div>
               </div>
 
-              {/* PnL Scenarios Section */}
+              {/* PnL Scenarios Section — Option B (Pago Proporcional) */}
               {(() => {
-                const fee = selectedMarketStats.platformFee
+                const feeRate = selectedMarketStats.platformFee
                   ? Number(selectedMarketStats.platformFee)
-                  : 0.1;
-                const totalVolume =
+                  : 0.015;
+                const totalPool =
                   Number(selectedMarketStats.yesPool || 0) +
                   Number(selectedMarketStats.noPool || 0);
-                // Fee correcto: se cobra sobre el bruto → vol / (1-fee) * fee
-                const collectedFees = (totalVolume / (1 - fee)) * fee;
+                // Fees se cobran sobre el bruto durante el trading
+                // gross = net / (1 - fee) → fee = net × fee / (1 - fee)
+                const collectedFees = (totalPool / (1 - feeRate)) * feeRate;
                 const seedCost = Number(
                   selectedMarketStats.liquidity?.initialSeed || 0,
                 );
-
-                // Payout máximo por escenario
-                const qYes = Number(selectedMarketStats.qYes || 0);
-                const qNo = Number(selectedMarketStats.qNo || 0);
-                // PnL = Ingresos brutos - Payout obligatorio (Seed cost is theoretical liquidity provided, not a direct subtraction from net bets)
-                const pnlYesSinFee = totalVolume - qYes;
-                const pnlYesConFee = pnlYesSinFee + collectedFees;
-                const pnlNoSinFee = totalVolume - qNo;
-                const pnlNoConFee = pnlNoSinFee + collectedFees;
-                const renderScenarioRow = (
-                  label: string,
-                  color: string,
-                  payout: number,
-                  pnlSin: number,
-                  pnlCon: number,
-                  vol: number,
-                  fees: number,
-                  seed: number,
-                ) => (
-                  <tr className="border-b border-white/5 hover:bg-white/[0.02] transition-colors h-16">
-                    <td className="pl-6">
-                      <span
-                        className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full tracking-wider ${color === "text-[#64c883]" ? "bg-[#64c883]/10 text-[#64c883]" : "bg-[#e16464]/10 text-[#e16464]"}`}
-                      >
-                        GANA {label}
-                      </span>
-                    </td>
-                    <td className="text-center text-xs font-bold text-white">
-                      $
-                      {vol.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                      })}
-                    </td>
-                    <td className="text-center text-xs font-bold text-[#e16464]">
-                      -$
-                      {payout.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                      })}
-                    </td>
-                    <td className="text-center text-xs font-bold text-[#64c883]">
-                      +$
-                      {fees.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                      })}
-                    </td>
-                    <td
-                      className={`text-center text-sm font-black ${pnlSin >= 0 ? "text-[#64c883]" : "text-[#e16464]"}`}
-                    >
-                      {pnlSin >= 0 ? "+" : ""}$
-                      {pnlSin.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                      })}
-                    </td>
-                    <td
-                      className={`text-center text-sm font-black ${pnlCon >= 0 ? "text-[#64c883]" : "text-[#e16464]"}`}
-                    >
-                      {pnlCon >= 0 ? "+" : ""}$
-                      {pnlCon.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                      })}
-                    </td>
-                    <td className="pr-6 text-right">
-                      <div className="flex flex-col items-end">
-                        <span className="text-sm font-bold text-white">
-                          $
-                          {(vol + fees + seed - payout).toLocaleString(
-                            undefined,
-                            { minimumFractionDigits: 2 },
-                          )}
-                        </span>
-                        <span className="text-[8px] text-gray-600 uppercase font-bold tracking-tighter mt-0.5">
-                          Efectivo Final
-                        </span>
-                      </div>
-                    </td>
-                  </tr>
-                );
+                // Option B: todo el pool va a ganadores — WIN siempre recupera seed y gana fees
+                // PnL WIN = fees (igual para cualquier outcome)
+                // Pool distribuido = totalPool (100%)
+                const winPnL = collectedFees;
 
                 return (
                   <div className="pt-8 border-t border-white/10 space-y-4">
                     <div className="flex items-center gap-3">
                       <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.1em]">
-                        Escenarios de PnL WIN (Consolidado)
+                        Escenarios de PnL WIN — Pago Proporcional (Option B)
                       </h3>
                       <div className="flex-1 h-[1px] bg-white/5" />
                       <div className="group relative">
-                        <span className="cursor-help text-xs text-gray-500">
-                          ⓘ
-                        </span>
-                        <div className="absolute bottom-full right-0 mb-2 w-72 p-3 bg-[#1a1a1a] text-[10px] text-gray-400 rounded-xl border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-                          Muestra el impacto financiero para la plataforma. PnL
-                          = Pool − Payout (± Fees).
+                        <span className="cursor-help text-xs text-gray-500">ⓘ</span>
+                        <div className="absolute bottom-full right-0 mb-2 w-80 p-3 bg-[#1a1a1a] text-[10px] text-gray-400 rounded-xl border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                          Pago proporcional (Option B): el pool completo se distribuye entre ganadores. WIN siempre recupera el seed y su ganancia = fees cobradas durante el trading (1.5% LMSR + 2% P2P). El resultado es idéntico para cualquier outcome.
                         </div>
+                      </div>
+                    </div>
+
+                    {/* Resumen fijo de WIN */}
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="bg-[#0a0a0a] border border-[#64c883]/20 rounded-2xl p-4 text-center">
+                        <p className="text-[9px] text-gray-400 uppercase tracking-wider mb-1">Fees Cobradas (1.5%)</p>
+                        <p className="text-xl font-extrabold text-[#64c883]">+${collectedFees.toFixed(2)}</p>
+                        <p className="text-[9px] text-gray-600 mt-1">Ingreso WIN (cualquier outcome)</p>
+                      </div>
+                      <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl p-4 text-center">
+                        <p className="text-[9px] text-gray-400 uppercase tracking-wider mb-1">Seed Recuperado</p>
+                        <p className="text-xl font-extrabold text-white">${seedCost.toFixed(2)}</p>
+                        <p className="text-[9px] text-[#64c883] mt-1">✓ Siempre 100%</p>
+                      </div>
+                      <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl p-4 text-center">
+                        <p className="text-[9px] text-gray-400 uppercase tracking-wider mb-1">Pool a Ganadores</p>
+                        <p className="text-xl font-extrabold text-white">${totalPool.toFixed(2)}</p>
+                        <p className="text-[9px] text-gray-600 mt-1">100% del pool usuario</p>
                       </div>
                     </div>
 
@@ -1167,39 +1111,45 @@ function AdminPage() {
                         <thead>
                           <tr className="bg-[#171717] border-b border-white/5 h-10 text-[9px] font-bold text-gray-500 uppercase tracking-widest">
                             <th className="pl-6">OUTCOME</th>
-                            <th className="text-center">VOLUMEN NETO</th>
-                            <th className="text-center">PAGO GANADORES</th>
-                            <th className="text-center">FEES (10%)</th>
-                            <th className="text-center">PNL (SIN FEE)</th>
-                            <th className="text-center text-white">
-                              PNL (CON FEE)
-                            </th>
-                            <th className="pr-6 text-right text-[#64c883]">
-                              TESORERIA WIN
-                            </th>
+                            <th className="text-center">POOL USUARIOS</th>
+                            <th className="text-center">DISTRIBUIDO A GANADORES</th>
+                            <th className="text-center">FEES WIN (1.5%)</th>
+                            <th className="text-center text-[#64c883]">PNL WIN</th>
+                            <th className="pr-6 text-right text-[#64c883]">TESORERÍA WIN</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
-                          {renderScenarioRow(
-                            "YES",
-                            "text-[#64c883]",
-                            qYes,
-                            pnlYesSinFee,
-                            pnlYesConFee,
-                            totalVolume,
-                            collectedFees,
-                            seedCost,
-                          )}
-                          {renderScenarioRow(
-                            "NO",
-                            "text-[#e16464]",
-                            qNo,
-                            pnlNoSinFee,
-                            pnlNoConFee,
-                            totalVolume,
-                            collectedFees,
-                            seedCost,
-                          )}
+                          {["YES", "NO"].map((label) => (
+                            <tr key={label} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors h-16">
+                              <td className="pl-6">
+                                <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full tracking-wider ${label === "YES" ? "bg-[#64c883]/10 text-[#64c883]" : "bg-[#e16464]/10 text-[#e16464]"}`}>
+                                  GANA {label}
+                                </span>
+                              </td>
+                              <td className="text-center text-xs font-bold text-white">
+                                ${totalPool.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                              </td>
+                              <td className="text-center text-xs font-bold text-[#e16464]">
+                                -${totalPool.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                              </td>
+                              <td className="text-center text-xs font-bold text-[#64c883]">
+                                +${collectedFees.toFixed(2)}
+                              </td>
+                              <td className="text-center text-sm font-black text-[#64c883]">
+                                +${winPnL.toFixed(2)}
+                              </td>
+                              <td className="pr-6 text-right">
+                                <div className="flex flex-col items-end">
+                                  <span className="text-sm font-bold text-white">
+                                    ${(collectedFees + seedCost).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                  </span>
+                                  <span className="text-[8px] text-gray-600 uppercase font-bold tracking-tighter mt-0.5">
+                                    Fees + Seed
+                                  </span>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
                         </tbody>
                       </table>
                     </div>

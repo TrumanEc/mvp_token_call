@@ -28,6 +28,8 @@ export async function GET(
         maxPriceImpact: true,
         platformFee: true,
         status: true,
+        yesPool: true,
+        noPool: true,
       },
     });
 
@@ -45,7 +47,7 @@ export async function GET(
     let lmsrFeeAmount = 0;
     let obFeeAmount = 0;
     let newPrices = { pYes: 0, pNo: 0 };
-    const platformFeeRate = market.platformFee ? Number(market.platformFee) : 0.1;
+    const platformFeeRate = market.platformFee ? Number(market.platformFee) : 0.015;
 
     if (amountStr && !sharesStr) {
       totalCost = parseFloat(amountStr);
@@ -72,8 +74,17 @@ export async function GET(
       const avgPrice = shares > 0 ? totalCost / shares : 0;
       const netInvestment = totalCost - feeAmount;
 
+      // Option B: estimated proportional payout per share after this buy
+      const currentTotalPool = Number(market.yesPool) + Number(market.noPool);
+      const poolAfterBuy = currentTotalPool + netInvestment;
+      const currentWinningShares = side === "YES" ? market.qYes : market.qNo;
+      const totalWinningSharesAfter = currentWinningShares + shares;
+      const estimatedPayoutPerShare = totalWinningSharesAfter > 0
+        ? poolAfterBuy / totalWinningSharesAfter
+        : 1;
+
       const validation = lmsrService.validateBetAmount(
-        netInvestment, 
+        netInvestment,
         market.qYes,
         market.qNo,
         market.b,
@@ -95,6 +106,7 @@ export async function GET(
         platformFeeRate,
         lmsrFeeRate: platformFeeRate,
         obFeeRate: 0.02,
+        estimatedPayoutPerShare,
         newProbabilities: {
           yes: newPrices.pYes,
           no: newPrices.pNo,
@@ -132,8 +144,17 @@ export async function GET(
       const avgPrice = shares > 0 ? totalCost / shares : 0;
       const netInvestment = totalCost - feeAmount;
 
+      // Option B: estimated proportional payout per share after this buy
+      const currentTotalPool2 = Number(market.yesPool) + Number(market.noPool);
+      const poolAfterBuy2 = currentTotalPool2 + netInvestment;
+      const currentWinningShares2 = side === "YES" ? market.qYes : market.qNo;
+      const totalWinningSharesAfter2 = currentWinningShares2 + shares;
+      const estimatedPayoutPerShare2 = totalWinningSharesAfter2 > 0
+        ? poolAfterBuy2 / totalWinningSharesAfter2
+        : 1;
+
       const validation = lmsrService.validateBetAmount(
-        netInvestment, 
+        netInvestment,
         market.qYes,
         market.qNo,
         market.b,
@@ -155,6 +176,7 @@ export async function GET(
         platformFeeRate,
         lmsrFeeRate: platformFeeRate,
         obFeeRate: 0.02,
+        estimatedPayoutPerShare: estimatedPayoutPerShare2,
         newProbabilities: {
           yes: newPrices.pYes,
           no: newPrices.pNo,

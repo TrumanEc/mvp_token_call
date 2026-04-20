@@ -43,6 +43,7 @@ function BuyForm({
     obFeeAmount?: number;
     lmsrFeeRate?: number;
     obFeeRate?: number;
+    estimatedPayoutPerShare?: number;
   } | null>(null);
 
   const currentPrice =
@@ -50,15 +51,18 @@ function BuyForm({
   const amountNum = parseFloat(amount) || 0;
   const netAmount = quote
     ? quote.totalCost - (quote.feeAmount ?? 0)
-    : amountNum * 0.9;
+    : amountNum * 0.985; // 1.5% fee fallback
   const estimatedShares = quote
     ? quote.shares
     : netAmount > 0
       ? netAmount / currentPrice
       : 0;
-  const potentialReturnValue = estimatedShares;
-  const potentialProfit = potentialReturnValue - netAmount;
-  const roi = netAmount > 0 ? (potentialProfit / netAmount) * 100 : 0;
+
+  // Option B: payout proporcional — el pool completo se divide entre los shares ganadores
+  const payoutPerShare = quote?.estimatedPayoutPerShare ?? 1;
+  const potentialReturnValue = estimatedShares * payoutPerShare;
+  const potentialProfit = potentialReturnValue - amountNum;
+  const roi = amountNum > 0 ? (potentialProfit / amountNum) * 100 : 0;
 
   useEffect(() => {
     if (prefillOrder && prefillOrder.shares && prefillOrder.price) {
@@ -240,10 +244,25 @@ function BuyForm({
                 </div>
               </div>
             )}
-            <div className="flex justify-between items-center px-4 py-4 bg-[#64c883]/5 rounded-xl border border-[#64c883]/10">
-              <span className="text-xs text-[#64c883]">Pago si gana {side} ({Math.max(0, roi).toFixed(0)}%)</span>
-              <span className="text-base font-extrabold text-[#64c883]">
-                {quoteLoading ? "..." : `$${potentialReturnValue.toFixed(2)}`}
+            <div className="flex flex-col gap-1 px-4 py-4 bg-[#64c883]/5 rounded-xl border border-[#64c883]/10">
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-[#64c883]">
+                  Pago estimado si gana {side} ({roi >= 0 ? "+" : ""}{roi.toFixed(0)}% ROI)
+                </span>
+                <span className="text-base font-extrabold text-[#64c883]">
+                  {quoteLoading ? "..." : `$${potentialReturnValue.toFixed(2)}`}
+                </span>
+              </div>
+              {!quoteLoading && quote?.estimatedPayoutPerShare !== undefined && (
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] text-gray-500">~${quote.estimatedPayoutPerShare.toFixed(3)} por share (proporcional al pool)</span>
+                  <span className="text-[10px] text-gray-500">{estimatedShares.toFixed(2)} sh</span>
+                </div>
+              )}
+            </div>
+            <div className="flex items-start gap-2 px-3 py-2 bg-white/[0.02] rounded-xl border border-white/5">
+              <span className="text-[9px] text-gray-500 leading-relaxed">
+                ℹ️ Pago proporcional: los ganadores comparten el pool completo del mercado. El pago real puede ser mayor o menor al estimado según el volumen final.
               </span>
             </div>
           </div>

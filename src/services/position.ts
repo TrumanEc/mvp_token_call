@@ -263,11 +263,14 @@ export class PositionService {
       const totalPnL = totalFairValue - totalInvested;
       const totalROI = totalInvested > 0 ? (totalPnL / totalInvested) * 100 : 0;
 
-      // Settlement Scenarios — USER perspective:
-      // If YES wins: user collects yesShares × $1, net = payout - what they paid for YES only
-      // If NO wins:  user collects noShares × $1,  net = payout - what they paid for NO only
-      const ifYesWinsPayout = yesShares;
-      const ifNoWinsPayout  = noShares;
+      // Settlement Scenarios — USER perspective (Option B: proportional payout)
+      // Pool is fully distributed to winners proportionally by shares.
+      // User payout = userShares × (totalPool / totalMarketWinningShares)
+      const totalPool = g.market.yesPool + g.market.noPool;
+      const payoutPerYesShare = marketQYes > 0 ? totalPool / marketQYes : 0;
+      const payoutPerNoShare  = marketQNo  > 0 ? totalPool / marketQNo  : 0;
+      const ifYesWinsPayout = yesShares * payoutPerYesShare;
+      const ifNoWinsPayout  = noShares  * payoutPerNoShare;
       const ifYesWinsPnL = ifYesWinsPayout - yesInvested;
       const ifNoWinsPnL  = ifNoWinsPayout  - noInvested;
 
