@@ -72,6 +72,8 @@ export async function GET(
       lmsrShares = sim.lmsrShares;
       obShares = sim.obShares;
       newPrices = { pYes: sim.newProbabilities.yes, pNo: sim.newProbabilities.no };
+      // Use actual spent amount, not the full budget (important when primary is paused and OB liquidity is limited)
+      totalCost = sim.spentGross;
 
       const avgPrice = shares > 0 ? totalCost / shares : 0;
       const netInvestment = totalCost - feeAmount;
