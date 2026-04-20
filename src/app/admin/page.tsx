@@ -253,6 +253,32 @@ function AdminPage() {
     fetchMarkets();
   };
 
+  const [pauseModal, setPauseModal] = useState<{ id: string; name: string } | null>(null);
+  const [pauseScheduledAt, setPauseScheduledAt] = useState("");
+
+  const handlePausePrimary = async (id: string, scheduledAt?: string) => {
+    await fetch(`/api/markets/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "pausePrimary",
+        ...(scheduledAt ? { scheduledAt } : {}),
+      }),
+    });
+    setPauseModal(null);
+    setPauseScheduledAt("");
+    fetchMarkets();
+  };
+
+  const handleUnpausePrimary = async (id: string) => {
+    await fetch(`/api/markets/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "unpausePrimary" }),
+    });
+    fetchMarkets();
+  };
+
   const handleResolve = async (outcome: "YES" | "NO" | "VOID") => {
     setResolving(true);
     try {
@@ -488,6 +514,31 @@ function AdminPage() {
                         >
                           {market.status}
                         </span>
+                        {market.status === "ACTIVE" && (() => {
+                          const isPaused =
+                            market.primaryMarketPaused ||
+                            (market.primaryPauseScheduledAt &&
+                              new Date(market.primaryPauseScheduledAt) <= new Date());
+                          const isScheduled =
+                            !market.primaryMarketPaused &&
+                            market.primaryPauseScheduledAt &&
+                            new Date(market.primaryPauseScheduledAt) > new Date();
+                          if (isPaused) {
+                            return (
+                              <span className="px-2 py-0.5 text-[9px] font-bold rounded-full uppercase tracking-wider bg-orange-500/20 text-orange-400">
+                                ⏸ Primario Pausado
+                              </span>
+                            );
+                          }
+                          if (isScheduled) {
+                            return (
+                              <span className="px-2 py-0.5 text-[9px] font-bold rounded-full uppercase tracking-wider bg-yellow-500/20 text-yellow-400">
+                                ⏱ Pausa programada
+                              </span>
+                            );
+                          }
+                          return null;
+                        })()}
                         <h4 className="text-base font-bold text-white group-hover:text-[#64c883] transition-colors">
                           {market.question}
                         </h4>
@@ -504,6 +555,27 @@ function AdminPage() {
                             Activar
                           </button>
                         )}
+                        {market.status === "ACTIVE" && (() => {
+                          const isPaused =
+                            market.primaryMarketPaused ||
+                            (market.primaryPauseScheduledAt &&
+                              new Date(market.primaryPauseScheduledAt) <= new Date());
+                          return isPaused ? (
+                            <button
+                              onClick={() => handleUnpausePrimary(market.id)}
+                              className="px-3 py-1 bg-yellow-500 text-[#0a0a0a] text-[9px] font-bold rounded-lg uppercase tracking-wider"
+                            >
+                              ▶ Reanudar
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => setPauseModal({ id: market.id, name: market.playerName || market.question })}
+                              className="px-3 py-1 bg-orange-500 text-white text-[9px] font-bold rounded-lg uppercase tracking-wider"
+                            >
+                              ⏸ Pausar
+                            </button>
+                          );
+                        })()}
                         {(market.status === "ACTIVE" ||
                           market.status === "CLOSED") && (
                           <button
@@ -1171,10 +1243,10 @@ function AdminPage() {
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <div className="p-6 bg-[#121212] rounded-2xl border border-white/5">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      <div className="p-5 bg-[#121212] rounded-2xl border border-white/5">
                         <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider mb-2">
-                          Total Pagado a Usuarios
+                          Total Pagado a Ganadores
                         </p>
                         <p className="text-2xl font-extrabold text-[#64c883]">
                           ${" "}
@@ -1185,38 +1257,46 @@ function AdminPage() {
                         </p>
                         <p className="text-[9px] text-gray-500 mt-1">
                           {selectedMarketStats.resolutionReport.results.winners}{" "}
-                          ganadores
+                          ganador{selectedMarketStats.resolutionReport.results.winners !== 1 ? "es" : ""}
                         </p>
                       </div>
-                      <div className="p-6 bg-[#121212] rounded-2xl border border-white/5">
+                      <div className="p-5 bg-[#121212] rounded-2xl border border-white/5">
                         <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider mb-2">
-                          Total Perdido por Usuarios
-                        </p>
-                        <p className="text-2xl font-extrabold text-[#e16464]">
-                          ${" "}
-                          {Number(
-                            selectedMarketStats.resolutionReport.results
-                              .totalLosses || 0,
-                          ).toFixed(2)}
-                        </p>
-                        <p className="text-[9px] text-gray-500 mt-1">
-                          {selectedMarketStats.resolutionReport.results.losers}{" "}
-                          perdedores
-                        </p>
-                      </div>
-                      <div className="p-6 bg-[#64c883]/10 rounded-2xl border border-[#64c883]/20">
-                        <p className="text-[9px] text-[#64c883] font-bold uppercase tracking-wider mb-2">
-                          Comisión Final WIN
+                          Pago por Share Ganador
                         </p>
                         <p className="text-2xl font-extrabold text-white">
                           ${" "}
                           {Number(
-                            selectedMarketStats.resolutionReport.fees.total ||
-                              0,
+                            selectedMarketStats.resolutionReport.payoutPerShare || 0,
+                          ).toFixed(4)}
+                        </p>
+                        <p className="text-[9px] text-gray-500 mt-1">
+                          Pool ÷ shares ganadores
+                        </p>
+                      </div>
+                      <div className="p-5 bg-[#121212] rounded-2xl border border-white/5">
+                        <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider mb-2">
+                          Posiciones Perdedoras
+                        </p>
+                        <p className="text-2xl font-extrabold text-[#e16464]">
+                          {selectedMarketStats.resolutionReport.results.losers}
+                        </p>
+                        <p className="text-[9px] text-gray-500 mt-1">
+                          ${Number(selectedMarketStats.resolutionReport.results.totalLosses || 0).toFixed(2)} en riesgo
+                        </p>
+                      </div>
+                      <div className="p-5 bg-[#64c883]/10 rounded-2xl border border-[#64c883]/20">
+                        <p className="text-[9px] text-[#64c883] font-bold uppercase tracking-wider mb-2">
+                          Fees WIN (1.5%)
+                        </p>
+                        <p className="text-2xl font-extrabold text-white">
+                          ${" "}
+                          {Number(
+                            selectedMarketStats.resolutionReport.fees?.secondary || 0,
                           ).toFixed(2)}
                         </p>
                         <p className="text-[9px] text-gray-400 mt-1">
-                          Primaria + Secundaria
+                          Cobradas en trading · Seed ✓ recuperado
                         </p>
                       </div>
                     </div>
@@ -1232,20 +1312,22 @@ function AdminPage() {
                               Lado
                             </th>
                             <th className="p-4 text-[9px] font-bold text-gray-400 uppercase tracking-wider text-right">
-                              Inversión (Usuario)
+                              Invertido
                             </th>
                             <th className="p-4 text-[9px] font-bold text-gray-400 uppercase tracking-wider text-right">
-                              Pago Realizado
+                              Cobrado
                             </th>
                             <th className="p-4 text-[9px] font-bold text-white uppercase tracking-wider text-right bg-white/5">
-                              RESULTADO WIN
+                              P&amp;L USUARIO
                             </th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
                           {selectedMarketStats.resolutionReport.positions.map(
                             (pos: any) => {
-                              const winResult = pos.amount - pos.payout;
+                              const userPnL = pos.payout - pos.amount;
+                              const isWinner = pos.payout > 0 && userPnL > 0;
+                              const isLoser = pos.payout === 0;
                               return (
                                 <tr key={pos.id} className="hover:bg-white/5">
                                   <td className="p-4 text-xs font-bold text-white">
@@ -1265,14 +1347,14 @@ function AdminPage() {
                                   <td className="p-4 text-sm font-bold text-white/40 text-right">
                                     $ {pos.amount.toFixed(2)}
                                   </td>
-                                  <td className="p-4 text-sm font-bold text-[#e16464] text-right">
-                                    – $ {pos.payout.toFixed(2)}
+                                  <td className={`p-4 text-sm font-bold text-right ${isWinner ? "text-[#64c883]" : "text-gray-500"}`}>
+                                    {isLoser ? "–" : `$ ${pos.payout.toFixed(2)}`}
                                   </td>
                                   <td
-                                    className={`p-4 text-sm font-black text-right bg-white/[0.02] ${winResult >= 0 ? "text-[#64c883]" : "text-[#e16464]"}`}
+                                    className={`p-4 text-sm font-black text-right bg-white/[0.02] ${isWinner ? "text-[#64c883]" : "text-[#e16464]"}`}
                                   >
-                                    {winResult >= 0 ? "+" : ""}${" "}
-                                    {winResult.toFixed(2)}
+                                    {isWinner ? "+" : ""}
+                                    {isLoser ? `– $ ${pos.amount.toFixed(2)}` : `$ ${userPnL.toFixed(2)}`}
                                   </td>
                                 </tr>
                               );
@@ -1714,6 +1796,66 @@ function AdminPage() {
             {creating ? "Creando..." : "Lanzar Mercado"}
           </button>
         </div>
+      </Modal>
+
+      {/* Pause Primary Market Modal */}
+      <Modal
+        isOpen={!!pauseModal}
+        onClose={() => { setPauseModal(null); setPauseScheduledAt(""); }}
+        title="Pausar Mercado Primario"
+      >
+        {pauseModal && (
+          <div className="space-y-6 pt-4">
+            <div className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-xl">
+              <p className="text-xs font-bold text-orange-400 mb-1">¿Qué ocurre al pausar?</p>
+              <p className="text-[11px] text-gray-400">
+                Los usuarios <span className="text-white font-bold">no podrán comprar posiciones nuevas</span> en el mercado primario (LMSR).
+                El <span className="text-white font-bold">mercado secundario (P2P) seguirá activo</span> — las posiciones existentes se pueden comprar y vender normalmente.
+              </p>
+            </div>
+
+            <div>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Mercado</p>
+              <p className="text-sm font-bold text-white">{pauseModal.name}</p>
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Tipo de pausa</p>
+
+              <button
+                onClick={() => handlePausePrimary(pauseModal.id)}
+                className="w-full py-3 bg-orange-500 text-white text-xs font-bold rounded-xl uppercase tracking-wider hover:bg-orange-600 transition-all"
+              >
+                ⏸ Pausar ahora (manual)
+              </button>
+
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-px bg-white/10" />
+                <span className="text-[10px] text-gray-500 uppercase tracking-wider">o programar</span>
+                <div className="flex-1 h-px bg-white/10" />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                  Pausar automáticamente en:
+                </label>
+                <input
+                  type="datetime-local"
+                  value={pauseScheduledAt}
+                  onChange={(e) => setPauseScheduledAt(e.target.value)}
+                  className="w-full bg-[#1a1a1a] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-orange-500/50"
+                />
+                <button
+                  onClick={() => pauseScheduledAt && handlePausePrimary(pauseModal.id, pauseScheduledAt)}
+                  disabled={!pauseScheduledAt}
+                  className="w-full py-3 bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 text-xs font-bold rounded-xl uppercase tracking-wider hover:bg-yellow-500/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  ⏱ Programar pausa
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </Modal>
 
       <Modal

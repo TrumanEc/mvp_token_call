@@ -30,11 +30,25 @@ export async function GET(
         status: true,
         yesPool: true,
         noPool: true,
+        primaryMarketPaused: true,
+        primaryPauseScheduledAt: true,
       },
     });
 
     if (!market) {
       return NextResponse.json({ error: "Market not found" }, { status: 404 });
+    }
+
+    const primaryPaused =
+      market.primaryMarketPaused ||
+      (market.primaryPauseScheduledAt &&
+        new Date(market.primaryPauseScheduledAt) <= new Date());
+
+    if (primaryPaused) {
+      return NextResponse.json(
+        { error: "Mercado primario pausado", primaryPaused: true },
+        { status: 403 },
+      );
     }
 
     const lmsrService = new LmsrService();
@@ -56,10 +70,10 @@ export async function GET(
       }
 
       const { RouterService } = await import("@/services/router.service");
-      
+
       const sim = await RouterService.simulateMarketBuy({
-        marketId: id, 
-        side, 
+        marketId: id,
+        side,
         budget: totalCost,
       });
 
@@ -134,11 +148,11 @@ export async function GET(
       feeAmount = totalCost - netCost;
       lmsrFeeAmount = feeAmount;
       obFeeAmount = 0;
-      
+
       const newQYes = side === "YES" ? market.qYes + shares : market.qYes;
       const newQNo = side === "NO" ? market.qNo + shares : market.qNo;
       newPrices = lmsrService.getPrice(newQYes, newQNo, market.b);
-      lmsrShares = shares; 
+      lmsrShares = shares;
       obShares = 0;
 
       const avgPrice = shares > 0 ? totalCost / shares : 0;

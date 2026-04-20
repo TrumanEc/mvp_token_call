@@ -580,40 +580,114 @@ export function PredictionCard({
         </div>
       </div>
 
+      {/* Primary market pause banner */}
+      {(() => {
+        const isPaused =
+          market.primaryMarketPaused ||
+          (market.primaryPauseScheduledAt &&
+            new Date(market.primaryPauseScheduledAt) <= new Date());
+        const isScheduled =
+          !market.primaryMarketPaused &&
+          market.primaryPauseScheduledAt &&
+          new Date(market.primaryPauseScheduledAt) > new Date();
+        if (isPaused) {
+          return (
+            <div className="flex items-start gap-3 px-4 py-3 bg-orange-500/10 border border-orange-500/20 rounded-xl">
+              <span className="text-orange-400 text-base mt-0.5">⏸</span>
+              <div>
+                <p className="text-[11px] font-bold text-orange-400 uppercase tracking-wider">
+                  Mercado primario pausado
+                </p>
+                <p className="text-[10px] text-gray-400 mt-0.5">
+                  No se pueden comprar nuevas posiciones. El mercado secundario (P2P) sigue activo — puedes comprar posiciones de otros usuarios en el orden de compra.
+                </p>
+              </div>
+            </div>
+          );
+        }
+        if (isScheduled) {
+          return (
+            <div className="flex items-start gap-3 px-4 py-3 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
+              <span className="text-yellow-400 text-base mt-0.5">⏱</span>
+              <div>
+                <p className="text-[11px] font-bold text-yellow-400 uppercase tracking-wider">
+                  Pausa programada
+                </p>
+                <p className="text-[10px] text-gray-400 mt-0.5">
+                  El mercado primario se pausará el{" "}
+                  {new Date(market.primaryPauseScheduledAt).toLocaleString("es-CO", {
+                    day: "2-digit",
+                    month: "short",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                  . Hasta entonces puedes seguir comprando.
+                </p>
+              </div>
+            </div>
+          );
+        }
+        return null;
+      })()}
+
       {/* BUY / SELL tabs */}
-      <div className="flex gap-1 bg-[#0d0d0d] rounded-xl p-1">
-        <button
-          type="button"
-          onClick={() => setMode("BUY")}
-          className={`flex-1 py-2 rounded-lg text-[11px] font-extrabold uppercase tracking-wider transition-all ${
-            mode === "BUY"
-              ? "bg-[#64c883] text-[#0a0a0a] shadow"
-              : "text-gray-500 hover:text-white"
-          }`}
-        >
-          Comprar
-        </button>
-        {hasPositionsToSell && (
-          <button
-            type="button"
-            onClick={() => setMode("SELL")}
-            className={`flex-1 py-2 rounded-lg text-[11px] font-extrabold uppercase tracking-wider transition-all ${
-              mode === "SELL"
-                ? "bg-orange-500 text-white shadow"
-                : "text-gray-500 hover:text-orange-400"
-            }`}
-          >
-            Vender
-          </button>
-        )}
-      </div>
+      {(() => {
+        const isPaused =
+          market.primaryMarketPaused ||
+          (market.primaryPauseScheduledAt &&
+            new Date(market.primaryPauseScheduledAt) <= new Date());
+        return (
+          <div className="flex gap-1 bg-[#0d0d0d] rounded-xl p-1">
+            <button
+              type="button"
+              onClick={() => !isPaused && setMode("BUY")}
+              disabled={isPaused}
+              className={`flex-1 py-2 rounded-lg text-[11px] font-extrabold uppercase tracking-wider transition-all ${
+                isPaused
+                  ? "text-gray-600 cursor-not-allowed"
+                  : mode === "BUY"
+                    ? "bg-[#64c883] text-[#0a0a0a] shadow"
+                    : "text-gray-500 hover:text-white"
+              }`}
+            >
+              {isPaused ? "Compra pausada" : "Comprar"}
+            </button>
+            {hasPositionsToSell && (
+              <button
+                type="button"
+                onClick={() => setMode("SELL")}
+                className={`flex-1 py-2 rounded-lg text-[11px] font-extrabold uppercase tracking-wider transition-all ${
+                  mode === "SELL"
+                    ? "bg-orange-500 text-white shadow"
+                    : "text-gray-500 hover:text-orange-400"
+                }`}
+              >
+                Vender
+              </button>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Form content */}
-      {mode === "BUY" ? (
-        <BuyForm market={market} userId={userId} userBalance={userBalance} onSuccess={onSuccess} prefillOrder={prefillOrder} />
-      ) : (
-        <SellForm market={market} userId={userId} onSuccess={onSuccess} />
-      )}
+      {(() => {
+        const isPaused =
+          market.primaryMarketPaused ||
+          (market.primaryPauseScheduledAt &&
+            new Date(market.primaryPauseScheduledAt) <= new Date());
+        if (isPaused && mode === "BUY") {
+          return (
+            <div className="py-6 text-center text-[11px] text-gray-500">
+              El mercado secundario sigue disponible — revisa las órdenes P2P abajo.
+            </div>
+          );
+        }
+        return mode === "BUY" ? (
+          <BuyForm market={market} userId={userId} userBalance={userBalance} onSuccess={onSuccess} prefillOrder={prefillOrder} />
+        ) : (
+          <SellForm market={market} userId={userId} onSuccess={onSuccess} />
+        );
+      })()}
 
       {/* Footer */}
       <div className="text-center pt-2">

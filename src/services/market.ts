@@ -176,6 +176,48 @@ export class MarketService {
     });
   }
 
+  /** Returns true if the primary market is paused (manual or scheduled). */
+  static isPrimaryPaused(market: {
+    primaryMarketPaused: boolean;
+    primaryPauseScheduledAt: Date | null;
+  }): boolean {
+    if (market.primaryMarketPaused) return true;
+    if (
+      market.primaryPauseScheduledAt &&
+      new Date(market.primaryPauseScheduledAt) <= new Date()
+    )
+      return true;
+    return false;
+  }
+
+  /** Pause the primary market immediately (manual) or schedule an auto-pause. */
+  static async pausePrimary(
+    id: string,
+    opts: { scheduledAt?: Date } = {},
+  ) {
+    if (opts.scheduledAt) {
+      return prisma.market.update({
+        where: { id },
+        data: {
+          primaryPauseScheduledAt: opts.scheduledAt,
+          primaryMarketPaused: false,
+        },
+      });
+    }
+    return prisma.market.update({
+      where: { id },
+      data: { primaryMarketPaused: true, primaryPauseScheduledAt: null },
+    });
+  }
+
+  /** Resume the primary market (removes manual flag and any schedule). */
+  static async unpausePrimary(id: string) {
+    return prisma.market.update({
+      where: { id },
+      data: { primaryMarketPaused: false, primaryPauseScheduledAt: null },
+    });
+  }
+
   /**
    * Recover seed from an inactive market (no trades since creation).
    * Voids the market and returns the seed cost to a designated admin wallet / reserve.
