@@ -46,6 +46,19 @@ function BuyForm({
     estimatedPayoutPerShare?: number;
   } | null>(null);
 
+  const isPrimaryPaused =
+    market.primaryMarketPaused ||
+    (market.primaryPauseScheduledAt &&
+      new Date(market.primaryPauseScheduledAt) <= new Date());
+
+  // P2P liquidity available for the selected side
+  const obOrders: any[] = (market.orders || []).filter(
+    (o: any) => o.type === "SELL" && o.side === side && ["OPEN", "PARTIAL"].includes(o.status)
+  );
+  const obAvailableShares = obOrders.reduce((s: number, o: any) => s + (o.remainingShares || 0), 0);
+  const obAvailableNetCost = obOrders.reduce((s: number, o: any) => s + (o.remainingShares || 0) * o.pricePerShare, 0);
+  const obAvailableGross = obAvailableNetCost > 0 ? obAvailableNetCost / 0.98 : 0; // 2% P2P fee
+
   const currentPrice =
     (side === "YES" ? market.odds.yesOdds : market.odds.noOdds) / 100;
   const amountNum = parseFloat(amount) || 0;
@@ -163,10 +176,40 @@ function BuyForm({
               placeholder="0.00"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="w-full bg-[#0d0d0d] border border-[#272727] rounded-xl px-4 py-3 text-white font-bold text-lg outline-none transition-all group-focus-within:border-[#64c883] group-focus-within:ring-1 group-focus-within:ring-[#64c883]/20"
+              disabled={isPrimaryPaused && obAvailableShares <= 0}
+              className="w-full bg-[#0d0d0d] border border-[#272727] rounded-xl px-4 py-3 text-white font-bold text-lg outline-none transition-all group-focus-within:border-[#64c883] group-focus-within:ring-1 group-focus-within:ring-[#64c883]/20 disabled:opacity-40 disabled:cursor-not-allowed"
             />
             <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold">$</div>
           </div>
+
+          {/* P2P liquidity info when primary is paused */}
+          {isPrimaryPaused && (
+            obAvailableShares > 0 ? (
+              <div className="flex items-center justify-between px-3 py-2 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+                <div>
+                  <p className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">Disponible en P2P</p>
+                  <p className="text-[11px] text-gray-300 mt-0.5">
+                    <span className="font-bold text-white">{obAvailableShares.toFixed(2)} shares</span>
+                    {" · "}costo total ~<span className="font-bold text-white">${obAvailableGross.toFixed(2)}</span>
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setAmount(Math.min(obAvailableGross, userBalance).toFixed(2))}
+                  className="shrink-0 ml-3 px-3 py-1.5 bg-blue-500/20 text-blue-400 border border-blue-500/30 text-[10px] font-bold rounded-lg uppercase tracking-wider hover:bg-blue-500/30 transition-all"
+                >
+                  Máx P2P
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 px-3 py-2 bg-[#e16464]/10 border border-[#e16464]/20 rounded-xl">
+                <span className="text-[#e16464] text-sm">⊘</span>
+                <p className="text-[11px] text-[#e16464] font-bold">
+                  Sin órdenes P2P disponibles para {side}. Espera a que otros usuarios pongan posiciones en venta.
+                </p>
+              </div>
+            )
+          )}
         </div>
 
         {amountNum > 0 && (
@@ -284,15 +327,26 @@ function BuyForm({
 
         <Button
           type="submit"
-          disabled={!amount || loading || quoteLoading || amountNum <= 0 || !!quote?.wouldExceedCap}
+          disabled={
+            !amount ||
+            loading ||
+            quoteLoading ||
+            amountNum <= 0 ||
+            !!quote?.wouldExceedCap ||
+            (isPrimaryPaused && obAvailableShares <= 0)
+          }
           loading={loading || quoteLoading}
           className={`w-full py-6 rounded-2xl text-lg font-bold transition-all shadow-xl ${
-            side === "YES"
-              ? "bg-[#64c883] text-[#0a0a0a] hover:bg-[#74db93] shadow-[#64c883]/20"
-              : "bg-[#e16464] text-white hover:bg-[#ef7a7a] shadow-[#e16464]/20"
+            isPrimaryPaused && obAvailableShares <= 0
+              ? "bg-gray-700 text-gray-500 cursor-not-allowed"
+              : side === "YES"
+                ? "bg-[#64c883] text-[#0a0a0a] hover:bg-[#74db93] shadow-[#64c883]/20"
+                : "bg-[#e16464] text-white hover:bg-[#ef7a7a] shadow-[#e16464]/20"
           }`}
         >
-          Confirmar {side}
+          {isPrimaryPaused && obAvailableShares <= 0
+            ? "Sin liquidez P2P"
+            : `Confirmar ${side}`}
         </Button>
       </form>
     </>
