@@ -34,9 +34,6 @@ export class RouterService {
         market.primaryMarketPaused ||
         (market.primaryPauseScheduledAt &&
           new Date(market.primaryPauseScheduledAt) <= new Date());
-      if (isPrimaryPaused) {
-        throw new Error("El mercado primario está pausado. Solo el mercado secundario está disponible.");
-      }
 
       const user = await tx.user.findUnique({ where: { id: data.userId } });
       if (!user) throw new Error("Usuario no encontrado");
@@ -89,7 +86,9 @@ export class RouterService {
         let bestAsk = askIndex < asks.length ? asks[askIndex] : null;
 
         // Caso A: El LMSR está por debajo o igual al precio del OrderBook
-        if (!bestAsk || lmsrSpotPrice < bestAsk.pricePerShare - 0.0001) {
+        // Si el mercado primario está pausado, saltar LMSR y solo operar vía OB
+        if (isPrimaryPaused && !bestAsk) break;
+        if (!isPrimaryPaused && (!bestAsk || lmsrSpotPrice < bestAsk.pricePerShare - 0.0001)) {
           let safeNetToLMSR = remainingGross * (1 - lmsrFeeRate);
           
           if (bestAsk) {
@@ -203,6 +202,13 @@ export class RouterService {
 
       const realSpentGross = budgetNum - remainingGross;
       const totalSharesCollected = lmsrSharesCollected + obSharesCollected;
+
+      if (totalSharesCollected <= 0) {
+        if (isPrimaryPaused) {
+          throw new Error("No hay órdenes P2P disponibles. El mercado primario está pausado.");
+        }
+        throw new Error("No se pudieron adquirir shares. Intenta con un monto mayor.");
+      }
       const avgPriceOverall = realSpentGross > 0 ? (realSpentGross / totalSharesCollected) : 0;
 
       await BalanceService.deduct(
@@ -284,16 +290,21 @@ export class RouterService {
 
     const market = await prisma.market.findUnique({
       where: { id: data.marketId },
-      select: { id: true, qYes: true, qNo: true, b: true, status: true, platformFee: true },
+      select: { id: true, qYes: true, qNo: true, b: true, status: true, platformFee: true, primaryMarketPaused: true, primaryPauseScheduledAt: true },
     });
 
     if (!market || market.status !== "ACTIVE") {
       throw new Error("El mercado no está activo");
     }
 
+    const simIsPrimaryPaused =
+      market.primaryMarketPaused ||
+      (market.primaryPauseScheduledAt &&
+        new Date(market.primaryPauseScheduledAt) <= new Date());
+
     const lmsrService = new LmsrService();
     let remainingGross = budgetNum;
-    
+
     const lmsrFeeRate = market.platformFee ? Number(market.platformFee) : 0.015;
     const obFeeRate = 0.02;
 
@@ -303,7 +314,7 @@ export class RouterService {
     let obNetSpent = 0;
     let lmsrFeeAmount = 0;
     let obFeeAmount = 0;
-    
+
     let currentQYes = market.qYes;
     let currentQNo = market.qNo;
 
@@ -326,7 +337,8 @@ export class RouterService {
 
       let bestAsk = askIndex < clonedAsks.length ? clonedAsks[askIndex] : null;
 
-      if (!bestAsk || lmsrSpotPrice < bestAsk.pricePerShare - 0.0001) {
+      if (simIsPrimaryPaused && !bestAsk) break;
+      if (!simIsPrimaryPaused && (!bestAsk || lmsrSpotPrice < bestAsk.pricePerShare - 0.0001)) {
         let safeNetToLMSR = remainingGross * (1 - lmsrFeeRate);
         if (bestAsk) {
           const netToReachTarget = lmsrService.getCostToReachTargetPrice(currentQYes, currentQNo, market.b, data.side, bestAsk.pricePerShare);
