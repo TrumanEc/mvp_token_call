@@ -39,18 +39,6 @@ export async function GET(
       return NextResponse.json({ error: "Market not found" }, { status: 404 });
     }
 
-    const primaryPaused =
-      market.primaryMarketPaused ||
-      (market.primaryPauseScheduledAt &&
-        new Date(market.primaryPauseScheduledAt) <= new Date());
-
-    if (primaryPaused) {
-      return NextResponse.json(
-        { error: "Mercado primario pausado", primaryPaused: true },
-        { status: 403 },
-      );
-    }
-
     const lmsrService = new LmsrService();
 
     let shares = 0;

@@ -124,9 +124,9 @@ export class RouterService {
           } else {
              break;
           }
-        } 
+        }
         // Caso B: El OrderBook ofrece mejor precio
-        else {
+        else if (bestAsk) {
           const netToClearAsk = bestAsk.remainingShares * bestAsk.pricePerShare;
           const grossToClearAsk = netToClearAsk / (1 - obFeeRate);
           
@@ -197,6 +197,8 @@ export class RouterService {
                }
              });
           }
+        } else {
+          break;
         }
       }
 
@@ -355,10 +357,10 @@ export class RouterService {
            if (data.side === "YES") currentQYes += sharesGenerados;
            else currentQNo += sharesGenerados;
         } else break;
-      } else {
+      } else if (bestAsk) {
         const netToClearAsk = bestAsk.remainingShares * bestAsk.pricePerShare;
         const grossToClearAsk = netToClearAsk / (1 - obFeeRate);
-        
+
         if (remainingGross >= grossToClearAsk) {
           obNetSpent += netToClearAsk;
           obSharesCollected += bestAsk.remainingShares;
@@ -375,6 +377,8 @@ export class RouterService {
           obFeeAmount += (spentGross - spentNet);
           remainingGross = 0;
         }
+      } else {
+        break;
       }
     }
 

@@ -631,63 +631,43 @@ export function PredictionCard({
       })()}
 
       {/* BUY / SELL tabs */}
-      {(() => {
-        const isPaused =
-          market.primaryMarketPaused ||
+      <div className="flex gap-1 bg-[#0d0d0d] rounded-xl p-1">
+        <button
+          type="button"
+          onClick={() => setMode("BUY")}
+          className={`flex-1 py-2 rounded-lg text-[11px] font-extrabold uppercase tracking-wider transition-all ${
+            mode === "BUY"
+              ? "bg-[#64c883] text-[#0a0a0a] shadow"
+              : "text-gray-500 hover:text-white"
+          }`}
+        >
+          {market.primaryMarketPaused ||
           (market.primaryPauseScheduledAt &&
-            new Date(market.primaryPauseScheduledAt) <= new Date());
-        return (
-          <div className="flex gap-1 bg-[#0d0d0d] rounded-xl p-1">
-            <button
-              type="button"
-              onClick={() => !isPaused && setMode("BUY")}
-              disabled={isPaused}
-              className={`flex-1 py-2 rounded-lg text-[11px] font-extrabold uppercase tracking-wider transition-all ${
-                isPaused
-                  ? "text-gray-600 cursor-not-allowed"
-                  : mode === "BUY"
-                    ? "bg-[#64c883] text-[#0a0a0a] shadow"
-                    : "text-gray-500 hover:text-white"
-              }`}
-            >
-              {isPaused ? "Compra pausada" : "Comprar"}
-            </button>
-            {hasPositionsToSell && (
-              <button
-                type="button"
-                onClick={() => setMode("SELL")}
-                className={`flex-1 py-2 rounded-lg text-[11px] font-extrabold uppercase tracking-wider transition-all ${
-                  mode === "SELL"
-                    ? "bg-orange-500 text-white shadow"
-                    : "text-gray-500 hover:text-orange-400"
-                }`}
-              >
-                Vender
-              </button>
-            )}
-          </div>
-        );
-      })()}
+            new Date(market.primaryPauseScheduledAt) <= new Date())
+            ? "Comprar P2P"
+            : "Comprar"}
+        </button>
+        {hasPositionsToSell && (
+          <button
+            type="button"
+            onClick={() => setMode("SELL")}
+            className={`flex-1 py-2 rounded-lg text-[11px] font-extrabold uppercase tracking-wider transition-all ${
+              mode === "SELL"
+                ? "bg-orange-500 text-white shadow"
+                : "text-gray-500 hover:text-orange-400"
+            }`}
+          >
+            Vender
+          </button>
+        )}
+      </div>
 
       {/* Form content */}
-      {(() => {
-        const isPaused =
-          market.primaryMarketPaused ||
-          (market.primaryPauseScheduledAt &&
-            new Date(market.primaryPauseScheduledAt) <= new Date());
-        if (isPaused && mode === "BUY") {
-          return (
-            <div className="py-6 text-center text-[11px] text-gray-500">
-              El mercado secundario sigue disponible — revisa las órdenes P2P abajo.
-            </div>
-          );
-        }
-        return mode === "BUY" ? (
-          <BuyForm market={market} userId={userId} userBalance={userBalance} onSuccess={onSuccess} prefillOrder={prefillOrder} />
-        ) : (
-          <SellForm market={market} userId={userId} onSuccess={onSuccess} />
-        );
-      })()}
+      {mode === "BUY" ? (
+        <BuyForm market={market} userId={userId} userBalance={userBalance} onSuccess={onSuccess} prefillOrder={prefillOrder} />
+      ) : (
+        <SellForm market={market} userId={userId} onSuccess={onSuccess} />
+      )}
 
       {/* Footer */}
       <div className="text-center pt-2">
