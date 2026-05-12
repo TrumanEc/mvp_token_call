@@ -18,7 +18,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a] relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-win-bg relative overflow-hidden">
       {/* Background Orbs */}
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-500/10 rounded-full blur-[120px] pointer-events-none"></div>
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none"></div>
@@ -39,10 +39,10 @@ export default function LoginPage() {
           <button
             onClick={handleGoogleLogin}
             disabled={isLoading}
-            className="w-full h-14 bg-[#64c883] text-[#0a0a0a] font-bold rounded-2xl flex items-center justify-center gap-3 transition-all hover:bg-[#5aaf75] hover:shadow-[0_0_20px_rgba(100,200,131,0.2)] active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none group shadow-lg"
+            className="w-full h-14 bg-primary text-win-bg font-bold rounded-2xl flex items-center justify-center gap-3 transition-all hover:bg-primary-active hover:shadow-[0_0_20px_rgba(100,200,131,0.2)] active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none group shadow-lg"
           >
             {isLoading ? (
-              <div className="w-5 h-5 border-2 border-[#0a0a0a]/20 border-t-[#0a0a0a] rounded-full animate-spin"></div>
+              <div className="w-5 h-5 border-2 border-win-bg/20 border-t-[#0a0a0a] rounded-full animate-spin"></div>
             ) : (
               <>
                 <svg className="w-5 h-5" viewBox="0 0 24 24">

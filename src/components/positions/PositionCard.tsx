@@ -64,7 +64,7 @@ export function PositionCard({ position, userId, onSell }: PositionCardProps) {
           : "-"}
       </td>
       <td
-        className={`text-center text-xs font-bold ${data.pnl >= 0 ? "text-[#64c883]" : "text-[#e16464]"} ${data.shares === 0 ? "opacity-0" : ""}`}
+        className={`text-center text-xs font-bold ${data.pnl >= 0 ? "text-primary" : "text-win-error"} ${data.shares === 0 ? "opacity-0" : ""}`}
       >
         {data.pnl >= 0 ? "+" : ""}$
         {data.pnl.toLocaleString(undefined, {
@@ -73,7 +73,7 @@ export function PositionCard({ position, userId, onSell }: PositionCardProps) {
         })}
       </td>
       <td
-        className={`text-center text-xs font-bold ${data.roi >= 0 ? "text-[#64c883]" : "text-[#e16464]"} ${data.shares === 0 ? "opacity-0" : ""}`}
+        className={`text-center text-xs font-bold ${data.roi >= 0 ? "text-primary" : "text-win-error"} ${data.shares === 0 ? "opacity-0" : ""}`}
       >
         {data.roi >= 0 ? "+" : ""}
         {data.roi.toFixed(1)}%
@@ -102,7 +102,7 @@ export function PositionCard({ position, userId, onSell }: PositionCardProps) {
                 <span className="text-xs font-extrabold text-white">
                   ${scenario.payout.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </span>
-                <span className={`text-[9px] font-bold ${scenario.net >= 0 ? "text-[#64c883]" : "text-[#e16464]"}`}>
+                <span className={`text-[9px] font-bold ${scenario.net >= 0 ? "text-primary" : "text-win-error"}`}>
                   {scenario.net >= 0 ? "+" : ""}${scenario.net.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </span>
               </div>
@@ -119,7 +119,7 @@ export function PositionCard({ position, userId, onSell }: PositionCardProps) {
   );
 
   return (
-    <div className="bg-[#121212] border border-white/5 rounded-3xl overflow-hidden transition-all hover:border-white/10 group col-span-1 md:col-span-2 shadow-2xl shadow-black/20">
+    <div className="bg-win-bg border border-white/5 rounded-3xl overflow-hidden transition-all hover:border-white/10 group col-span-1 md:col-span-2 shadow-2xl shadow-black/20">
       {/* Header */}
       <div className="p-6 md:px-8 md:py-7 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-0 bg-white/[0.01]">
         <div className="w-full md:w-auto">
@@ -137,7 +137,7 @@ export function PositionCard({ position, userId, onSell }: PositionCardProps) {
               {new Date(position.createdAt).toLocaleDateString()}
             </span>
             {!isActive && (
-              <span className={`text-[10px] font-black uppercase tracking-[0.2em] px-3 py-1 rounded-lg ml-2 ${position.totalPnL >= 0 ? "bg-[#64c883]/20 text-[#64c883]" : "bg-[#e16464]/20 text-[#e16464]"}`}>
+              <span className={`text-[10px] font-black uppercase tracking-[0.2em] px-3 py-1 rounded-lg ml-2 ${position.totalPnL >= 0 ? "bg-primary/20 text-primary" : "bg-win-error/20 text-win-error"}`}>
                 {position.totalPnL >= 0 ? "WIN" : "LOSS"}
               </span>
             )}
@@ -154,25 +154,25 @@ export function PositionCard({ position, userId, onSell }: PositionCardProps) {
           <div className="flex flex-col items-start md:items-end gap-2 pr-0 md:pr-2 w-full md:w-auto border-t border-white/5 md:border-t-0 pt-4 md:pt-0 mt-2 md:mt-0">
             <div className="flex gap-4 mb-0.5 justify-start md:justify-end w-full">
               <div className="flex items-center gap-1.5">
-                <div className="w-1.5 h-1.5 rounded-full bg-[#64c883]" />
-                <span className="text-[10px] font-extrabold text-[#64c883]">
+                <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                <span className="text-[10px] font-extrabold text-primary">
                   {(yes.prob * 100).toFixed(1)}%
                 </span>
               </div>
               <div className="flex items-center gap-1.5">
-                <div className="w-1.5 h-1.5 rounded-full bg-[#e16464]" />
-                <span className="text-[10px] font-extrabold text-[#e16464]">
+                <div className="w-1.5 h-1.5 rounded-full bg-win-error" />
+                <span className="text-[10px] font-extrabold text-win-error">
                   {(no.prob * 100).toFixed(1)}%
                 </span>
               </div>
             </div>
             <div className="w-full md:w-40 h-1.5 bg-white/5 rounded-full overflow-hidden flex">
               <div
-                className="h-full bg-[#64c883] transition-all duration-1000"
+                className="h-full bg-primary transition-all duration-1000"
                 style={{ width: `${yes.prob * 100}%` }}
               />
               <div
-                className="h-full bg-[#e16464] transition-all duration-1000"
+                className="h-full bg-win-error transition-all duration-1000"
                 style={{ width: `${no.prob * 100}%` }}
               />
             </div>
@@ -204,9 +204,9 @@ export function PositionCard({ position, userId, onSell }: PositionCardProps) {
                 <th className="pr-4 text-right">{isActive ? "PROB." : "FINAL"}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5 bg-[#0a0a0a]/40 rounded-2xl overflow-hidden border border-white/5">
-              {renderRow("YES", yes, "text-[#64c883]", ob.yes, scenarios.ifYesWins, isActive)}
-              {renderRow("NO", no, "text-[#e16464]", ob.no, scenarios.ifNoWins, isActive)}
+            <tbody className="divide-y divide-white/5 bg-win-bg/40 rounded-2xl overflow-hidden border border-white/5">
+              {renderRow("YES", yes, "text-primary", ob.yes, scenarios.ifYesWins, isActive)}
+              {renderRow("NO", no, "text-win-error", ob.no, scenarios.ifNoWins, isActive)}
 
               {/* TOTAL ROW */}
               <tr className="h-14 bg-white/[0.03]">
@@ -230,7 +230,7 @@ export function PositionCard({ position, userId, onSell }: PositionCardProps) {
                   })}
                 </td>
                 <td
-                  className={`text-center text-xs font-extrabold ${position.totalPnL >= 0 ? "text-[#64c883]" : "text-[#e16464]"}`}
+                  className={`text-center text-xs font-extrabold ${position.totalPnL >= 0 ? "text-primary" : "text-win-error"}`}
                 >
                   {position.totalPnL >= 0 ? "+" : ""}$
                   {position.totalPnL.toLocaleString(undefined, {
@@ -239,7 +239,7 @@ export function PositionCard({ position, userId, onSell }: PositionCardProps) {
                   })}
                 </td>
                 <td
-                  className={`text-center text-xs font-extrabold ${position.totalROI >= 0 ? "text-[#64c883]" : "text-[#e16464]"}`}
+                  className={`text-center text-xs font-extrabold ${position.totalROI >= 0 ? "text-primary" : "text-win-error"}`}
                 >
                   {position.totalROI >= 0 ? "+" : ""}
                   {position.totalROI.toFixed(1)}%
@@ -326,7 +326,7 @@ export function PositionCard({ position, userId, onSell }: PositionCardProps) {
         </div>
 
         {!isActive ? (
-          <div className="px-8 py-3 rounded-xl bg-white/5 border border-white/10 text-[10px] font-extrabold text-[#64c883] uppercase tracking-widest">
+          <div className="px-8 py-3 rounded-xl bg-white/5 border border-white/10 text-[10px] font-extrabold text-primary uppercase tracking-widest">
             {position.payout > 0 ? "PAGADO" : "CERRADO"}
           </div>
         ) : (

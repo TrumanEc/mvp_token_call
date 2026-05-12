@@ -95,7 +95,7 @@ export function ListingCard({ listing, userId, userBalance, onBuy }: ListingCard
               <h4 className="font-medium text-gray-900 line-clamp-2">{listing.position.market.question}</h4>
             </div>
             <div className="flex flex-col items-end gap-1">
-              <span className={`px-2 py-1 text-xs font-medium rounded-full ${listing.position.side === 'YES' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+              <span className={`px-2 py-1 text-xs font-medium rounded-full ${listing.position.side === 'YES' ? 'bg-win-success-tint text-primary' : 'bg-win-error-tint text-win-error'}`}>
                 {listing.position.side}
               </span>
               {status === 'SOLD' && (
@@ -118,7 +118,7 @@ export function ListingCard({ listing, userId, userBalance, onBuy }: ListingCard
             </div>
             {status === 'ACTIVE' && (
               <div className="text-center p-2 bg-gray-50 rounded">
-                <div className={`text-xl font-bold ${listing.roi && listing.roi >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                <div className={`text-xl font-bold ${listing.roi && listing.roi >= 0 ? 'text-primary' : 'text-win-error'}`}>
                   {listing.roi && listing.roi >= 0 ? '+' : ''}{roiDisplay}%
                 </div>
                 <div className="text-xs text-gray-500">ROI si gana</div>
@@ -145,12 +145,12 @@ export function ListingCard({ listing, userId, userBalance, onBuy }: ListingCard
             </div>
             <div className="flex justify-between">
               <span>Retorno potencial:</span>
-              <span className="font-medium text-green-600">${potReturnDisplay}</span>
+              <span className="font-medium text-primary">${potReturnDisplay}</span>
             </div>
             {status === 'ACTIVE' && (
               <div className="flex justify-between">
                 <span>Ganancia potencial:</span>
-                <span className={`font-medium ${(listing.potentialProfit || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                <span className={`font-medium ${(listing.potentialProfit || 0) >= 0 ? 'text-primary' : 'text-win-error'}`}>
                   ${potProfitDisplay}
                 </span>
               </div>
@@ -177,7 +177,7 @@ export function ListingCard({ listing, userId, userBalance, onBuy }: ListingCard
           )}
 
           {status === 'ACTIVE' && isSeller && (
-            <div className="mt-4 text-center text-sm text-blue-600 bg-blue-50 py-2 rounded">
+            <div className="mt-4 text-center text-sm text-win-info bg-win-info/10 py-2 rounded">
               Tu listing
             </div>
           )}
@@ -189,7 +189,7 @@ export function ListingCard({ listing, userId, userBalance, onBuy }: ListingCard
           <div className="bg-gray-50 p-4 rounded-lg space-y-3 text-sm">
             <div className="flex justify-between items-center">
               <span>Posición:</span>
-              <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${listing.position.side === 'YES' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+              <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${listing.position.side === 'YES' ? 'bg-win-success-tint text-primary' : 'bg-win-error-tint text-win-error'}`}>
                 {listing.position.side}
               </span>
             </div>
@@ -202,7 +202,7 @@ export function ListingCard({ listing, userId, userBalance, onBuy }: ListingCard
                   type="number"
                   value={buyAmount}
                   onChange={(e) => setBuyAmount(e.target.value)}
-                  className="w-full pl-7 pr-4 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none"
+                  className="w-full pl-7 pr-4 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none"
                   placeholder="0.00"
                   step="0.01"
                   min="0.01"
@@ -218,7 +218,7 @@ export function ListingCard({ listing, userId, userBalance, onBuy }: ListingCard
               </div>
               <div className="flex justify-between">
                 <span>Retorno proyectado:</span>
-                <span className="font-medium text-green-600">
+                <span className="font-medium text-primary">
                   ${(listing.position.shares * (parseFloat(buyAmount || '0') / listing.askPrice) || 0).toFixed(2)}
                 </span>
               </div>
@@ -231,7 +231,7 @@ export function ListingCard({ listing, userId, userBalance, onBuy }: ListingCard
             </div>
           </div>
 
-          {error && <p className="text-red-500 text-sm">{error}</p>}
+          {error && <p className="text-win-error text-sm">{error}</p>}
 
           <div className="flex gap-3">
             <Button variant="outline" onClick={() => setShowBuyModal(false)} className="flex-1">

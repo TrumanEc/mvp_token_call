@@ -13,11 +13,11 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     const baseStyles = 'inline-flex items-center justify-center font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed'
 
     const variants = {
-      primary: 'bg-[#64c883] text-[#0a0a0a] hover:bg-[#74db93] focus:ring-[#64c883]',
-      secondary: 'bg-[#c9a555] text-[#0a0a0a] hover:bg-[#d3b776] focus:ring-[#c9a555]',
-      success: 'bg-[#64c883] text-[#0a0a0a] hover:bg-[#74db93] focus:ring-[#64c883]',
-      danger: 'bg-[#e16464] text-white hover:bg-[#ef7a7a] focus:ring-[#e16464]',
-      outline: 'border border-[#272727] bg-transparent text-[#64c883] hover:bg-[#171717] focus:ring-[#64c883]',
+      primary: 'bg-primary text-win-bg hover:bg-primary-hover focus:ring-primary',
+      secondary: 'bg-win-secondary text-win-bg hover:bg-win-secondary-hover focus:ring-win-secondary',
+      success: 'bg-win-success text-win-bg hover:bg-primary-hover focus:ring-win-success',
+      danger: 'bg-win-error text-white hover:bg-win-error-hover focus:ring-win-error',
+      outline: 'border border-win-hover bg-transparent text-primary hover:bg-win-card focus:ring-primary',
     }
 
     const sizes = {

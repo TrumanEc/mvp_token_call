@@ -53,8 +53,8 @@ function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
 
   if (loading || !user || loadingMarket) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#64c883]" />
+      <div className="min-h-screen bg-win-bg flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
       </div>
     );
   }
@@ -153,19 +153,19 @@ function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
             <div className="flex border-b border-white/10 lg:hidden mt-0 mb-4">
               <button
                 onClick={() => setActiveTab("trade")}
-                className={`py-3 px-4 text-[10px] font-bold uppercase tracking-wider flex-1 text-center border-b-2 transition-colors ${activeTab === "trade" ? "border-[#64c883] text-[#64c883]" : "border-transparent text-gray-400 hover:text-white"}`}
+                className={`py-3 px-4 text-[10px] font-bold uppercase tracking-wider flex-1 text-center border-b-2 transition-colors ${activeTab === "trade" ? "border-primary text-primary" : "border-transparent text-gray-400 hover:text-white"}`}
               >
                 Operar
               </button>
               <button
                 onClick={() => setActiveTab("orderbook")}
-                className={`py-3 px-4 text-[10px] font-bold uppercase tracking-wider flex-1 text-center border-b-2 transition-colors ${activeTab === "orderbook" ? "border-[#64c883] text-[#64c883]" : "border-transparent text-gray-400 hover:text-white"}`}
+                className={`py-3 px-4 text-[10px] font-bold uppercase tracking-wider flex-1 text-center border-b-2 transition-colors ${activeTab === "orderbook" ? "border-primary text-primary" : "border-transparent text-gray-400 hover:text-white"}`}
               >
                 Orderbook
               </button>
               <button
                 onClick={() => setActiveTab("activity")}
-                className={`py-3 px-4 text-[10px] font-bold uppercase tracking-wider flex-1 text-center border-b-2 transition-colors ${activeTab === "activity" ? "border-[#64c883] text-[#64c883]" : "border-transparent text-gray-400 hover:text-white"}`}
+                className={`py-3 px-4 text-[10px] font-bold uppercase tracking-wider flex-1 text-center border-b-2 transition-colors ${activeTab === "activity" ? "border-primary text-primary" : "border-transparent text-gray-400 hover:text-white"}`}
               >
                 Actividad
               </button>
@@ -192,21 +192,21 @@ function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
                     .map((pos: any) => (
                       <div
                         key={pos.id}
-                        className={`bg-[#121212] border border-white/5 rounded-2xl p-4 flex flex-col gap-4 group transition-all ${pos.shares === 0 ? "opacity-50 grayscale" : "hover:border-white/10"}`}
+                        className={`bg-win-bg border border-white/5 rounded-2xl p-4 flex flex-col gap-4 group transition-all ${pos.shares === 0 ? "opacity-50 grayscale" : "hover:border-white/10"}`}
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-4">
                             <div
                               className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs ${
                                 pos.side === "YES"
-                                  ? "bg-[#64c883]/10 text-[#64c883]"
-                                  : "bg-[#e16464]/10 text-[#e16464]"
+                                  ? "bg-primary/10 text-primary"
+                                  : "bg-win-error/10 text-win-error"
                               }`}
                             >
                               {pos.side}
                             </div>
                             <div>
-                              <div className="text-sm font-bold text-white group-hover:text-[#64c883] transition-colors flex items-center gap-2">
+                              <div className="text-sm font-bold text-white group-hover:text-primary transition-colors flex items-center gap-2">
                                 {pos.currentOwner.username
                                   ? `@${pos.currentOwner.username}`
                                   : pos.currentOwner.email?.split("@")[0] ||
@@ -242,7 +242,7 @@ function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
                                 {pos.shares === 0 ? "(Sold)" : "sh"}
                               </span>
                             </div>
-                            <div className="text-[11px] font-bold text-[#64c883] mt-0.5">
+                            <div className="text-[11px] font-bold text-primary mt-0.5">
                               $
                               {pos.amount
                                 ? pos.amount.toLocaleString(undefined, {
@@ -327,7 +327,7 @@ function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
                     .map((pos: any) => (
                       <div
                         key={pos.id}
-                        className={`bg-[#121212] border rounded-2xl p-4 flex flex-col gap-3 transition-all ${
+                        className={`bg-win-bg border rounded-2xl p-4 flex flex-col gap-3 transition-all ${
                           pos.shares === 0
                             ? "opacity-40 grayscale border-white/5"
                             : "border-white/10 hover:border-white/20"
@@ -338,8 +338,8 @@ function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
                             <div
                               className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-[10px] ${
                                 pos.side === "YES"
-                                  ? "bg-[#64c883]/15 text-[#64c883]"
-                                  : "bg-[#e16464]/15 text-[#e16464]"
+                                  ? "bg-primary/15 text-primary"
+                                  : "bg-win-error/15 text-win-error"
                               }`}
                             >
                               {pos.side}
@@ -371,7 +371,7 @@ function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
                                 {pos.shares === 0 ? "(Sold)" : "sh"}
                               </span>
                             </div>
-                            <div className="text-[11px] text-[#64c883] font-bold">
+                            <div className="text-[11px] text-primary font-bold">
                               $
                               {pos.amount
                                 ? pos.amount.toLocaleString(undefined, {
@@ -414,7 +414,7 @@ function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
                                 Si gana {pos.side}
                               </div>
                               <div
-                                className={`text-xs font-bold mt-0.5 ${pos.shares > 0 ? "text-[#64c883]" : "text-gray-500"}`}
+                                className={`text-xs font-bold mt-0.5 ${pos.shares > 0 ? "text-primary" : "text-gray-500"}`}
                               >
                                 ${pos.shares.toFixed(2)}
                               </div>

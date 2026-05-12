@@ -31,8 +31,8 @@ export function PriceChart({ data: rawData, height = 300, showNo = false }: Pric
 
   if (data.length < 2) {
     return (
-      <div className="flex items-center justify-center bg-[#0d0d0d] rounded-2xl border border-white/5" style={{ height }}>
-        <p className="text-gray-500 text-sm font-medium">Esperando más datos para graficar...</p>
+      <div className="flex items-center justify-center bg-win-bg rounded-2xl border border-white/5" style={{ height }}>
+        <p className="text-win-text-tertiary text-sm font-medium">Esperando más datos para graficar...</p>
       </div>
     )
   }
@@ -165,14 +165,14 @@ export function PriceChart({ data: rawData, height = 300, showNo = false }: Pric
       {/* Tooltip (Simplified and styled for dark theme) */}
       {hoverIdx !== null && (
         <div 
-          className="absolute top-0 pointer-events-none bg-[#171717] border border-white/10 rounded-xl shadow-2xl p-3 z-50 transition-all duration-75"
+          className="absolute top-0 pointer-events-none bg-win-card border border-white/10 rounded-xl shadow-2xl p-3 z-50 transition-all duration-75"
           style={{ 
             left: `${(getX(hoverIdx) / width) * 100}%`,
             transform: `translateX(${getX(hoverIdx) > width * 0.8 ? '-100%' : '10px'})`,
           }}
         >
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#64c883]" />
+            <span className="w-2 h-2 rounded-full bg-primary" />
             <span className="text-sm font-extrabold text-white">{data[hoverIdx].percent.toFixed(1)}%</span>
             <span className="text-xs text-gray-500">Price: ${data[hoverIdx].price.toFixed(2)}</span>
           </div>

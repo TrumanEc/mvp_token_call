@@ -10,7 +10,7 @@ export default async function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white relative overflow-hidden flex flex-col items-center justify-center p-6 text-center">
+    <div className="min-h-screen bg-win-bg text-white relative overflow-hidden flex flex-col items-center justify-center p-6 text-center">
       {/* Background Glow */}
       <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-blue-600/10 rounded-full blur-[150px] pointer-events-none animate-pulse"></div>
       <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-emerald-600/10 rounded-full blur-[150px] pointer-events-none animate-pulse"></div>
@@ -28,7 +28,7 @@ export default async function Home() {
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link 
             href="/login"
-            className="px-10 py-5 bg-[#64c883] text-[#0a0a0a] font-bold rounded-2xl text-lg transition-all hover:bg-[#5aaf75] hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_30px_rgba(100,200,131,0.2)]"
+            className="px-10 py-5 bg-primary text-win-bg font-bold rounded-2xl text-lg transition-all hover:bg-primary-active hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_30px_rgba(100,200,131,0.2)]"
           >
             Start Trading
           </Link>

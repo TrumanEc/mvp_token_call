@@ -39,7 +39,7 @@ export function MarketCard({ market }: MarketCardProps) {
 
   return (
     <Link href={`/markets/${market.id}`} className="block group">
-      <div className="bg-[#171717] rounded-[32px] border border-white/5 transition-all duration-300 overflow-hidden group-hover:border-white/10 group-hover:shadow-[0_20px_40px_rgba(0,0,0,0.4)]">
+      <div className="bg-win-card rounded-[32px] border border-white/5 transition-all duration-300 overflow-hidden group-hover:border-white/10 group-hover:shadow-[0_20px_40px_rgba(0,0,0,0.4)]">
 
         {/* Banner image */}
         <div
@@ -63,7 +63,7 @@ export function MarketCard({ market }: MarketCardProps) {
           <div className="absolute top-3 right-3">
             <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
               market.status === 'ACTIVE'
-                ? 'bg-[#64c883]/20 text-[#64c883] border border-[#64c883]/30'
+                ? 'bg-primary/20 text-primary border border-primary/30'
                 : 'bg-white/10 text-gray-400 border border-white/10'
             }`}>
               {market.status}
@@ -115,11 +115,11 @@ export function MarketCard({ market }: MarketCardProps) {
 
           {/* Middle: YES / NO buttons (visual) */}
           <div className="grid grid-cols-2 gap-3 mb-6">
-            <div className="bg-[#1a2e21]/40 border border-[#64c883]/20 py-3 rounded-2xl flex items-center justify-center transition-all group-hover:bg-[#1a2e21]/60">
-              <span className="text-base font-bold text-[#64c883]/80">Yes</span>
+            <div className="bg-win-success-tint border border-primary/20 py-3 rounded-2xl flex items-center justify-center transition-all group-hover:bg-primary/15">
+              <span className="text-base font-bold text-primary/80">Yes</span>
             </div>
-            <div className="bg-[#2e1a1a]/40 border border-[#e16464]/20 py-3 rounded-2xl flex items-center justify-center transition-all group-hover:bg-[#2e1a1a]/60">
-              <span className="text-base font-bold text-[#e16464]/80">No</span>
+            <div className="bg-win-error-tint border border-win-error/20 py-3 rounded-2xl flex items-center justify-center transition-all group-hover:bg-win-error/15">
+              <span className="text-base font-bold text-win-error/80">No</span>
             </div>
           </div>
 

@@ -39,8 +39,8 @@ function PositionsPage() {
 
   if (loading || !user) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#64c883]" />
+      <div className="min-h-screen bg-win-bg flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
       </div>
     )
   }
@@ -62,29 +62,29 @@ function PositionsPage() {
               Mis Posiciones
             </h1>
             <div className="flex flex-wrap items-center gap-6 mt-4">
-               <div className="bg-[#121212] border border-white/5 p-4 rounded-2xl flex flex-col min-w-[140px]">
+               <div className="bg-win-bg border border-white/5 p-4 rounded-2xl flex flex-col min-w-[140px]">
                   <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1">Total Invertido</span>
                   <span className="text-lg font-extrabold text-white">$ {totalInvested.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                </div>
-               <div className="bg-[#121212] border border-white/5 p-4 rounded-2xl flex flex-col min-w-[140px]">
+               <div className="bg-win-bg border border-white/5 p-4 rounded-2xl flex flex-col min-w-[140px]">
                   <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1">Valor de Mercado</span>
-                  <span className="text-lg font-extrabold text-[#64c883]">$ {totalFairValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                  <span className="text-lg font-extrabold text-primary">$ {totalFairValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                </div>
-               <div className="bg-[#121212] border border-white/5 p-4 rounded-2xl flex flex-col min-w-[140px]">
+               <div className="bg-win-bg border border-white/5 p-4 rounded-2xl flex flex-col min-w-[140px]">
                   <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1">P&L Total</span>
-                  <span className={`text-lg font-extrabold ${totalProfit >= 0 ? 'text-[#64c883]' : 'text-[#e16464]'}`}>
+                  <span className={`text-lg font-extrabold ${totalProfit >= 0 ? 'text-primary' : 'text-win-error'}`}>
                     {totalProfit >= 0 ? '+' : ''}{totalProfitPct.toFixed(1)}%
                   </span>
                </div>
             </div>
           </div>
           
-          <div className="flex bg-[#121212] p-1 rounded-xl border border-white/5">
+          <div className="flex bg-win-bg p-1 rounded-xl border border-white/5">
             <button
               onClick={() => setFilter('ACTIVE')}
               className={`px-6 py-2 rounded-lg text-[10px] font-bold uppercase tracking-[0.1em] transition-all ${
                 filter === 'ACTIVE' 
-                  ? 'bg-[#64c883] text-[#0a0a0a] shadow-lg shadow-[#64c883]/10' 
+                  ? 'bg-primary text-win-bg shadow-lg shadow-primary/10' 
                   : 'text-gray-400 hover:text-white'
               }`}
             >
@@ -94,7 +94,7 @@ function PositionsPage() {
               onClick={() => setFilter('ALL')}
               className={`px-6 py-2 rounded-lg text-[10px] font-bold uppercase tracking-[0.1em] transition-all ${
                 filter === 'ALL' 
-                  ? 'bg-[#64c883] text-[#0a0a0a] shadow-lg shadow-[#64c883]/10' 
+                  ? 'bg-primary text-win-bg shadow-lg shadow-primary/10' 
                   : 'text-gray-400 hover:text-white'
               }`}
             >
@@ -105,16 +105,16 @@ function PositionsPage() {
 
         {loadingPositions ? (
           <div className="flex justify-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#64c883]" />
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
           </div>
         ) : filteredPositions.length === 0 ? (
-          <div className="text-center py-24 bg-[#121212] rounded-3xl border border-white/5">
+          <div className="text-center py-24 bg-win-bg rounded-3xl border border-white/5">
             <div className="text-gray-400 text-sm font-bold uppercase tracking-wider mb-6">
               No tienes posiciones {filter === 'ACTIVE' ? 'activas' : ''}
             </div>
             <button 
               onClick={() => router.push('/markets')} 
-              className="text-[#64c883] text-xs font-bold uppercase tracking-[0.1em] hover:opacity-80 transition-opacity"
+              className="text-primary text-xs font-bold uppercase tracking-[0.1em] hover:opacity-80 transition-opacity"
             >
               Ver mercados →
             </button>

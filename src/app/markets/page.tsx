@@ -40,12 +40,12 @@ function MarketsPage() {
     <Shell>
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-2xl font-bold text-white tracking-tight">Mercados Disponibles</h1>
-        <div className="flex bg-[#171717] p-1 rounded-xl border border-white/5">
+        <div className="flex bg-win-card p-1 rounded-xl border border-white/5">
           <button
             onClick={() => setFilter('ACTIVE')}
             className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
               filter === 'ACTIVE' 
-                ? 'bg-[#64c883] text-[#0a0a0a] shadow-lg shadow-[#64c883]/20' 
+                ? 'bg-primary text-win-bg shadow-lg shadow-primary/20' 
                 : 'text-gray-400 hover:text-white'
             }`}
           >
@@ -55,7 +55,7 @@ function MarketsPage() {
             onClick={() => setFilter('ALL')}
             className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
               filter === 'ALL' 
-                ? 'bg-[#64c883] text-[#0a0a0a] shadow-lg shadow-[#64c883]/20' 
+                ? 'bg-primary text-win-bg shadow-lg shadow-primary/20' 
                 : 'text-gray-400 hover:text-white'
             }`}
           >
