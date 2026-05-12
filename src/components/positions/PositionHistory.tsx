@@ -18,7 +18,7 @@ export function PositionHistory({ history }: PositionHistoryProps) {
   return (
     <div className="mt-6 pt-6 border-t border-white/5 space-y-3">
       <h5 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-        <div className="w-1 h-3 bg-[#64c883] rounded-full" />
+        <div className="w-1 h-3 bg-primary rounded-full" />
         Historial de Compras
       </h5>
       <div className="space-y-2">
@@ -32,7 +32,7 @@ export function PositionHistory({ history }: PositionHistoryProps) {
             </div>
             <div className="text-right flex flex-col items-end">
               <span className="text-white font-extrabold">$ {h.amount.toFixed(2)}</span>
-              <span className="text-[10px] text-[#64c883] font-bold">{h.shares.toFixed(2)} Shares</span>
+              <span className="text-[10px] text-primary font-bold">{h.shares.toFixed(2)} Shares</span>
             </div>
           </div>
         ))}

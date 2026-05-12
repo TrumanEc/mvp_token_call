@@ -138,8 +138,8 @@ function BuyForm({
           onClick={() => setSide("YES")}
           className={`h-16 rounded-2xl flex flex-col items-center justify-center transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] ${
             side === "YES"
-              ? "bg-[#64c883] text-[#0a0a0a] shadow-lg shadow-[#64c883]/20"
-              : "bg-[#1a2e21]/40 text-[#64c883]/60 border border-[#64c883]/10"
+              ? "bg-primary text-win-bg shadow-lg shadow-primary/20"
+              : "bg-win-success-tint/40 text-primary/60 border border-primary/10"
           }`}
         >
           <span className="text-xl font-bold">Yes</span>
@@ -152,8 +152,8 @@ function BuyForm({
           onClick={() => setSide("NO")}
           className={`h-16 rounded-2xl flex flex-col items-center justify-center transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] ${
             side === "NO"
-              ? "bg-[#e16464] text-[#0a0a0a] shadow-lg shadow-[#e16464]/20"
-              : "bg-[#2e1a1a]/40 text-[#e16464]/60 border border-[#e16464]/10"
+              ? "bg-win-error text-win-bg shadow-lg shadow-win-error/20"
+              : "bg-win-error-tint/40 text-win-error/60 border border-win-error/10"
           }`}
         >
           <span className="text-xl font-bold">No</span>
@@ -177,7 +177,7 @@ function BuyForm({
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               disabled={isPrimaryPaused && obAvailableShares <= 0}
-              className="w-full bg-[#0d0d0d] border border-[#272727] rounded-xl px-4 py-3 text-white font-bold text-lg outline-none transition-all group-focus-within:border-[#64c883] group-focus-within:ring-1 group-focus-within:ring-[#64c883]/20 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="w-full bg-win-bg border border-win-hover rounded-xl px-4 py-3 text-white font-bold text-lg outline-none transition-all group-focus-within:border-primary group-focus-within:ring-1 group-focus-within:ring-primary/20 disabled:opacity-40 disabled:cursor-not-allowed"
             />
             <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold">$</div>
           </div>
@@ -202,9 +202,9 @@ function BuyForm({
                 </button>
               </div>
             ) : (
-              <div className="flex items-center gap-2 px-3 py-2 bg-[#e16464]/10 border border-[#e16464]/20 rounded-xl">
-                <span className="text-[#e16464] text-sm">⊘</span>
-                <p className="text-[11px] text-[#e16464] font-bold">
+              <div className="flex items-center gap-2 px-3 py-2 bg-win-error/10 border border-win-error/20 rounded-xl">
+                <span className="text-win-error text-sm">⊘</span>
+                <p className="text-[11px] text-win-error font-bold">
                   Sin órdenes P2P disponibles para {side}. Espera a que otros usuarios pongan posiciones en venta.
                 </p>
               </div>
@@ -217,34 +217,34 @@ function BuyForm({
             {quote?.feeAmount !== undefined && quote.feeAmount > 0 && (
               <>
                 {quote.lmsrFeeAmount !== undefined && quote.lmsrFeeAmount > 0 && (
-                  <div className="flex justify-between items-center px-4 py-3 bg-[#0d0d0d]/50 rounded-xl border border-white/5">
+                  <div className="flex justify-between items-center px-4 py-3 bg-win-bg/50 rounded-xl border border-white/5">
                     <span className="text-xs text-purple-400">Comisión WIN ({((quote.lmsrFeeRate ?? 0.1) * 100).toFixed(0)}%)</span>
-                    <span className="text-sm font-bold text-[#e16464]">- ${quote.lmsrFeeAmount.toFixed(2)}</span>
+                    <span className="text-sm font-bold text-win-error">- ${quote.lmsrFeeAmount.toFixed(2)}</span>
                   </div>
                 )}
                 {quote.obFeeAmount !== undefined && quote.obFeeAmount > 0 && (
-                  <div className="flex justify-between items-center px-4 py-3 bg-[#0d0d0d]/50 rounded-xl border border-white/5">
+                  <div className="flex justify-between items-center px-4 py-3 bg-win-bg/50 rounded-xl border border-white/5">
                     <span className="text-xs text-blue-400">Comisión P2P ({((quote.obFeeRate ?? 0.02) * 100).toFixed(0)}%)</span>
-                    <span className="text-sm font-bold text-[#e16464]">- ${quote.obFeeAmount.toFixed(2)}</span>
+                    <span className="text-sm font-bold text-win-error">- ${quote.obFeeAmount.toFixed(2)}</span>
                   </div>
                 )}
                 {(quote.lmsrFeeAmount === undefined || quote.lmsrFeeAmount === 0) && (quote.obFeeAmount === undefined || quote.obFeeAmount === 0) && quote.feeAmount > 0 && (
-                  <div className="flex justify-between items-center px-4 py-3 bg-[#0d0d0d]/50 rounded-xl border border-white/5">
+                  <div className="flex justify-between items-center px-4 py-3 bg-win-bg/50 rounded-xl border border-white/5">
                     <span className="text-xs text-gray-400">Comisión WIN ({((quote.platformFeeRate ?? 0.1) * 100).toFixed(0)}%)</span>
-                    <span className="text-sm font-bold text-[#e16464]">- ${quote.feeAmount.toFixed(2)}</span>
+                    <span className="text-sm font-bold text-win-error">- ${quote.feeAmount.toFixed(2)}</span>
                   </div>
                 )}
-                <div className="flex justify-between items-center px-4 py-3 bg-[#0d0d0d]/50 rounded-xl border border-white/5">
+                <div className="flex justify-between items-center px-4 py-3 bg-win-bg/50 rounded-xl border border-white/5">
                   <span className="text-xs text-gray-400">Inversión Neta</span>
                   <span className="text-sm font-bold text-white">${(quote.totalCost - quote.feeAmount).toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between items-center px-4 py-3 bg-[#0d0d0d]/50 rounded-xl border border-white/5">
+                <div className="flex justify-between items-center px-4 py-3 bg-win-bg/50 rounded-xl border border-white/5">
                   <span className="text-xs text-gray-400">Costo Total</span>
                   <span className="text-sm font-bold text-white">${quote.totalCost.toFixed(2)}</span>
                 </div>
               </>
             )}
-            <div className="flex flex-col px-4 py-3 bg-[#0d0d0d]/50 rounded-xl border border-white/5 space-y-2">
+            <div className="flex flex-col px-4 py-3 bg-win-bg/50 rounded-xl border border-white/5 space-y-2">
               <div className="flex justify-between items-center">
                 <span className="text-xs text-gray-400">Acciones Estimadas</span>
                 <span className="text-sm font-bold text-white">
@@ -272,27 +272,27 @@ function BuyForm({
                 </div>
               )}
             </div>
-            <div className="flex justify-between items-center px-4 py-3 bg-[#0d0d0d]/50 rounded-xl border border-white/5">
+            <div className="flex justify-between items-center px-4 py-3 bg-win-bg/50 rounded-xl border border-white/5">
               <span className="text-xs text-gray-400">Precio Promedio</span>
               <span className="text-sm font-bold text-white">
                 {quoteLoading ? "..." : `$${(quote ? quote.avgPrice : currentPrice).toFixed(4)}`}
               </span>
             </div>
             {quote && (
-              <div className="flex justify-between items-center px-4 py-3 bg-[#0d0d0d]/50 rounded-xl border border-white/5">
+              <div className="flex justify-between items-center px-4 py-3 bg-win-bg/50 rounded-xl border border-white/5">
                 <span className="text-xs text-gray-400">Nuevo Precio del Mercado</span>
                 <div className="flex gap-3">
-                  <span className="text-sm font-bold text-[#64c883]">Y ${quote.newProbabilities.yes.toFixed(2)}</span>
-                  <span className="text-sm font-bold text-[#e16464]">N ${quote.newProbabilities.no.toFixed(2)}</span>
+                  <span className="text-sm font-bold text-primary">Y ${quote.newProbabilities.yes.toFixed(2)}</span>
+                  <span className="text-sm font-bold text-win-error">N ${quote.newProbabilities.no.toFixed(2)}</span>
                 </div>
               </div>
             )}
-            <div className="flex flex-col gap-1 px-4 py-4 bg-[#64c883]/5 rounded-xl border border-[#64c883]/10">
+            <div className="flex flex-col gap-1 px-4 py-4 bg-primary/5 rounded-xl border border-primary/10">
               <div className="flex justify-between items-center">
-                <span className="text-xs text-[#64c883]">
+                <span className="text-xs text-primary">
                   Pago estimado si gana {side} ({roi >= 0 ? "+" : ""}{roi.toFixed(0)}% ROI)
                 </span>
-                <span className="text-base font-extrabold text-[#64c883]">
+                <span className="text-base font-extrabold text-primary">
                   {quoteLoading ? "..." : `$${potentialReturnValue.toFixed(2)}`}
                 </span>
               </div>
@@ -312,7 +312,7 @@ function BuyForm({
         )}
 
         {quote?.wouldExceedCap && (
-          <div className="bg-[#e16464]/10 border border-[#e16464]/20 p-3 rounded-xl text-[#e16464] text-[11px] mb-2">
+          <div className="bg-win-error/10 border border-win-error/20 p-3 rounded-xl text-win-error text-[11px] mb-2">
             <p className="font-bold mb-0.5">⚠️ Límite excedido</p>
             <p>{quote.capReason}</p>
             <p className="mt-1">Máximo permitido: <strong>${quote.maxAllowedAmount?.toFixed(2)}</strong></p>
@@ -323,7 +323,7 @@ function BuyForm({
           </div>
         )}
 
-        {error && <p className="text-[#e16464] text-xs text-center font-medium">{error}</p>}
+        {error && <p className="text-win-error text-xs text-center font-medium">{error}</p>}
 
         <Button
           type="submit"
@@ -340,8 +340,8 @@ function BuyForm({
             isPrimaryPaused && obAvailableShares <= 0
               ? "bg-gray-700 text-gray-500 cursor-not-allowed"
               : side === "YES"
-                ? "bg-[#64c883] text-[#0a0a0a] hover:bg-[#74db93] shadow-[#64c883]/20"
-                : "bg-[#e16464] text-white hover:bg-[#ef7a7a] shadow-[#e16464]/20"
+                ? "bg-primary text-win-bg hover:bg-primary-hover shadow-primary/20"
+                : "bg-win-error text-white hover:bg-win-error-hover shadow-win-error/20"
           }`}
         >
           {isPrimaryPaused && obAvailableShares <= 0
@@ -445,14 +445,14 @@ function SellForm({ market, userId, onSuccess }: SellFormProps) {
                 className={`flex items-center justify-between px-4 py-3 rounded-xl border transition-all text-left ${
                   selectedPositionId === pos.id
                     ? pos.side === "YES"
-                      ? "border-[#64c883]/40 bg-[#64c883]/5"
-                      : "border-[#e16464]/40 bg-[#e16464]/5"
-                    : "border-white/5 bg-[#0d0d0d] hover:border-white/10"
+                      ? "border-primary/40 bg-primary/5"
+                      : "border-win-error/40 bg-win-error/5"
+                    : "border-white/5 bg-win-bg hover:border-white/10"
                 }`}
               >
                 <div className="flex items-center gap-3">
                   <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded ${
-                    pos.side === "YES" ? "bg-[#64c883]/15 text-[#64c883]" : "bg-[#e16464]/15 text-[#e16464]"
+                    pos.side === "YES" ? "bg-primary/15 text-primary" : "bg-win-error/15 text-win-error"
                   }`}>
                     {pos.side}
                   </span>
@@ -468,11 +468,11 @@ function SellForm({ market, userId, onSuccess }: SellFormProps) {
       {/* Single position info (if only one) */}
       {myPositions.length === 1 && selectedPos && (
         <div className={`flex items-center justify-between px-4 py-3 rounded-xl border ${
-          selectedPos.side === "YES" ? "border-[#64c883]/20 bg-[#64c883]/5" : "border-[#e16464]/20 bg-[#e16464]/5"
+          selectedPos.side === "YES" ? "border-primary/20 bg-primary/5" : "border-win-error/20 bg-win-error/5"
         }`}>
           <div className="flex items-center gap-3">
             <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded ${
-              selectedPos.side === "YES" ? "bg-[#64c883]/20 text-[#64c883]" : "bg-[#e16464]/20 text-[#e16464]"
+              selectedPos.side === "YES" ? "bg-primary/20 text-primary" : "bg-win-error/20 text-win-error"
             }`}>
               {selectedPos.side}
             </span>
@@ -513,7 +513,7 @@ function SellForm({ market, userId, onSuccess }: SellFormProps) {
             min="0.01"
             max={maxShares}
             step="0.01"
-            className="w-full bg-[#0d0d0d] border border-[#272727] rounded-xl px-4 py-3 text-white font-bold text-lg outline-none transition-all group-focus-within:border-orange-500/50 group-focus-within:ring-1 group-focus-within:ring-orange-500/20"
+            className="w-full bg-win-bg border border-win-hover rounded-xl px-4 py-3 text-white font-bold text-lg outline-none transition-all group-focus-within:border-orange-500/50 group-focus-within:ring-1 group-focus-within:ring-orange-500/20"
           />
           <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold text-sm">sh</div>
         </div>
@@ -532,7 +532,7 @@ function SellForm({ market, userId, onSuccess }: SellFormProps) {
             min="0.01"
             max="0.99"
             step="0.01"
-            className="w-full bg-[#0d0d0d] border border-[#272727] rounded-xl px-4 py-3 text-white font-bold text-lg outline-none transition-all group-focus-within:border-orange-500/50 group-focus-within:ring-1 group-focus-within:ring-orange-500/20"
+            className="w-full bg-win-bg border border-win-hover rounded-xl px-4 py-3 text-white font-bold text-lg outline-none transition-all group-focus-within:border-orange-500/50 group-focus-within:ring-1 group-focus-within:ring-orange-500/20"
           />
           <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold">$</div>
         </div>
@@ -541,13 +541,13 @@ function SellForm({ market, userId, onSuccess }: SellFormProps) {
       {/* Summary */}
       {numShares > 0 && numPrice > 0 && (
         <div className="space-y-2">
-          <div className="flex justify-between items-center px-4 py-3 bg-[#0d0d0d]/50 rounded-xl border border-white/5">
+          <div className="flex justify-between items-center px-4 py-3 bg-win-bg/50 rounded-xl border border-white/5">
             <span className="text-xs text-gray-400">Órdenes a colocar</span>
             <span className="text-sm font-bold text-white">{numShares.toFixed(2)} sh @ ${numPrice.toFixed(2)}</span>
           </div>
-          <div className="flex justify-between items-center px-4 py-3 bg-[#0d0d0d]/50 rounded-xl border border-white/5">
+          <div className="flex justify-between items-center px-4 py-3 bg-win-bg/50 rounded-xl border border-white/5">
             <span className="text-xs text-gray-400">Comisión (Maker)</span>
-            <span className="text-sm font-bold text-[#64c883]">0%</span>
+            <span className="text-sm font-bold text-primary">0%</span>
           </div>
           <div className="flex justify-between items-center px-4 py-4 bg-orange-500/5 rounded-xl border border-orange-500/10">
             <span className="text-xs text-orange-400">Recibirás si se ejecuta</span>
@@ -556,8 +556,8 @@ function SellForm({ market, userId, onSuccess }: SellFormProps) {
         </div>
       )}
 
-      {error && <p className="text-[#e16464] text-xs text-center font-medium">{error}</p>}
-      {success && <p className="text-[#64c883] text-xs text-center font-bold">✓ Orden listada en el Order Book</p>}
+      {error && <p className="text-win-error text-xs text-center font-medium">{error}</p>}
+      {success && <p className="text-primary text-xs text-center font-bold">✓ Orden listada en el Order Book</p>}
 
       <Button
         type="submit"
@@ -605,7 +605,7 @@ export function PredictionCard({
   const strokeDashoffset = semiCircumference - (yesOdds / 100) * semiCircumference;
 
   return (
-    <div className="bg-[#171717] rounded-3xl p-6 shadow-2xl border border-white/5 space-y-6">
+    <div className="bg-win-card rounded-3xl p-6 shadow-2xl border border-white/5 space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
         <h3 className="text-xl font-semibold text-white max-w-[60%] leading-tight">
@@ -685,13 +685,13 @@ export function PredictionCard({
       })()}
 
       {/* BUY / SELL tabs */}
-      <div className="flex gap-1 bg-[#0d0d0d] rounded-xl p-1">
+      <div className="flex gap-1 bg-win-bg rounded-xl p-1">
         <button
           type="button"
           onClick={() => setMode("BUY")}
           className={`flex-1 py-2 rounded-lg text-[11px] font-extrabold uppercase tracking-wider transition-all ${
             mode === "BUY"
-              ? "bg-[#64c883] text-[#0a0a0a] shadow"
+              ? "bg-primary text-win-bg shadow"
               : "text-gray-500 hover:text-white"
           }`}
         >

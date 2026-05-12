@@ -1,13 +1,22 @@
 @import "tailwindcss";
 
-:root {
-  /* Core Palette */
-  --background: #0a0a0a;
-  /* Main background */
-  --foreground: #ffffff;
+/* =====================================================
+   WIN DESIGN SYSTEM - CSS VARIABLES
+   ===================================================== */
 
+:root {
+  /* ── Legacy (kept for backward compat) ── */
+  --background: #0a0a0a;
+  --foreground: #ffffff;
+  --primary: #64c883;
+  --primary-glow: rgba(100, 200, 131, 0.2);
+  --secondary: #c9a555;
+  --red-main: #e16464;
+  --soft-black: #303030;
+  --dark-gray: #141414;
+
+  /* ── Gray Scale ── */
   --gray-bg: #171717;
-  /* Card/Box background */
   --gray-0: #0a0a0a;
   --gray-1: #171717;
   --gray-2: #272727;
@@ -19,43 +28,135 @@
   --gray-8: #f3f3f4;
   --gray-9: #ffffff;
 
-  /* Primary Palette (Green) */
-  --primary: #64c883;
-  --primary-glow: rgba(100, 200, 131, 0.2);
+  /* ── COLORS - PRIMARY ── */
+  --color-primary: #64C883;
+  --color-primary-hover: #74db93;
+  --color-primary-active: #5aaf75;
+  --color-primary-disabled: rgba(100, 200, 131, 0.5);
 
-  /* Secondary Palette (Gold) */
-  --secondary: #c9a555;
+  /* ── COLORS - SECONDARY ── */
+  --color-secondary: #c9a555;
+  --color-secondary-hover: #d3b776;
 
-  /* Alert Palette */
-  --red-main: #e16464;
+  /* ── COLORS - BACKGROUNDS ── */
+  --color-bg-dark: #0A0A0A;
+  --color-bg-darkest: #000000;
+  --color-bg-card: #171717;
+  --color-bg-hover: #272727;
+  --color-bg-overlay: rgba(0, 0, 0, 0.8);
 
-  /* Specifics */
-  --soft-black: #303030;
-  --dark-gray: #141414;
+  /* ── COLORS - TEXT ── */
+  --color-text-primary: #FFFFFF;
+  --color-text-secondary: #9fa3a9;
+  --color-text-tertiary: #6f757e;
+  --color-text-disabled: #3f4753;
+
+  /* ── COLORS - STATES ── */
+  --color-success: #64C883;
+  --color-error: #e16464;
+  --color-error-hover: #ef7a7a;
+  --color-warning: #F39C12;
+  --color-info: #3498DB;
+
+  /* ── TYPOGRAPHY - FONTS ── */
+  --font-primary: var(--font-roboto-flex), 'Roboto Flex', sans-serif;
+  --font-secondary: var(--font-dm-sans), 'DM Sans', sans-serif;
+
+  /* ── TYPOGRAPHY - SIZES ── */
+  --font-size-h1: 48px;
+  --font-size-h2: 36px;
+  --font-size-h3: 24px;
+  --font-size-h4: 18px;
+  --font-size-large: 16px;
+  --font-size-regular: 14px;
+  --font-size-small: 12px;
+
+  /* ── TYPOGRAPHY - WEIGHTS ── */
+  --font-weight-light: 300;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* ── SPACING (8px grid) ── */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+  --spacing-3xl: 64px;
+
+  /* ── BORDER RADIUS ── */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-full: 9999px;
+
+  /* ── SHADOWS ── */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.4);
+
+  /* ── TRANSITIONS ── */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+/* =====================================================
+   TAILWIND THEME EXTENSION
+   ===================================================== */
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
 
-  /* Map Blue to Primary Green (to catch existing classes) */
+  /* Primary */
+  --color-primary: var(--color-primary);
+  --color-primary-hover: var(--color-primary-hover);
+  --color-primary-active: var(--color-primary-active);
+
+  /* Secondary */
+  --color-win-secondary: var(--color-secondary);
+  --color-win-secondary-hover: var(--color-secondary-hover);
+
+  /* Backgrounds */
+  --color-win-bg: var(--color-bg-dark);
+  --color-win-card: var(--color-bg-card);
+  --color-win-hover: var(--color-bg-hover);
+
+  /* Text */
+  --color-win-text: var(--color-text-primary);
+  --color-win-text-secondary: var(--color-text-secondary);
+  --color-win-text-tertiary: var(--color-text-tertiary);
+
+  /* States */
+  --color-win-success: var(--color-success);
+  --color-win-error: var(--color-error);
+  --color-win-error-hover: var(--color-error-hover);
+  --color-win-warning: var(--color-warning);
+  --color-win-info: var(--color-info);
+
+  /* Tints (for subtle backgrounds) */
+  --color-win-success-tint: rgba(100, 200, 131, 0.1);
+  --color-win-error-tint: rgba(225, 100, 100, 0.1);
+
+  /* Legacy mappings (catch existing Tailwind classes) */
   --color-blue-50: #f1fbf4;
   --color-blue-100: #e3f7e9;
   --color-blue-200: #c7f0d3;
   --color-blue-300: #abe9be;
   --color-blue-400: #8fe2a8;
   --color-blue-500: #74db93;
-  --color-blue-600: var(--primary);
+  --color-blue-600: var(--color-primary);
   --color-blue-700: #5caf75;
 
-  /* Map Green to Primary Green */
-  --color-green-600: var(--primary);
+  --color-green-600: var(--color-primary);
 
-  /* Map Red to the new Red */
-  --color-red-500: var(--red-main);
-  --color-red-600: var(--red-main);
+  --color-red-500: var(--color-error);
+  --color-red-600: var(--color-error);
 
-  /* Map Gray shades */
   --color-gray-50: #f3f3f4;
   --color-gray-100: #e7e8e9;
   --color-gray-200: #cfd1d4;
@@ -63,81 +164,123 @@
   --color-gray-900: #0a0a0a;
 }
 
+/* =====================================================
+   BASE STYLES
+   ===================================================== */
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: var(--color-bg-dark);
+  color: var(--color-text-primary);
+  font-family: var(--font-secondary);
+  line-height: 1.6;
   min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Global Component Overrides for Dark Mode */
+/* ── Typography ── */
+h1, .h1 {
+  font-family: var(--font-primary);
+  font-size: var(--font-size-h1);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.2;
+  letter-spacing: -0.5px;
+}
+
+h2, .h2 {
+  font-family: var(--font-primary);
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.3;
+  letter-spacing: -0.3px;
+}
+
+h3, .h3 {
+  font-family: var(--font-primary);
+  font-size: var(--font-size-h3);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.4;
+}
+
+h4, .h4 {
+  font-family: var(--font-primary);
+  font-size: var(--font-size-h4);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.5;
+}
+
+/* ── Dark Mode Overrides ── */
 .bg-white {
-  background-color: var(--gray-bg) !important;
+  background-color: var(--color-bg-card) !important;
 }
 
 .text-gray-900,
 .text-gray-800,
 .text-gray-700 {
-  color: #ffffff !important;
+  color: var(--color-text-primary) !important;
 }
 
 .text-gray-600,
 .text-gray-500,
 .text-gray-400 {
-  color: #9fa3a9 !important;
+  color: var(--color-text-secondary) !important;
 }
 
 .border,
 .border-gray-100,
 .border-gray-200,
 .border-gray-300 {
-  border-color: #272727 !important;
+  border-color: var(--color-bg-hover) !important;
 }
 
 .bg-gray-50,
 .bg-gray-100 {
-  background-color: var(--gray-0) !important;
+  background-color: var(--color-bg-dark) !important;
 }
 
-/* Input Overrides */
+/* ── Inputs ── */
 input,
 select,
 textarea {
-  background-color: #0d0d0d !important;
-  color: #ffffff !important;
-  border: 1px solid #272727 !important;
-  border-radius: 8px !important;
+  background-color: var(--color-bg-dark) !important;
+  color: var(--color-text-primary) !important;
+  border: 1px solid var(--color-bg-hover) !important;
+  border-radius: var(--radius-md) !important;
 }
 
 input:focus {
-  border-color: var(--primary) !important;
+  border-color: var(--color-primary) !important;
   outline: none;
   box-shadow: 0 0 0 2px var(--primary-glow);
 }
 
-/* Shadow adjustments */
+input::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+/* ── Shadows ── */
 .shadow-sm,
 .shadow,
 .shadow-md,
 .shadow-lg,
 .shadow-xl {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3) !important;
+  box-shadow: var(--shadow-md) !important;
 }
 
-/* Scrollbar */
+/* ── Scrollbar ── */
 ::-webkit-scrollbar {
   width: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0a0a0a;
+  background: var(--color-bg-dark);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #272727;
-  border-radius: 4px;
+  background: var(--color-bg-hover);
+  border-radius: var(--radius-sm);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #3f4753;
+  background: var(--gray-3);
 }

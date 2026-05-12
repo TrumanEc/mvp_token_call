@@ -122,7 +122,7 @@ export function LmsrCalculator() {
   const netProfitLoss = netInvestments - initialSeed;
 
   return (
-    <Card className="bg-[#121212] border-white/5">
+    <Card className="bg-win-bg border-white/5">
       <CardHeader>
         <CardTitle className="text-white uppercase tracking-wider text-sm">
           Simulador LMSR
@@ -138,7 +138,7 @@ export function LmsrCalculator() {
               type="number"
               value={b}
               onChange={(e) => setB(parseFloat(e.target.value) || 100)}
-              className="bg-[#0a0a0a] border-white/5 text-white"
+              className="bg-win-bg border-white/5 text-white"
             />
           </div>
           <div>
@@ -149,7 +149,7 @@ export function LmsrCalculator() {
               type="number"
               value={qYes}
               onChange={(e) => setQYes(parseFloat(e.target.value) || 0)}
-              className="bg-[#0a0a0a] border-white/5 text-white"
+              className="bg-win-bg border-white/5 text-white"
             />
           </div>
           <div>
@@ -160,13 +160,13 @@ export function LmsrCalculator() {
               type="number"
               value={qNo}
               onChange={(e) => setQNo(parseFloat(e.target.value) || 0)}
-              className="bg-[#0a0a0a] border-white/5 text-white"
+              className="bg-win-bg border-white/5 text-white"
             />
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-[#0a0a0a] p-5 rounded-2xl border border-white/5 space-y-3">
+          <div className="bg-win-bg p-5 rounded-2xl border border-white/5 space-y-3">
             <h4 className="text-[10px] font-bold text-white uppercase tracking-wider mb-2">
               Balance de Liquidez (WIN)
             </h4>
@@ -196,7 +196,7 @@ export function LmsrCalculator() {
                   PnL de Liquidez (Neto)
                 </span>
                 <span
-                  className={`font-extrabold ${netProfitLoss >= 0 ? "text-[#64c883]" : "text-[#e16464]"}`}
+                  className={`font-extrabold ${netProfitLoss >= 0 ? "text-primary" : "text-win-error"}`}
                 >
                   ${netProfitLoss.toFixed(2)}
                 </span>
@@ -211,20 +211,20 @@ export function LmsrCalculator() {
             </div>
           </div>
 
-          <div className="bg-[#0a0a0a] p-5 rounded-2xl border border-white/5 grid grid-cols-2 gap-4 text-center items-center">
+          <div className="bg-win-bg p-5 rounded-2xl border border-white/5 grid grid-cols-2 gap-4 text-center items-center">
             <div>
-              <div className="text-[10px] font-bold text-[#64c883] uppercase">
+              <div className="text-[10px] font-bold text-primary uppercase">
                 Precio SÍ
               </div>
-              <div className="text-2xl font-extrabold text-[#64c883]">
+              <div className="text-2xl font-extrabold text-primary">
                 {(pYes * 100).toFixed(1)}%
               </div>
             </div>
             <div>
-              <div className="text-[10px] font-bold text-[#e16464] uppercase">
+              <div className="text-[10px] font-bold text-win-error uppercase">
                 Precio NO
               </div>
-              <div className="text-2xl font-extrabold text-[#e16464]">
+              <div className="text-2xl font-extrabold text-win-error">
                 {(pNo * 100).toFixed(1)}%
               </div>
             </div>
@@ -241,7 +241,7 @@ export function LmsrCalculator() {
               value={maxBetAmount}
               onChange={(e) => setMaxBetAmount(e.target.value)}
               placeholder="Sin límite"
-              className="bg-[#0a0a0a] border-white/5 text-white"
+              className="bg-win-bg border-white/5 text-white"
             />
           </div>
           <div>
@@ -253,7 +253,7 @@ export function LmsrCalculator() {
               value={maxPriceImpact}
               onChange={(e) => setMaxPriceImpact(e.target.value)}
               placeholder="Sin límite"
-              className="bg-[#0a0a0a] border-white/5 text-white"
+              className="bg-win-bg border-white/5 text-white"
             />
           </div>
           <div>
@@ -264,7 +264,7 @@ export function LmsrCalculator() {
               type="number"
               value={platformFeeRate}
               onChange={(e) => setPlatformFeeRate(e.target.value)}
-              className="bg-[#0a0a0a] border-white/5 text-white"
+              className="bg-win-bg border-white/5 text-white"
             />
           </div>
         </div>
@@ -279,20 +279,20 @@ export function LmsrCalculator() {
                 type="number"
                 value={simAmount}
                 onChange={(e) => setSimAmount(e.target.value)}
-                className="bg-[#0a0a0a] border-white/5 text-white"
+                className="bg-win-bg border-white/5 text-white"
                 placeholder="Monto ($)"
               />
             </div>
             <div className="flex gap-2">
               <Button
                 onClick={() => setSimSide("YES")}
-                className={`font-bold ${simSide === "YES" ? "bg-[#64c883] text-black" : "bg-[#1a2e21] text-[#64c883]"}`}
+                className={`font-bold ${simSide === "YES" ? "bg-primary text-black" : "bg-win-success-tint text-primary"}`}
               >
                 YES
               </Button>
               <Button
                 onClick={() => setSimSide("NO")}
-                className={`font-bold ${simSide === "NO" ? "bg-[#e16464] text-black" : "bg-[#2e1a1a] text-[#e16464]"}`}
+                className={`font-bold ${simSide === "NO" ? "bg-win-error text-black" : "bg-win-error-tint text-win-error"}`}
               >
                 NO
               </Button>
@@ -300,7 +300,7 @@ export function LmsrCalculator() {
           </div>
 
           {simResult && (
-            <div className="bg-[#1a1a1a] p-3 rounded-lg text-xs space-y-1 border border-white/5">
+            <div className="bg-win-card p-3 rounded-lg text-xs space-y-1 border border-white/5">
               <div className="flex justify-between">
                 <span className="text-gray-400">Shares Recibidas:</span>
                 <span className="text-white font-bold">
@@ -309,7 +309,7 @@ export function LmsrCalculator() {
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Comisión WIN:</span>
-                <span className="text-[#e16464] font-bold">
+                <span className="text-win-error font-bold">
                   - ${simResult.feeAmount.toFixed(2)}
                 </span>
               </div>
@@ -334,7 +334,7 @@ export function LmsrCalculator() {
               <div className="flex justify-between pt-2 border-t border-white/5 mt-2">
                 <span className="text-gray-400">Impacto p:</span>
                 <span
-                  className={`font-bold ${simResult.wouldExceedCap ? "text-[#e16464]" : "text-[#64c883]"}`}
+                  className={`font-bold ${simResult.wouldExceedCap ? "text-win-error" : "text-primary"}`}
                 >
                   {simResult.priceImpact.toFixed(2)}%
                 </span>
@@ -342,7 +342,7 @@ export function LmsrCalculator() {
               <div className="flex justify-between">
                 <span className="text-gray-400">Nuevo Precio {simSide}:</span>
                 <span
-                  className={`font-bold ${simSide === "YES" ? "text-[#64c883]" : "text-[#e16464]"}`}
+                  className={`font-bold ${simSide === "YES" ? "text-primary" : "text-win-error"}`}
                 >
                   {(
                     simResult.newPrices[simSide === "YES" ? "pYes" : "pNo"] *
@@ -352,7 +352,7 @@ export function LmsrCalculator() {
                 </span>
               </div>
               {simResult.wouldExceedCap && (
-                <div className="mt-2 text-[#e16464] font-bold text-[10px] animate-pulse">
+                <div className="mt-2 text-win-error font-bold text-[10px] animate-pulse">
                   ⚠️ {simResult.capReason}
                 </div>
               )}

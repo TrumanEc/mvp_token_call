@@ -27,8 +27,8 @@ export function Shell({ children }: ShellProps) {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a]">
-      <nav className="bg-[#0a0a0a] border-b border-white/5">
+    <div className="min-h-screen bg-win-bg">
+      <nav className="bg-win-bg border-b border-white/5">
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
@@ -36,7 +36,7 @@ export function Shell({ children }: ShellProps) {
                 href="/markets"
                 className="flex-shrink-0 flex items-center mr-8"
               >
-                <span className="text-xl font-extrabold text-[#64c883] tracking-tighter">
+                <span className="text-xl font-extrabold text-primary tracking-tighter">
                   WIN
                 </span>
                 <span className="text-[10px] font-bold text-gray-400 ml-2 uppercase tracking-wider hidden md:block">
@@ -54,13 +54,13 @@ export function Shell({ children }: ShellProps) {
                         href={item.href}
                         className={`relative h-full flex items-center px-4 text-[11px] font-bold uppercase tracking-[0.1em] transition-all ${
                           isActive
-                            ? "text-[#64c883]"
+                            ? "text-primary"
                             : "text-white/60 hover:text-white"
                         }`}
                       >
                         {item.name}
                         {isActive && (
-                          <div className="absolute bottom-0 left-2 right-2 h-[2px] bg-[#64c883] rounded-full shadow-[0_0_8px_rgba(100,200,131,0.4)]" />
+                          <div className="absolute bottom-0 left-2 right-2 h-[2px] bg-primary rounded-full shadow-[0_0_8px_rgba(100,200,131,0.4)]" />
                         )}
                       </Link>
                     );
@@ -114,7 +114,7 @@ export function Shell({ children }: ShellProps) {
                     </span>
                     <button
                       onClick={handleLogout}
-                      className="text-[9px] font-bold text-gray-400 hover:text-[#e16464] uppercase tracking-wider transition-colors"
+                      className="text-[9px] font-bold text-gray-400 hover:text-win-error uppercase tracking-wider transition-colors"
                     >
                       Cerrar Sesión
                     </button>
@@ -166,7 +166,7 @@ export function Shell({ children }: ShellProps) {
 
         {/* Mobile menu, show/hide based on menu state. */}
         {user && isMobileMenuOpen && (
-          <div className="sm:hidden border-t border-white/5 bg-[#0a0a0a] px-4 py-4 space-y-4 shadow-xl">
+          <div className="sm:hidden border-t border-white/5 bg-win-bg px-4 py-4 space-y-4 shadow-xl">
             <div className="flex justify-between items-center mb-4 pb-4 border-b border-white/5">
               <div className="text-left">
                 <div className="text-[12px] font-bold text-white tracking-tight">
@@ -195,7 +195,7 @@ export function Shell({ children }: ShellProps) {
                     onClick={() => setIsMobileMenuOpen(false)}
                     className={`block py-3 px-4 rounded-lg text-[13px] font-bold uppercase tracking-[0.1em] transition-all ${
                       isActive
-                        ? "bg-[#64c883]/10 text-[#64c883] border border-[#64c883]/20"
+                        ? "bg-primary/10 text-primary border border-primary/20"
                         : "text-white/70 hover:bg-white/5 hover:text-white border border-transparent"
                     }`}
                   >

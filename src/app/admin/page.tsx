@@ -332,8 +332,8 @@ function AdminPage() {
 
   if (loading || !user || user.role !== "ADMIN") {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#64c883]" />
+      <div className="min-h-screen bg-win-bg flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
       </div>
     );
   }
@@ -352,7 +352,7 @@ function AdminPage() {
             </div>
           </div>
 
-          <div className="flex overflow-x-auto bg-[#121212] p-1 rounded-xl border border-white/5">
+          <div className="flex overflow-x-auto bg-win-bg p-1 rounded-xl border border-white/5">
             {[
               { id: "markets", label: "Mercados" },
               { id: "users", label: "Usuarios" },
@@ -370,7 +370,7 @@ function AdminPage() {
                 }}
                 className={`flex-shrink-0 whitespace-nowrap px-5 py-2 rounded-lg text-[10px] font-bold uppercase tracking-[0.1em] transition-all ${
                   activeTab === tab.id
-                    ? "bg-[#64c883] text-[#0a0a0a] shadow-lg shadow-[#64c883]/10"
+                    ? "bg-primary text-win-bg shadow-lg shadow-primary/10"
                     : "text-gray-400 hover:text-white"
                 }`}
               >
@@ -381,7 +381,7 @@ function AdminPage() {
         </div>
 
         {/* Action Bar */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 bg-[#121212] p-4 rounded-2xl border border-white/5">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 bg-win-bg p-4 rounded-2xl border border-white/5">
           <h2 className="text-xs font-bold uppercase tracking-[0.15em] text-white">
             {activeTab === "markets"
               ? "Gestión de Mercados"
@@ -400,7 +400,7 @@ function AdminPage() {
               activeTab === "payments" ||
               activeTab === "router_logs") && (
               <select
-                className="bg-[#0a0a0a] text-white text-[10px] font-bold uppercase tracking-[0.1em] px-4 py-2 border border-white/5 rounded-xl outline-none focus:border-[#64c883] transition-all"
+                className="bg-win-bg text-white text-[10px] font-bold uppercase tracking-[0.1em] px-4 py-2 border border-white/5 rounded-xl outline-none focus:border-primary transition-all"
                 value={selectedMarketId}
                 onChange={(e) => setSelectedMarketId(e.target.value)}
               >
@@ -415,7 +415,7 @@ function AdminPage() {
             {activeTab === "markets" && (
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="bg-[#64c883] text-[#0a0a0a] text-[10px] font-bold uppercase tracking-[0.1em] px-5 py-2 rounded-xl transition-all hover:scale-[1.02]"
+                className="bg-primary text-win-bg text-[10px] font-bold uppercase tracking-[0.1em] px-5 py-2 rounded-xl transition-all hover:scale-[1.02]"
               >
                 + Crear Mercado
               </button>
@@ -423,7 +423,7 @@ function AdminPage() {
             {activeTab === "users" && (
               <button
                 onClick={() => setShowCreateUserModal(true)}
-                className="bg-white text-[#0a0a0a] text-[10px] font-bold uppercase tracking-[0.1em] px-5 py-2 rounded-xl transition-all hover:scale-[1.02]"
+                className="bg-white text-win-bg text-[10px] font-bold uppercase tracking-[0.1em] px-5 py-2 rounded-xl transition-all hover:scale-[1.02]"
               >
                 + Crear Usuario
               </button>
@@ -441,12 +441,12 @@ function AdminPage() {
 
           {activeTab === "inactive" && (
             <div className="space-y-4">
-              <div className="bg-[#121212] border border-yellow-500/20 rounded-2xl p-4 text-[11px] text-yellow-400">
+              <div className="bg-win-bg border border-yellow-500/20 rounded-2xl p-4 text-[11px] text-yellow-400">
                 Mercados sin actividad (sin posiciones). Podés recuperar el seed voidando el mercado.
               </div>
               {loadingInactive ? (
                 <div className="flex justify-center py-20">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#64c883]" />
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
                 </div>
               ) : inactiveMarkets.length === 0 ? (
                 <div className="text-center py-20 text-gray-500 text-sm">
@@ -457,7 +457,7 @@ function AdminPage() {
                   {inactiveMarkets.map((m) => (
                     <div
                       key={m.id}
-                      className="bg-[#0f0f0f] border border-white/5 rounded-2xl p-5 flex items-center justify-between gap-4"
+                      className="bg-win-bg border border-white/5 rounded-2xl p-5 flex items-center justify-between gap-4"
                     >
                       <div className="flex-1 min-w-0">
                         <p className="text-white font-bold text-sm truncate">{m.question}</p>
@@ -484,19 +484,19 @@ function AdminPage() {
           {activeTab === "markets" &&
             (loadingMarkets ? (
               <div className="flex justify-center py-20">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#64c883]" />
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {markets.map((market) => (
                   <div
                     key={market.id}
-                    className="bg-[#121212] border border-white/5 rounded-3xl p-6 hover:border-white/10 transition-all group cursor-pointer relative"
+                    className="bg-win-bg border border-white/5 rounded-3xl p-6 hover:border-white/10 transition-all group cursor-pointer relative"
                     onClick={() => fetchMarketDetails(market.id)}
                   >
                     {loadingDetails && selectedMarketId === market.id && (
                       <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] rounded-3xl z-10 flex items-center justify-center">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#64c883]" />
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
                       </div>
                     )}
                     <div className="flex justify-between items-start mb-6">
@@ -504,12 +504,12 @@ function AdminPage() {
                         <span
                           className={`px-2 py-0.5 text-[9px] font-bold rounded-full uppercase tracking-wider ${
                             market.status === "ACTIVE"
-                              ? "bg-[#64c883]/10 text-[#64c883]"
+                              ? "bg-primary/10 text-primary"
                               : market.status === "DRAFT"
                                 ? "bg-gray-800 text-gray-400"
                                 : market.status === "RESOLVED"
                                   ? "bg-white/10 text-white"
-                                  : "bg-[#e16464]/10 text-[#e16464]"
+                                  : "bg-win-error/10 text-win-error"
                           }`}
                         >
                           {market.status}
@@ -539,7 +539,7 @@ function AdminPage() {
                           }
                           return null;
                         })()}
-                        <h4 className="text-base font-bold text-white group-hover:text-[#64c883] transition-colors">
+                        <h4 className="text-base font-bold text-white group-hover:text-primary transition-colors">
                           {market.question}
                         </h4>
                       </div>
@@ -550,7 +550,7 @@ function AdminPage() {
                         {market.status === "DRAFT" && (
                           <button
                             onClick={() => handleActivate(market.id)}
-                            className="px-3 py-1 bg-[#64c883] text-[#0a0a0a] text-[9px] font-bold rounded-lg uppercase tracking-wider"
+                            className="px-3 py-1 bg-primary text-win-bg text-[9px] font-bold rounded-lg uppercase tracking-wider"
                           >
                             Activar
                           </button>
@@ -563,7 +563,7 @@ function AdminPage() {
                           return isPaused ? (
                             <button
                               onClick={() => handleUnpausePrimary(market.id)}
-                              className="px-3 py-1 bg-yellow-500 text-[#0a0a0a] text-[9px] font-bold rounded-lg uppercase tracking-wider"
+                              className="px-3 py-1 bg-yellow-500 text-win-bg text-[9px] font-bold rounded-lg uppercase tracking-wider"
                             >
                               ▶ Reanudar
                             </button>
@@ -580,19 +580,19 @@ function AdminPage() {
                           market.status === "CLOSED") && (
                           <button
                             onClick={() => setShowResolveModal(market)}
-                            className="px-3 py-1 bg-[#64c883] text-[#0a0a0a] text-[9px] font-bold rounded-lg uppercase tracking-wider"
+                            className="px-3 py-1 bg-primary text-win-bg text-[9px] font-bold rounded-lg uppercase tracking-wider"
                           >
                             Resolver
                           </button>
                         )}
                       </div>
                     </div>
-                    <div className="grid grid-cols-3 gap-2 bg-[#0a0a0a] p-4 rounded-xl border border-white/5">
+                    <div className="grid grid-cols-3 gap-2 bg-win-bg p-4 rounded-xl border border-white/5">
                       <div>
                         <div className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">
                           YES Pool
                         </div>
-                        <div className="text-sm font-extrabold text-[#64c883]">
+                        <div className="text-sm font-extrabold text-primary">
                           $ {Number(market.yesPool || 0).toFixed(0)}
                         </div>
                       </div>
@@ -600,7 +600,7 @@ function AdminPage() {
                         <div className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">
                           NO Pool
                         </div>
-                        <div className="text-sm font-extrabold text-[#e16464]">
+                        <div className="text-sm font-extrabold text-win-error">
                           $ {Number(market.noPool || 0).toFixed(0)}
                         </div>
                       </div>
@@ -632,7 +632,7 @@ function AdminPage() {
                 {users.map((u) => (
                   <div
                     key={u.id}
-                    className="bg-[#121212] border border-white/5 rounded-3xl p-6 hover:border-white/10 transition-all group cursor-pointer"
+                    className="bg-win-bg border border-white/5 rounded-3xl p-6 hover:border-white/10 transition-all group cursor-pointer"
                     onClick={() => fetchUserDetails(u.id)}
                   >
                     <div className="flex items-center gap-4 mb-4">
@@ -640,7 +640,7 @@ function AdminPage() {
                         {(u.username || u.email || "?")[0]}
                       </div>
                       <div>
-                        <div className="text-base font-bold text-white group-hover:text-[#64c883] transition-colors truncate max-w-[150px]">
+                        <div className="text-base font-bold text-white group-hover:text-primary transition-colors truncate max-w-[150px]">
                           @{u.username || u.email.split("@")[0]}
                         </div>
                         <span
@@ -654,11 +654,11 @@ function AdminPage() {
                         </span>
                       </div>
                     </div>
-                    <div className="bg-[#0a0a0a] p-3 rounded-xl border border-white/5 flex justify-between items-center mb-4">
+                    <div className="bg-win-bg p-3 rounded-xl border border-white/5 flex justify-between items-center mb-4">
                       <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
                         Balance
                       </span>
-                      <span className="text-base font-extrabold text-[#64c883]">
+                      <span className="text-base font-extrabold text-primary">
                         $ {Number(u.balance || 0).toFixed(2)}
                       </span>
                     </div>
@@ -684,11 +684,11 @@ function AdminPage() {
           {(activeTab === "purchases" ||
             activeTab === "payments" ||
             activeTab === "router_logs") && (
-            <div className="bg-[#121212] border border-white/5 rounded-3xl overflow-hidden">
+            <div className="bg-win-bg border border-white/5 rounded-3xl overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="border-b border-white/5 bg-[#171717]">
+                    <tr className="border-b border-white/5 bg-win-card">
                       {activeTab === "purchases" ? (
                         <>
                           <th className="p-4 text-[9px] font-bold text-gray-400 uppercase tracking-[0.1em]">
@@ -755,7 +755,7 @@ function AdminPage() {
                             </td>
                             <td className="p-4">
                               <span
-                                className={`px-2 py-0.5 text-[9px] font-bold rounded-full uppercase tracking-wider ${p.side === "YES" ? "bg-[#64c883]/10 text-[#64c883]" : "bg-[#e16464]/10 text-[#e16464]"}`}
+                                className={`px-2 py-0.5 text-[9px] font-bold rounded-full uppercase tracking-wider ${p.side === "YES" ? "bg-primary/10 text-primary" : "bg-win-error/10 text-win-error"}`}
                               >
                                 {p.side} @{" "}
                                 {parseFloat(p.initialProbability).toFixed(0)}%
@@ -788,7 +788,7 @@ function AdminPage() {
                                   {t.type}
                                 </span>
                               </td>
-                              <td className="p-4 text-sm font-extrabold text-[#64c883]">
+                              <td className="p-4 text-sm font-extrabold text-primary">
                                 $ {Math.abs(parseFloat(t.amount)).toFixed(2)}
                               </td>
                               <td className="p-4 text-[10px] font-bold text-gray-400">
@@ -806,7 +806,7 @@ function AdminPage() {
                             >
                               <td className="p-4">
                                 <span
-                                  className={`px-2 py-0.5 text-[9px] font-bold rounded-full uppercase tracking-wider ${log.side === "YES" ? "bg-[#64c883]/10 text-[#64c883]" : "bg-[#e16464]/10 text-[#e16464]"}`}
+                                  className={`px-2 py-0.5 text-[9px] font-bold rounded-full uppercase tracking-wider ${log.side === "YES" ? "bg-primary/10 text-primary" : "bg-win-error/10 text-win-error"}`}
                                 >
                                   {log.side}
                                 </span>
@@ -849,7 +849,7 @@ function AdminPage() {
                                       ).map((step, idx) => (
                                         <div
                                           key={idx}
-                                          className="flex justify-between items-center text-[9px] font-bold text-gray-500 bg-[#0a0a0a] border border-white/5 p-1 rounded"
+                                          className="flex justify-between items-center text-[9px] font-bold text-gray-500 bg-win-bg border border-white/5 p-1 rounded"
                                         >
                                           <span>
                                             $
@@ -898,13 +898,13 @@ function AdminPage() {
       >
         {loadingDetails ? (
           <div className="py-20 flex justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#64c883]" />
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
           </div>
         ) : (
           selectedUserStats && (
             <div className="space-y-8 pt-4">
               <div className="grid grid-cols-3 gap-6">
-                <div className="p-6 bg-[#0a0a0a] rounded-2xl border border-white/5">
+                <div className="p-6 bg-win-bg rounded-2xl border border-white/5">
                   <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-2">
                     Inversión Total
                   </p>
@@ -915,18 +915,18 @@ function AdminPage() {
                     )}
                   </p>
                 </div>
-                <div className="p-6 bg-[#0a0a0a] rounded-2xl border border-[#64c883]/10">
-                  <p className="text-[10px] text-[#64c883]/60 font-bold uppercase tracking-wider mb-2">
+                <div className="p-6 bg-win-bg rounded-2xl border border-primary/10">
+                  <p className="text-[10px] text-primary/60 font-bold uppercase tracking-wider mb-2">
                     Ganancias Reales
                   </p>
-                  <p className="text-2xl font-extrabold text-[#64c883]">
+                  <p className="text-2xl font-extrabold text-primary">
                     ${" "}
                     {Number(selectedUserStats.stats.realizedGains || 0).toFixed(
                       0,
                     )}
                   </p>
                 </div>
-                <div className="p-6 bg-[#0a0a0a] rounded-2xl border border-white/5">
+                <div className="p-6 bg-win-bg rounded-2xl border border-white/5">
                   <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-2">
                     Potencial
                   </p>
@@ -947,11 +947,11 @@ function AdminPage() {
                   {selectedUserStats.positions.map((p: any) => (
                     <div
                       key={p.id}
-                      className="flex justify-between items-center p-4 bg-[#121212] border border-white/5 rounded-2xl"
+                      className="flex justify-between items-center p-4 bg-win-bg border border-white/5 rounded-2xl"
                     >
                       <div className="flex items-center gap-4">
                         <div
-                          className={`px-2 py-1 text-[9px] font-bold rounded-lg uppercase ${p.side === "YES" ? "bg-[#64c883]/10 text-[#64c883]" : "bg-[#e16464]/10 text-[#e16464]"}`}
+                          className={`px-2 py-1 text-[9px] font-bold rounded-lg uppercase ${p.side === "YES" ? "bg-primary/10 text-primary" : "bg-win-error/10 text-win-error"}`}
                         >
                           {p.side}
                         </div>
@@ -987,14 +987,14 @@ function AdminPage() {
       >
         {loadingDetails ? (
           <div className="py-20 flex justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#64c883]" />
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
           </div>
         ) : (
           selectedMarketStats && (
             <div className="space-y-8 pt-4">
               {/* Header de Info Base */}
               <div className="flex items-center gap-4 px-1">
-                <div className="bg-[#121212] px-4 py-2 rounded-xl border border-white/5">
+                <div className="bg-win-bg px-4 py-2 rounded-xl border border-white/5">
                   <div className="text-[9px] font-bold text-gray-500 uppercase tracking-wider mb-0.5">
                     ID Mercado
                   </div>
@@ -1002,15 +1002,15 @@ function AdminPage() {
                     {selectedMarketStats.id}
                   </div>
                 </div>
-                <div className="bg-[#121212] px-4 py-2 rounded-xl border border-white/5">
-                  <div className="text-[9px] font-bold text-[#64c883] uppercase tracking-wider mb-0.5">
+                <div className="bg-win-bg px-4 py-2 rounded-xl border border-white/5">
+                  <div className="text-[9px] font-bold text-primary uppercase tracking-wider mb-0.5">
                     Liquidez (b)
                   </div>
                   <div className="text-xs font-mono text-white">
                     {selectedMarketStats.b || 100}
                   </div>
                 </div>
-                <div className="bg-[#121212] px-4 py-2 rounded-xl border border-white/5">
+                <div className="bg-win-bg px-4 py-2 rounded-xl border border-white/5">
                   <div className="text-[9px] font-bold text-gray-500 uppercase tracking-wider mb-0.5">
                     Seed Cost Inicial
                   </div>
@@ -1023,7 +1023,7 @@ function AdminPage() {
                 </div>
               </div>
 
-              <div className="bg-[#0a0a0a] p-6 rounded-2xl border border-white/5">
+              <div className="bg-win-bg p-6 rounded-2xl border border-white/5">
                 <div className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.1em] mb-4">
                   Evolución de Probabilidad
                 </div>
@@ -1038,8 +1038,8 @@ function AdminPage() {
                   <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.1em]">
                     Liquidación Proyectada
                   </h3>
-                  <div className="bg-[#121212] p-6 rounded-2xl border border-white/5 space-y-4">
-                    <div className="flex justify-between items-center bg-[#0a0a0a] p-4 rounded-xl border border-white/5">
+                  <div className="bg-win-bg p-6 rounded-2xl border border-white/5 space-y-4">
+                    <div className="flex justify-between items-center bg-win-bg p-4 rounded-xl border border-white/5">
                       <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
                         WIN (
                         {selectedMarketStats.platformFee
@@ -1064,8 +1064,8 @@ function AdminPage() {
                       </span>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="p-4 bg-[#64c883]/5 rounded-xl border border-[#64c883]/10">
-                        <div className="text-[9px] font-bold text-[#64c883] uppercase tracking-wider mb-1">
+                      <div className="p-4 bg-primary/5 rounded-xl border border-primary/10">
+                        <div className="text-[9px] font-bold text-primary uppercase tracking-wider mb-1">
                           Si Gana SÍ
                         </div>
                         <div className="text-lg font-extrabold text-white">
@@ -1076,8 +1076,8 @@ function AdminPage() {
                           ).toFixed(2)}
                         </div>
                       </div>
-                      <div className="p-4 bg-[#e16464]/5 rounded-xl border border-[#e16464]/10">
-                        <div className="text-[9px] font-bold text-[#e16464] uppercase tracking-wider mb-1">
+                      <div className="p-4 bg-win-error/5 rounded-xl border border-win-error/10">
+                        <div className="text-[9px] font-bold text-win-error uppercase tracking-wider mb-1">
                           Si Gana NO
                         </div>
                         <div className="text-lg font-extrabold text-white">
@@ -1097,24 +1097,24 @@ function AdminPage() {
                     Distribución del Pool
                   </h3>
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-[#121212] p-4 rounded-2xl border border-[#64c883]/10">
-                      <div className="text-[9px] font-bold text-[#64c883] uppercase tracking-wider mb-1">
+                    <div className="bg-win-bg p-4 rounded-2xl border border-primary/10">
+                      <div className="text-[9px] font-bold text-primary uppercase tracking-wider mb-1">
                         YES Pool
                       </div>
-                      <div className="text-xl font-extrabold text-[#64c883]">
+                      <div className="text-xl font-extrabold text-primary">
                         $ {Number(selectedMarketStats.yesPool || 0).toFixed(0)}
                       </div>
                     </div>
-                    <div className="bg-[#121212] p-4 rounded-2xl border border-[#e16464]/10">
-                      <div className="text-[9px] font-bold text-[#e16464] uppercase tracking-wider mb-1">
+                    <div className="bg-win-bg p-4 rounded-2xl border border-win-error/10">
+                      <div className="text-[9px] font-bold text-win-error uppercase tracking-wider mb-1">
                         NO Pool
                       </div>
-                      <div className="text-xl font-extrabold text-[#e16464]">
+                      <div className="text-xl font-extrabold text-win-error">
                         $ {Number(selectedMarketStats.noPool || 0).toFixed(0)}
                       </div>
                     </div>
                   </div>
-                  <div className="bg-[#64c883] p-6 rounded-2xl text-[#0a0a0a] shadow-xl shadow-[#64c883]/10">
+                  <div className="bg-primary p-6 rounded-2xl text-win-bg shadow-xl shadow-primary/10">
                     <div className="text-[10px] font-bold uppercase tracking-wider mb-1 opacity-70">
                       Volumen Total en Juego
                     </div>
@@ -1153,7 +1153,7 @@ function AdminPage() {
                       <div className="flex-1 h-[1px] bg-white/5" />
                       <div className="group relative">
                         <span className="cursor-help text-xs text-gray-500">ⓘ</span>
-                        <div className="absolute bottom-full right-0 mb-2 w-80 p-3 bg-[#1a1a1a] text-[10px] text-gray-400 rounded-xl border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                        <div className="absolute bottom-full right-0 mb-2 w-80 p-3 bg-win-card text-[10px] text-gray-400 rounded-xl border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
                           Pago proporcional (Option B): el pool completo se distribuye entre ganadores. WIN siempre recupera el seed y su ganancia = fees cobradas durante el trading (1.5% LMSR + 2% P2P). El resultado es idéntico para cualquier outcome.
                         </div>
                       </div>
@@ -1161,53 +1161,53 @@ function AdminPage() {
 
                     {/* Resumen fijo de WIN */}
                     <div className="grid grid-cols-3 gap-4">
-                      <div className="bg-[#0a0a0a] border border-[#64c883]/20 rounded-2xl p-4 text-center">
+                      <div className="bg-win-bg border border-primary/20 rounded-2xl p-4 text-center">
                         <p className="text-[9px] text-gray-400 uppercase tracking-wider mb-1">Fees Cobradas (1.5%)</p>
-                        <p className="text-xl font-extrabold text-[#64c883]">+${collectedFees.toFixed(2)}</p>
+                        <p className="text-xl font-extrabold text-primary">+${collectedFees.toFixed(2)}</p>
                         <p className="text-[9px] text-gray-600 mt-1">Ingreso WIN (cualquier outcome)</p>
                       </div>
-                      <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl p-4 text-center">
+                      <div className="bg-win-bg border border-white/5 rounded-2xl p-4 text-center">
                         <p className="text-[9px] text-gray-400 uppercase tracking-wider mb-1">Seed Recuperado</p>
                         <p className="text-xl font-extrabold text-white">${seedCost.toFixed(2)}</p>
-                        <p className="text-[9px] text-[#64c883] mt-1">✓ Siempre 100%</p>
+                        <p className="text-[9px] text-primary mt-1">✓ Siempre 100%</p>
                       </div>
-                      <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl p-4 text-center">
+                      <div className="bg-win-bg border border-white/5 rounded-2xl p-4 text-center">
                         <p className="text-[9px] text-gray-400 uppercase tracking-wider mb-1">Pool a Ganadores</p>
                         <p className="text-xl font-extrabold text-white">${totalPool.toFixed(2)}</p>
                         <p className="text-[9px] text-gray-600 mt-1">100% del pool usuario</p>
                       </div>
                     </div>
 
-                    <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl overflow-hidden">
+                    <div className="bg-win-bg border border-white/5 rounded-2xl overflow-hidden">
                       <table className="w-full text-left">
                         <thead>
-                          <tr className="bg-[#171717] border-b border-white/5 h-10 text-[9px] font-bold text-gray-500 uppercase tracking-widest">
+                          <tr className="bg-win-card border-b border-white/5 h-10 text-[9px] font-bold text-gray-500 uppercase tracking-widest">
                             <th className="pl-6">OUTCOME</th>
                             <th className="text-center">POOL USUARIOS</th>
                             <th className="text-center">DISTRIBUIDO A GANADORES</th>
                             <th className="text-center">FEES WIN (1.5%)</th>
-                            <th className="text-center text-[#64c883]">PNL WIN</th>
-                            <th className="pr-6 text-right text-[#64c883]">TESORERÍA WIN</th>
+                            <th className="text-center text-primary">PNL WIN</th>
+                            <th className="pr-6 text-right text-primary">TESORERÍA WIN</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
                           {["YES", "NO"].map((label) => (
                             <tr key={label} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors h-16">
                               <td className="pl-6">
-                                <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full tracking-wider ${label === "YES" ? "bg-[#64c883]/10 text-[#64c883]" : "bg-[#e16464]/10 text-[#e16464]"}`}>
+                                <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full tracking-wider ${label === "YES" ? "bg-primary/10 text-primary" : "bg-win-error/10 text-win-error"}`}>
                                   GANA {label}
                                 </span>
                               </td>
                               <td className="text-center text-xs font-bold text-white">
                                 ${totalPool.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                               </td>
-                              <td className="text-center text-xs font-bold text-[#e16464]">
+                              <td className="text-center text-xs font-bold text-win-error">
                                 -${totalPool.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                               </td>
-                              <td className="text-center text-xs font-bold text-[#64c883]">
+                              <td className="text-center text-xs font-bold text-primary">
                                 +${collectedFees.toFixed(2)}
                               </td>
-                              <td className="text-center text-sm font-black text-[#64c883]">
+                              <td className="text-center text-sm font-black text-primary">
                                 +${winPnL.toFixed(2)}
                               </td>
                               <td className="pr-6 text-right">
@@ -1235,20 +1235,20 @@ function AdminPage() {
                 selectedMarketStats.resolutionReport && (
                   <div className="space-y-6 pt-8 border-t border-white/10">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-xs font-bold text-[#64c883] uppercase tracking-[0.2em]">
+                      <h3 className="text-xs font-bold text-primary uppercase tracking-[0.2em]">
                         Reporte de Resolución
                       </h3>
-                      <span className="px-3 py-1 bg-[#64c883]/10 text-[#64c883] text-[10px] font-bold rounded-lg uppercase tracking-wider">
+                      <span className="px-3 py-1 bg-primary/10 text-primary text-[10px] font-bold rounded-lg uppercase tracking-wider">
                         Resultado: {selectedMarketStats.outcome}
                       </span>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                      <div className="p-5 bg-[#121212] rounded-2xl border border-white/5">
+                      <div className="p-5 bg-win-bg rounded-2xl border border-white/5">
                         <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider mb-2">
                           Total Pagado a Ganadores
                         </p>
-                        <p className="text-2xl font-extrabold text-[#64c883]">
+                        <p className="text-2xl font-extrabold text-primary">
                           ${" "}
                           {Number(
                             selectedMarketStats.resolutionReport.results
@@ -1260,7 +1260,7 @@ function AdminPage() {
                           ganador{selectedMarketStats.resolutionReport.results.winners !== 1 ? "es" : ""}
                         </p>
                       </div>
-                      <div className="p-5 bg-[#121212] rounded-2xl border border-white/5">
+                      <div className="p-5 bg-win-bg rounded-2xl border border-white/5">
                         <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider mb-2">
                           Pago por Share Ganador
                         </p>
@@ -1274,19 +1274,19 @@ function AdminPage() {
                           Pool ÷ shares ganadores
                         </p>
                       </div>
-                      <div className="p-5 bg-[#121212] rounded-2xl border border-white/5">
+                      <div className="p-5 bg-win-bg rounded-2xl border border-white/5">
                         <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider mb-2">
                           Posiciones Perdedoras
                         </p>
-                        <p className="text-2xl font-extrabold text-[#e16464]">
+                        <p className="text-2xl font-extrabold text-win-error">
                           {selectedMarketStats.resolutionReport.results.losers}
                         </p>
                         <p className="text-[9px] text-gray-500 mt-1">
                           ${Number(selectedMarketStats.resolutionReport.results.totalLosses || 0).toFixed(2)} en riesgo
                         </p>
                       </div>
-                      <div className="p-5 bg-[#64c883]/10 rounded-2xl border border-[#64c883]/20">
-                        <p className="text-[9px] text-[#64c883] font-bold uppercase tracking-wider mb-2">
+                      <div className="p-5 bg-primary/10 rounded-2xl border border-primary/20">
+                        <p className="text-[9px] text-primary font-bold uppercase tracking-wider mb-2">
                           Fees WIN (1.5%)
                         </p>
                         <p className="text-2xl font-extrabold text-white">
@@ -1301,10 +1301,10 @@ function AdminPage() {
                       </div>
                     </div>
 
-                    <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl overflow-hidden">
+                    <div className="bg-win-bg border border-white/5 rounded-2xl overflow-hidden">
                       <table className="w-full text-left">
                         <thead>
-                          <tr className="bg-[#171717] border-b border-white/5">
+                          <tr className="bg-win-card border-b border-white/5">
                             <th className="p-4 text-[9px] font-bold text-gray-400 uppercase tracking-wider">
                               Usuario
                             </th>
@@ -1337,8 +1337,8 @@ function AdminPage() {
                                     <span
                                       className={`px-2 py-0.5 text-[9px] font-bold rounded-full uppercase ${
                                         pos.side === "YES"
-                                          ? "text-[#64c883] bg-[#64c883]/5"
-                                          : "text-[#e16464] bg-[#e16464]/5"
+                                          ? "text-primary bg-primary/5"
+                                          : "text-win-error bg-win-error/5"
                                       }`}
                                     >
                                       {pos.side}
@@ -1347,11 +1347,11 @@ function AdminPage() {
                                   <td className="p-4 text-sm font-bold text-white/40 text-right">
                                     $ {pos.amount.toFixed(2)}
                                   </td>
-                                  <td className={`p-4 text-sm font-bold text-right ${isWinner ? "text-[#64c883]" : "text-gray-500"}`}>
+                                  <td className={`p-4 text-sm font-bold text-right ${isWinner ? "text-primary" : "text-gray-500"}`}>
                                     {isLoser ? "–" : `$ ${pos.payout.toFixed(2)}`}
                                   </td>
                                   <td
-                                    className={`p-4 text-sm font-black text-right bg-white/[0.02] ${isWinner ? "text-[#64c883]" : "text-[#e16464]"}`}
+                                    className={`p-4 text-sm font-black text-right bg-white/[0.02] ${isWinner ? "text-primary" : "text-win-error"}`}
                                   >
                                     {isWinner ? "+" : ""}
                                     {isLoser ? `– $ ${pos.amount.toFixed(2)}` : `$ ${userPnL.toFixed(2)}`}
@@ -1371,10 +1371,10 @@ function AdminPage() {
                 <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.1em]">
                   Historial de Operaciones
                 </h3>
-                <div className="bg-[#121212] border border-white/5 rounded-2xl overflow-hidden">
+                <div className="bg-win-bg border border-white/5 rounded-2xl overflow-hidden">
                   <table className="w-full text-left">
                     <thead>
-                      <tr className="bg-[#171717] border-b border-white/5">
+                      <tr className="bg-win-card border-b border-white/5">
                         <th className="p-4 text-[9px] font-bold text-gray-400 uppercase tracking-wider">
                           Usuario
                         </th>
@@ -1413,7 +1413,7 @@ function AdminPage() {
                             </td>
                             <td className="p-4">
                               <span
-                                className={`px-2 py-0.5 text-[9px] font-bold rounded-full uppercase tracking-wider ${p.side === "YES" ? "bg-[#64c883]/10 text-[#64c883]" : "bg-[#e16464]/10 text-[#e16464]"}`}
+                                className={`px-2 py-0.5 text-[9px] font-bold rounded-full uppercase tracking-wider ${p.side === "YES" ? "bg-primary/10 text-primary" : "bg-win-error/10 text-win-error"}`}
                               >
                                 {p.side}
                               </span>
@@ -1421,7 +1421,7 @@ function AdminPage() {
                             <td className="p-4 text-sm font-extrabold text-white">
                               $ {Number(p.amount || 0).toFixed(2)}
                             </td>
-                            <td className="p-4 text-xs font-bold text-[#64c883]">
+                            <td className="p-4 text-xs font-bold text-primary">
                               {Number(p.initialProbability || 0).toFixed(0)}%
                             </td>
                             <td className="p-4 text-[10px] font-bold text-gray-400">
@@ -1453,7 +1453,7 @@ function AdminPage() {
                     const sm = selectedMarketStats.secondaryMarket.summary;
                     return (
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        <div className="bg-[#121212] border border-white/5 rounded-2xl p-4">
+                        <div className="bg-win-bg border border-white/5 rounded-2xl p-4">
                           <div className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">
                             Vol. P2P Ejecutado
                           </div>
@@ -1464,18 +1464,18 @@ function AdminPage() {
                             {sm.p2pTradeCount} trades completados
                           </div>
                         </div>
-                        <div className="bg-[#64c883]/10 border border-[#64c883]/20 rounded-2xl p-4">
-                          <div className="text-[9px] font-bold text-[#64c883] uppercase tracking-wider">
+                        <div className="bg-primary/10 border border-primary/20 rounded-2xl p-4">
+                          <div className="text-[9px] font-bold text-primary uppercase tracking-wider">
                             Ganancia WIN (FEE P2P)
                           </div>
-                          <div className="text-xl font-extrabold text-[#64c883] mt-1">
+                          <div className="text-xl font-extrabold text-primary mt-1">
                             + ${sm.totalP2PFeeCollected.toFixed(2)}
                           </div>
-                          <div className="text-[9px] text-[#64c883]/60 mt-0.5">
+                          <div className="text-[9px] text-primary/60 mt-0.5">
                             2% sobre el Orderbook
                           </div>
                         </div>
-                        <div className="bg-[#121212] border border-blue-500/10 rounded-2xl p-4">
+                        <div className="bg-win-bg border border-blue-500/10 rounded-2xl p-4">
                           <div className="text-[9px] font-bold text-blue-400 uppercase tracking-wider">
                             Órdenes Abiertas
                           </div>
@@ -1486,7 +1486,7 @@ function AdminPage() {
                             {sm.totalOpenShares.toFixed(2)} sh en el libro
                           </div>
                         </div>
-                        <div className="bg-[#121212] border border-blue-500/10 rounded-2xl p-4">
+                        <div className="bg-win-bg border border-blue-500/10 rounded-2xl p-4">
                           <div className="text-[9px] font-bold text-blue-400 uppercase tracking-wider">
                             Val. en el Libro
                           </div>
@@ -1506,10 +1506,10 @@ function AdminPage() {
                     <h4 className="text-[9px] font-bold text-blue-400 uppercase tracking-[0.1em]">
                       📂 Órdenes Abiertas en el Libro
                     </h4>
-                    <div className="bg-[#121212] border border-white/5 rounded-2xl overflow-hidden">
+                    <div className="bg-win-bg border border-white/5 rounded-2xl overflow-hidden">
                       <table className="w-full text-left">
                         <thead>
-                          <tr className="bg-[#171717] border-b border-white/5">
+                          <tr className="bg-win-card border-b border-white/5">
                             {[
                               "Usuario",
                               "Lado",
@@ -1553,7 +1553,7 @@ function AdminPage() {
                                   </td>
                                   <td className="p-3">
                                     <span
-                                      className={`px-2 py-0.5 text-[9px] font-bold rounded-full uppercase ${o.side === "YES" ? "bg-[#64c883]/10 text-[#64c883]" : "bg-[#e16464]/10 text-[#e16464]"}`}
+                                      className={`px-2 py-0.5 text-[9px] font-bold rounded-full uppercase ${o.side === "YES" ? "bg-primary/10 text-primary" : "bg-win-error/10 text-win-error"}`}
                                     >
                                       {o.side}
                                     </span>
@@ -1561,7 +1561,7 @@ function AdminPage() {
                                   <td className="p-3 text-xs font-bold text-white">
                                     {o.initialShares.toFixed(2)}
                                   </td>
-                                  <td className="p-3 text-xs font-bold text-[#64c883]">
+                                  <td className="p-3 text-xs font-bold text-primary">
                                     {o.filledShares.toFixed(2)}
                                   </td>
                                   <td className="p-3 text-xs font-bold text-blue-400">
@@ -1597,13 +1597,13 @@ function AdminPage() {
 
                   {/* P2P Transctions table */}
                   <div className="space-y-2">
-                    <h4 className="text-[9px] font-bold text-[#64c883] uppercase tracking-[0.1em]">
+                    <h4 className="text-[9px] font-bold text-primary uppercase tracking-[0.1em]">
                       ✅ Transacciones Mercado Secundario (P2P)
                     </h4>
-                    <div className="bg-[#121212] border border-white/5 rounded-2xl overflow-hidden">
+                    <div className="bg-win-bg border border-white/5 rounded-2xl overflow-hidden">
                       <table className="w-full text-left">
                         <thead>
-                          <tr className="bg-[#171717] border-b border-white/5">
+                          <tr className="bg-win-card border-b border-white/5">
                             {[
                               "Comprador",
                               "Vendedor (Recibe Neto)",
@@ -1639,7 +1639,7 @@ function AdminPage() {
                                   key={f.id || idx}
                                   className="hover:bg-white/5 transition-colors"
                                 >
-                                  <td className="p-3 text-xs font-bold text-[#64c883]">
+                                  <td className="p-3 text-xs font-bold text-primary">
                                     @{f.buyer}
                                   </td>
                                   <td className="p-3 text-xs font-bold text-gray-400">
@@ -1651,7 +1651,7 @@ function AdminPage() {
                                   <td className="p-3 text-xs font-bold text-blue-300">
                                     ${f.netAmount.toFixed(2)}
                                   </td>
-                                  <td className="p-3 text-sm font-extrabold text-[#64c883]">
+                                  <td className="p-3 text-sm font-extrabold text-primary">
                                     + ${f.fee.toFixed(2)}
                                   </td>
                                   <td className="p-3 text-[10px] font-bold text-gray-400 whitespace-nowrap">
@@ -1685,7 +1685,7 @@ function AdminPage() {
                 Pregunta del Mercado
               </label>
               <input
-                className="w-full h-14 bg-[#121212] border border-white/5 rounded-2xl px-4 text-white font-bold outline-none focus:border-[#64c883] transition-all"
+                className="w-full h-14 bg-win-bg border border-white/5 rounded-2xl px-4 text-white font-bold outline-none focus:border-primary transition-all"
                 value={newMarket.question}
                 onChange={(e) =>
                   setNewMarket({ ...newMarket, question: e.target.value })
@@ -1699,7 +1699,7 @@ function AdminPage() {
               </label>
               <input
                 type="date"
-                className="w-full h-14 bg-[#121212] border border-white/5 rounded-2xl px-4 text-white font-bold outline-none focus:border-[#64c883] transition-all"
+                className="w-full h-14 bg-win-bg border border-white/5 rounded-2xl px-4 text-white font-bold outline-none focus:border-primary transition-all"
                 value={newMarket.resolutionDate}
                 onChange={(e) =>
                   setNewMarket({
@@ -1716,7 +1716,7 @@ function AdminPage() {
                 </label>
                 <input
                   type="number"
-                  className="w-full h-14 bg-[#121212] border border-white/5 rounded-2xl px-4 text-white font-bold outline-none focus:border-[#64c883] transition-all"
+                  className="w-full h-14 bg-win-bg border border-white/5 rounded-2xl px-4 text-white font-bold outline-none focus:border-primary transition-all"
                   value={newMarket.b}
                   onChange={(e) =>
                     setNewMarket({ ...newMarket, b: e.target.value })
@@ -1733,7 +1733,7 @@ function AdminPage() {
                 </label>
                 <input
                   type="number"
-                  className="w-full h-14 bg-[#121212] border border-white/5 rounded-2xl px-4 text-white font-bold outline-none focus:border-[#64c883] transition-all"
+                  className="w-full h-14 bg-win-bg border border-white/5 rounded-2xl px-4 text-white font-bold outline-none focus:border-primary transition-all"
                   value={newMarket.maxBetAmount}
                   onChange={(e) =>
                     setNewMarket({ ...newMarket, maxBetAmount: e.target.value })
@@ -1747,7 +1747,7 @@ function AdminPage() {
                 </label>
                 <input
                   type="number"
-                  className="w-full h-14 bg-[#121212] border border-white/5 rounded-2xl px-4 text-white font-bold outline-none focus:border-[#64c883] transition-all"
+                  className="w-full h-14 bg-win-bg border border-white/5 rounded-2xl px-4 text-white font-bold outline-none focus:border-primary transition-all"
                   value={newMarket.maxPriceImpact}
                   onChange={(e) =>
                     setNewMarket({
@@ -1791,7 +1791,7 @@ function AdminPage() {
           </div>
           <button
             onClick={handleCreate}
-            className="w-full h-16 bg-[#64c883] text-[#0a0a0a] text-xs font-bold uppercase tracking-[0.1em] rounded-2xl transition-all hover:scale-[1.02] shadow-xl shadow-[#64c883]/10"
+            className="w-full h-16 bg-primary text-win-bg text-xs font-bold uppercase tracking-[0.1em] rounded-2xl transition-all hover:scale-[1.02] shadow-xl shadow-primary/10"
           >
             {creating ? "Creando..." : "Lanzar Mercado"}
           </button>
@@ -1843,7 +1843,7 @@ function AdminPage() {
                   type="datetime-local"
                   value={pauseScheduledAt}
                   onChange={(e) => setPauseScheduledAt(e.target.value)}
-                  className="w-full bg-[#1a1a1a] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-orange-500/50"
+                  className="w-full bg-win-card border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-orange-500/50"
                 />
                 <button
                   onClick={() => pauseScheduledAt && handlePausePrimary(pauseModal.id, pauseScheduledAt)}
@@ -1865,7 +1865,7 @@ function AdminPage() {
       >
         {showResolveModal && (
           <div className="space-y-8 pt-4">
-            <div className="bg-[#121212] p-6 rounded-2xl border border-white/5 text-center">
+            <div className="bg-win-bg p-6 rounded-2xl border border-white/5 text-center">
               <p className="text-lg font-bold text-white mb-4">
                 {showResolveModal.question}
               </p>
@@ -1882,10 +1882,10 @@ function AdminPage() {
               <button
                 onClick={() => handleResolve("YES")}
                 disabled={resolving}
-                className="h-16 bg-[#64c883] text-[#0a0a0a] text-[10px] font-bold uppercase tracking-wider rounded-2xl transition-all hover:scale-[1.05] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="h-16 bg-primary text-win-bg text-[10px] font-bold uppercase tracking-wider rounded-2xl transition-all hover:scale-[1.05] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {resolving ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-[#0a0a0a] border-t-transparent" />
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-win-bg border-t-transparent" />
                 ) : (
                   "SÍ Gana"
                 )}
@@ -1893,10 +1893,10 @@ function AdminPage() {
               <button
                 onClick={() => handleResolve("NO")}
                 disabled={resolving}
-                className="h-16 bg-[#e16464] text-[#0a0a0a] text-[10px] font-bold uppercase tracking-wider rounded-2xl transition-all hover:scale-[1.05] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="h-16 bg-win-error text-win-bg text-[10px] font-bold uppercase tracking-wider rounded-2xl transition-all hover:scale-[1.05] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {resolving ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-[#0a0a0a] border-t-transparent" />
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-win-bg border-t-transparent" />
                 ) : (
                   "NO Gana"
                 )}

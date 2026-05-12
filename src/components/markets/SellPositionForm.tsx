@@ -77,7 +77,7 @@ export function SellPositionForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="mt-4 p-4 bg-[#0a0a0a] border border-white/5 rounded-xl space-y-4 animate-in slide-in-from-top-2">
+    <form onSubmit={handleSubmit} className="mt-4 p-4 bg-win-bg border border-white/5 rounded-xl space-y-4 animate-in slide-in-from-top-2">
       <div className="flex justify-between items-center mb-2 text-xs">
         <span className="font-bold uppercase text-gray-400">Vender Shares {side}</span>
         <span className="text-gray-500">Max: {maxShares.toFixed(2)}</span>
@@ -107,12 +107,12 @@ export function SellPositionForm({
       </div>
 
       {numShares > 0 && numPrice > 0 && (
-        <div className="text-[10px] font-bold text-[#64c883] uppercase tracking-wider text-right">
+        <div className="text-[10px] font-bold text-primary uppercase tracking-wider text-right">
           Retorno estimado: ${(numShares * numPrice).toFixed(2)}
         </div>
       )}
 
-      {error && <p className="text-red-500 text-[10px] font-bold uppercase">{error}</p>}
+      {error && <p className="text-win-error text-[10px] font-bold uppercase">{error}</p>}
 
       <div className="flex gap-2 pt-2">
         <button
