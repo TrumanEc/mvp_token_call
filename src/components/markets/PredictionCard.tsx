@@ -366,6 +366,7 @@ function SellForm({ market, userId, onSuccess }: SellFormProps) {
     (p: any) => p.currentOwner.id === userId && p.shares > 0 && !p.isForSale
   );
 
+  const [sellMode, setSellMode] = useState<"LMSR" | "P2P">("LMSR");
   const [selectedPositionId, setSelectedPositionId] = useState<string>(
     myPositions[0]?.id || ""
   );
@@ -375,11 +376,58 @@ function SellForm({ market, userId, onSuccess }: SellFormProps) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
+  // LMSR sell-back quote
+  const [sellQuote, setSellQuote] = useState<{
+    shares: number;
+    grossAmount: number;
+    feeAmount: number;
+    netAmount: number;
+    avgPricePerShare: number;
+    feeRate: number;
+    newProbabilities: { yes: number; no: number };
+    liquidityAvailable: number;
+    capped: boolean;
+    capReason: string | null;
+  } | null>(null);
+  const [sellQuoteLoading, setSellQuoteLoading] = useState(false);
+
+  const isPrimaryPaused =
+    market.primaryMarketPaused ||
+    (market.primaryPauseScheduledAt &&
+      new Date(market.primaryPauseScheduledAt) <= new Date());
+
+  // Force P2P mode when primary is paused
+  useEffect(() => {
+    if (isPrimaryPaused && sellMode === "LMSR") setSellMode("P2P");
+  }, [isPrimaryPaused, sellMode]);
+
   const selectedPos = myPositions.find((p: any) => p.id === selectedPositionId);
   const maxShares = selectedPos?.shares || 0;
   const numShares = parseFloat(sharesToSell) || 0;
   const numPrice = parseFloat(pricePerShare) || 0;
   const estimatedRevenue = numShares * numPrice;
+
+  // Fetch LMSR sell-back quote
+  useEffect(() => {
+    if (sellMode !== "LMSR" || !selectedPos || numShares <= 0) {
+      setSellQuote(null);
+      return;
+    }
+    const fetchQuote = async () => {
+      setSellQuoteLoading(true);
+      try {
+        const res = await fetch(
+          `/api/markets/${market.id}/sell-quote?side=${selectedPos.side}&shares=${numShares}`
+        );
+        const data = await res.json();
+        if (res.ok) setSellQuote(data);
+        else setError(data.error || "Error al obtener cotización");
+      } catch { /* noop */ }
+      finally { setSellQuoteLoading(false); }
+    };
+    const t = setTimeout(fetchQuote, 400);
+    return () => clearTimeout(t);
+  }, [sellMode, numShares, selectedPositionId, market.id, selectedPos]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -389,29 +437,44 @@ function SellForm({ market, userId, onSuccess }: SellFormProps) {
       setError(`Debes vender entre 0.01 y ${maxShares.toFixed(2)} shares`);
       return;
     }
-    if (numPrice <= 0 || numPrice >= 1) {
-      setError("El precio por share debe estar entre $0.01 y $0.99");
-      return;
-    }
     setLoading(true);
     try {
-      const res = await fetch("/api/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          marketId: market.id,
-          userId,
-          positionId: selectedPositionId,
-          shares: numShares,
-          pricePerShare: numPrice,
-          executionType: "LIMIT_SELL",
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Error al listar la orden");
-      setSuccess(true);
-      setSharesToSell(""); setPricePerShare("");
-      setTimeout(() => { setSuccess(false); onSuccess(); }, 1200);
+      if (sellMode === "LMSR") {
+        // Sell-back via LMSR
+        const res = await fetch(`/api/positions/${selectedPositionId}/sell-lmsr`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId, shares: numShares }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Error al vender al mercado");
+        setSuccess(true);
+        setSharesToSell(""); setSellQuote(null);
+        setTimeout(() => { setSuccess(false); onSuccess(); }, 1200);
+      } else {
+        // P2P limit order
+        if (numPrice <= 0 || numPrice >= 1) {
+          setError("El precio por share debe estar entre $0.01 y $0.99");
+          setLoading(false); return;
+        }
+        const res = await fetch("/api/orders", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            marketId: market.id,
+            userId,
+            positionId: selectedPositionId,
+            shares: numShares,
+            pricePerShare: numPrice,
+            executionType: "LIMIT_SELL",
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Error al listar la orden");
+        setSuccess(true);
+        setSharesToSell(""); setPricePerShare("");
+        setTimeout(() => { setSuccess(false); onSuccess(); }, 1200);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error desconocido");
     } finally { setLoading(false); }
@@ -430,6 +493,59 @@ function SellForm({ market, userId, onSuccess }: SellFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Sell mode toggle */}
+      <div className="flex gap-1 bg-[#0d0d0d] rounded-xl p-1">
+        <button
+          type="button"
+          onClick={() => !isPrimaryPaused && setSellMode("LMSR")}
+          disabled={isPrimaryPaused}
+          className={`flex-1 py-2 rounded-lg text-[10px] font-extrabold uppercase tracking-wider transition-all ${
+            isPrimaryPaused
+              ? "text-gray-600 cursor-not-allowed"
+              : sellMode === "LMSR"
+                ? "bg-purple-500 text-white shadow"
+                : "text-gray-500 hover:text-white"
+          }`}
+        >
+          ⚡ Vender al mercado
+        </button>
+        <button
+          type="button"
+          onClick={() => setSellMode("P2P")}
+          className={`flex-1 py-2 rounded-lg text-[10px] font-extrabold uppercase tracking-wider transition-all ${
+            sellMode === "P2P"
+              ? "bg-orange-500 text-white shadow"
+              : "text-gray-500 hover:text-orange-400"
+          }`}
+        >
+          📋 Orden P2P (límite)
+        </button>
+      </div>
+
+      {/* Mode description */}
+      <div className="px-3 py-2 bg-white/[0.02] border border-white/5 rounded-xl">
+        <p className="text-[10px] text-gray-400 leading-relaxed">
+          {sellMode === "LMSR" ? (
+            <>
+              <span className="font-bold text-purple-400">Venta instantánea:</span> quemas tus shares contra el AMM (LMSR) y recibes cash al precio actual de la curva, menos {((market.platformFee ?? 0.015) * 100).toFixed(1)}% de fee.
+            </>
+          ) : (
+            <>
+              <span className="font-bold text-orange-400">Orden P2P:</span> publicas un precio límite. Tus shares se venden cuando otro usuario las compre. Sin fees como maker.
+            </>
+          )}
+        </p>
+      </div>
+
+      {isPrimaryPaused && (
+        <div className="flex items-start gap-2 px-3 py-2 bg-orange-500/10 border border-orange-500/20 rounded-xl">
+          <span className="text-orange-400 text-sm">⏸</span>
+          <p className="text-[10px] text-orange-400">
+            Primario pausado: la venta al mercado (LMSR) no está disponible. Solo puedes crear órdenes P2P.
+          </p>
+        </div>
+      )}
+
       {/* Position selector */}
       {myPositions.length > 1 && (
         <div className="space-y-1">
@@ -519,27 +635,29 @@ function SellForm({ market, userId, onSuccess }: SellFormProps) {
         </div>
       </div>
 
-      <div className="space-y-2">
-        <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider px-1">
-          Precio límite por share
+      {sellMode === "P2P" && (
+        <div className="space-y-2">
+          <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider px-1">
+            Precio límite por share
+          </div>
+          <div className="relative group">
+            <input
+              type="number"
+              placeholder="0.50"
+              value={pricePerShare}
+              onChange={(e) => setPricePerShare(e.target.value)}
+              min="0.01"
+              max="0.99"
+              step="0.01"
+              className="w-full bg-win-bg border border-win-hover rounded-xl px-4 py-3 text-white font-bold text-lg outline-none transition-all group-focus-within:border-orange-500/50 group-focus-within:ring-1 group-focus-within:ring-orange-500/20"
+            />
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold">$</div>
+          </div>
         </div>
-        <div className="relative group">
-          <input
-            type="number"
-            placeholder="0.50"
-            value={pricePerShare}
-            onChange={(e) => setPricePerShare(e.target.value)}
-            min="0.01"
-            max="0.99"
-            step="0.01"
-            className="w-full bg-win-bg border border-win-hover rounded-xl px-4 py-3 text-white font-bold text-lg outline-none transition-all group-focus-within:border-orange-500/50 group-focus-within:ring-1 group-focus-within:ring-orange-500/20"
-          />
-          <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold">$</div>
-        </div>
-      </div>
+      )}
 
-      {/* Summary */}
-      {numShares > 0 && numPrice > 0 && (
+      {/* Summary — P2P */}
+      {sellMode === "P2P" && numShares > 0 && numPrice > 0 && (
         <div className="space-y-2">
           <div className="flex justify-between items-center px-4 py-3 bg-win-bg/50 rounded-xl border border-white/5">
             <span className="text-xs text-gray-400">Órdenes a colocar</span>
@@ -556,16 +674,85 @@ function SellForm({ market, userId, onSuccess }: SellFormProps) {
         </div>
       )}
 
+      {/* Summary — LMSR sell-back */}
+      {sellMode === "LMSR" && numShares > 0 && (
+        <div className="space-y-2">
+          <div className="flex justify-between items-center px-4 py-3 bg-win-bg/50 rounded-xl border border-white/5">
+            <span className="text-xs text-gray-400">Shares a quemar</span>
+            <span className="text-sm font-bold text-white">
+              {sellQuoteLoading ? "..." : (sellQuote?.shares ?? numShares).toFixed(2)} sh
+            </span>
+          </div>
+          {sellQuote?.capped && (
+            <div className="flex items-start gap-2 px-3 py-2 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
+              <span className="text-yellow-400 text-xs">⚠️</span>
+              <p className="text-[10px] text-yellow-300">
+                Limitado a {sellQuote.shares.toFixed(2)} shares por liquidez en la curva LMSR.
+              </p>
+            </div>
+          )}
+          <div className="flex justify-between items-center px-4 py-3 bg-win-bg/50 rounded-xl border border-white/5">
+            <span className="text-xs text-gray-400">Precio promedio</span>
+            <span className="text-sm font-bold text-white">
+              {sellQuoteLoading ? "..." : `$${(sellQuote?.avgPricePerShare ?? 0).toFixed(4)}`}
+            </span>
+          </div>
+          <div className="flex justify-between items-center px-4 py-3 bg-win-bg/50 rounded-xl border border-white/5">
+            <span className="text-xs text-gray-400">Monto bruto</span>
+            <span className="text-sm font-bold text-white">
+              {sellQuoteLoading ? "..." : `$${(sellQuote?.grossAmount ?? 0).toFixed(2)}`}
+            </span>
+          </div>
+          <div className="flex justify-between items-center px-4 py-3 bg-win-bg/50 rounded-xl border border-white/5">
+            <span className="text-xs text-purple-400">
+              Comisión WIN ({((sellQuote?.feeRate ?? 0.015) * 100).toFixed(1)}%)
+            </span>
+            <span className="text-sm font-bold text-win-error">
+              - ${(sellQuote?.feeAmount ?? 0).toFixed(2)}
+            </span>
+          </div>
+          {sellQuote && (
+            <div className="flex justify-between items-center px-4 py-3 bg-win-bg/50 rounded-xl border border-white/5">
+              <span className="text-xs text-gray-400">Nuevo precio del mercado</span>
+              <div className="flex gap-3">
+                <span className="text-sm font-bold text-primary">Y ${sellQuote.newProbabilities.yes.toFixed(2)}</span>
+                <span className="text-sm font-bold text-win-error">N ${sellQuote.newProbabilities.no.toFixed(2)}</span>
+              </div>
+            </div>
+          )}
+          <div className="flex justify-between items-center px-4 py-4 bg-purple-500/10 rounded-xl border border-purple-500/20">
+            <span className="text-xs text-purple-300">Recibirás ahora</span>
+            <span className="text-base font-extrabold text-purple-300">
+              {sellQuoteLoading ? "..." : `$${(sellQuote?.netAmount ?? 0).toFixed(2)}`}
+            </span>
+          </div>
+        </div>
+      )}
+
       {error && <p className="text-win-error text-xs text-center font-medium">{error}</p>}
-      {success && <p className="text-primary text-xs text-center font-bold">✓ Orden listada en el Order Book</p>}
+      {success && (
+        <p className="text-primary text-xs text-center font-bold">
+          {sellMode === "LMSR" ? "✓ Shares vendidos al mercado" : "✓ Orden listada en el Order Book"}
+        </p>
+      )}
 
       <Button
         type="submit"
-        disabled={loading || numShares <= 0 || numPrice <= 0 || numShares > maxShares}
+        disabled={
+          loading ||
+          numShares <= 0 ||
+          numShares > maxShares ||
+          (sellMode === "P2P" && (numPrice <= 0 || numPrice >= 1)) ||
+          (sellMode === "LMSR" && (sellQuoteLoading || !sellQuote || sellQuote.grossAmount <= 0))
+        }
         loading={loading}
-        className="w-full py-6 rounded-2xl text-lg font-bold bg-orange-500 hover:bg-orange-400 text-white shadow-xl shadow-orange-500/20 transition-all"
+        className={`w-full py-6 rounded-2xl text-lg font-bold text-white shadow-xl transition-all ${
+          sellMode === "LMSR"
+            ? "bg-purple-500 hover:bg-purple-400 shadow-purple-500/20"
+            : "bg-orange-500 hover:bg-orange-400 shadow-orange-500/20"
+        }`}
       >
-        Listar en Order Book
+        {sellMode === "LMSR" ? "Vender al mercado" : "Listar en Order Book"}
       </Button>
     </form>
   );

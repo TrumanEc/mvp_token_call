@@ -59,6 +59,34 @@ export class LmsrService {
   }
 
   /**
+   * Gross revenue from burning (selling-back) deltaShares of a specific side against the LMSR curve.
+   * Revenue = C(before) - C(after)
+   * Returns a positive number representing how much cash leaves the pool.
+   */
+  getRevenueFromSell(
+    qYes: number,
+    qNo: number,
+    b: number,
+    side: "YES" | "NO",
+    deltaShares: number,
+  ): number {
+    if (deltaShares <= 0) return 0;
+    // Cannot sell more than what exists on that side (allow going slightly below zero for floating precision but normally no)
+    if (side === "YES" && deltaShares > qYes && qYes > 0) {
+      deltaShares = Math.max(0, qYes);
+    }
+    if (side === "NO" && deltaShares > qNo && qNo > 0) {
+      deltaShares = Math.max(0, qNo);
+    }
+    const before = this.costFunction(qYes, qNo, b);
+    const after =
+      side === "YES"
+        ? this.costFunction(qYes - deltaShares, qNo, b)
+        : this.costFunction(qYes, qNo - deltaShares, b);
+    return Math.max(0, before - after);
+  }
+
+  /**
    * Calculate how many shares can be bought for a fixed amount of money
    * Uses binary search as the inverse of costFunction is not easily solvable analytically for delta
    */
