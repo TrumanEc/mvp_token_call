@@ -2,15 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 /**
- * GET /api/users/[userId]/transactions
+ * GET /api/users/[id]/transactions
  * Returns the user's full transaction history with market metadata.
  * Optional filters: ?type=BET_PLACED&limit=50
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ userId: string }> },
+  { params }: { params: Promise<{ id: string }> },
 ) {
-  const { userId } = await params;
+  const { id: userId } = await params;
   const { searchParams } = new URL(request.url);
   const typeFilter = searchParams.get("type");
   const limit = Math.min(parseInt(searchParams.get("limit") || "200"), 500);
