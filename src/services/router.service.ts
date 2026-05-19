@@ -23,7 +23,7 @@ export class RouterService {
 
       const market = await tx.market.findUnique({
         where: { id: data.marketId },
-        select: { id: true, qYes: true, qNo: true, b: true, status: true, yesPool: true, noPool: true, platformFee: true, primaryMarketPaused: true, primaryPauseScheduledAt: true },
+        select: { id: true, qYes: true, qNo: true, b: true, alpha: true, bMin: true, status: true, yesPool: true, noPool: true, platformFee: true, primaryMarketPaused: true, primaryPauseScheduledAt: true },
       });
 
       if (!market || market.status !== "ACTIVE") {
@@ -44,6 +44,7 @@ export class RouterService {
       }
 
       const lmsrService = new LmsrService();
+      const liquidityParams = { b: market.b, alpha: market.alpha, bMin: market.bMin };
       let remainingGross = budgetNum;
 
       // Variables de tracking
@@ -80,7 +81,7 @@ export class RouterService {
 
       // START ROUTING LOOP
       while (remainingGross > 0.0001) {
-        const { pYes, pNo } = lmsrService.getPrice(currentQYes, currentQNo, market.b);
+        const { pYes, pNo } = lmsrService.getPriceLS(currentQYes, currentQNo, liquidityParams);
         const lmsrSpotPrice = data.side === "YES" ? pYes : pNo;
 
         let bestAsk = askIndex < asks.length ? asks[askIndex] : null;
@@ -90,17 +91,17 @@ export class RouterService {
         if (isPrimaryPaused && !bestAsk) break;
         if (!isPrimaryPaused && (!bestAsk || lmsrSpotPrice < bestAsk.pricePerShare - 0.0001)) {
           let safeNetToLMSR = remainingGross * (1 - lmsrFeeRate);
-          
+
           if (bestAsk) {
-            const netToReachTarget = lmsrService.getCostToReachTargetPrice(
-              currentQYes, currentQNo, market.b, data.side, bestAsk.pricePerShare
+            const netToReachTarget = lmsrService.getCostToReachTargetPriceLS(
+              currentQYes, currentQNo, liquidityParams, data.side, bestAsk.pricePerShare
             );
             if (netToReachTarget > 0 && netToReachTarget <= safeNetToLMSR) {
                safeNetToLMSR = netToReachTarget;
             }
           }
 
-          const sharesGenerados = lmsrService.getSharesToBuy(currentQYes, currentQNo, market.b, data.side, safeNetToLMSR);
+          const sharesGenerados = lmsrService.getSharesToBuyLS(currentQYes, currentQNo, liquidityParams, data.side, safeNetToLMSR);
           
           if (sharesGenerados > 0 && safeNetToLMSR > 0) {
              const stepGross = safeNetToLMSR / (1 - lmsrFeeRate);
@@ -239,7 +240,8 @@ export class RouterService {
       });
 
       if (lmsrNetSpent > 0) {
-         const stateBefore = lmsrService.getMarketState(market.qYes, market.qNo, market.b);
+         const bBefore = lmsrService.getEffectiveB(market.qYes, market.qNo, liquidityParams);
+         const stateBefore = lmsrService.getMarketState(market.qYes, market.qNo, bBefore);
          await tx.market.update({
            where: { id: data.marketId },
            data: {
@@ -249,7 +251,8 @@ export class RouterService {
              noPool:  data.side === "NO"  ? { increment: lmsrNetSpent } : undefined,
            }
          });
-         const stateAfter = lmsrService.getMarketState(currentQYes, currentQNo, market.b);
+         const bAfter = lmsrService.getEffectiveB(currentQYes, currentQNo, liquidityParams);
+         const stateAfter = lmsrService.getMarketState(currentQYes, currentQNo, bAfter);
          await tx.lmsrSnapshot.create({
             data: {
               marketId: data.marketId,
@@ -292,7 +295,7 @@ export class RouterService {
 
     const market = await prisma.market.findUnique({
       where: { id: data.marketId },
-      select: { id: true, qYes: true, qNo: true, b: true, status: true, platformFee: true, primaryMarketPaused: true, primaryPauseScheduledAt: true },
+      select: { id: true, qYes: true, qNo: true, b: true, alpha: true, bMin: true, status: true, platformFee: true, primaryMarketPaused: true, primaryPauseScheduledAt: true },
     });
 
     if (!market || market.status !== "ACTIVE") {
@@ -305,6 +308,7 @@ export class RouterService {
         new Date(market.primaryPauseScheduledAt) <= new Date());
 
     const lmsrService = new LmsrService();
+    const liquidityParams = { b: market.b, alpha: market.alpha, bMin: market.bMin };
     let remainingGross = budgetNum;
 
     const lmsrFeeRate = market.platformFee ? Number(market.platformFee) : 0.015;
@@ -334,7 +338,7 @@ export class RouterService {
     let askIndex = 0;
 
     while (remainingGross > 0.0001) {
-      const { pYes, pNo } = lmsrService.getPrice(currentQYes, currentQNo, market.b);
+      const { pYes, pNo } = lmsrService.getPriceLS(currentQYes, currentQNo, liquidityParams);
       const lmsrSpotPrice = data.side === "YES" ? pYes : pNo;
 
       let bestAsk = askIndex < clonedAsks.length ? clonedAsks[askIndex] : null;
@@ -343,11 +347,11 @@ export class RouterService {
       if (!simIsPrimaryPaused && (!bestAsk || lmsrSpotPrice < bestAsk.pricePerShare - 0.0001)) {
         let safeNetToLMSR = remainingGross * (1 - lmsrFeeRate);
         if (bestAsk) {
-          const netToReachTarget = lmsrService.getCostToReachTargetPrice(currentQYes, currentQNo, market.b, data.side, bestAsk.pricePerShare);
+          const netToReachTarget = lmsrService.getCostToReachTargetPriceLS(currentQYes, currentQNo, liquidityParams, data.side, bestAsk.pricePerShare);
           if (netToReachTarget > 0 && netToReachTarget <= safeNetToLMSR) safeNetToLMSR = netToReachTarget;
         }
 
-        const sharesGenerados = lmsrService.getSharesToBuy(currentQYes, currentQNo, market.b, data.side, safeNetToLMSR);
+        const sharesGenerados = lmsrService.getSharesToBuyLS(currentQYes, currentQNo, liquidityParams, data.side, safeNetToLMSR);
         if (sharesGenerados > 0 && safeNetToLMSR > 0.0001) {
            const stepGross = safeNetToLMSR / (1 - lmsrFeeRate);
            lmsrSharesCollected += sharesGenerados;
@@ -385,7 +389,7 @@ export class RouterService {
     const realSpentGross = budgetNum - remainingGross;
     const totalSharesCollected = lmsrSharesCollected + obSharesCollected;
     const avgPriceOverall = realSpentGross > 0 ? (realSpentGross / totalSharesCollected) : 0;
-    const newPrices = lmsrService.getPrice(currentQYes, currentQNo, market.b);
+    const newPrices = lmsrService.getPriceLS(currentQYes, currentQNo, liquidityParams);
 
     return {
        spentGross: realSpentGross,

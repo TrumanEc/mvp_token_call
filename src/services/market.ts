@@ -58,7 +58,9 @@ export class MarketService {
     if (!market) return null;
 
     const lmsrService = new LmsrService();
-    const prices = lmsrService.getPrice(market.qYes, market.qNo, market.b);
+    const liquidityParams = { b: market.b, alpha: market.alpha, bMin: market.bMin };
+    const effectiveB = lmsrService.getEffectiveB(market.qYes, market.qNo, liquidityParams);
+    const prices = lmsrService.getPriceLS(market.qYes, market.qNo, liquidityParams);
 
     // Calculate legacy-style odds for compatibility if needed, or just use LMSR prices * 100
     const odds = {
@@ -72,6 +74,9 @@ export class MarketService {
       maxPool: market.maxPool?.toNumber() ?? null,
       orders: (market as any).orders || [],
       odds, // Overwrite legacy odds with LMSR odds
+      effectiveB,
+      Q: market.qYes + market.qNo,
+      isLiquiditySensitive: market.alpha != null,
       positions: (market as any).positions.map((p: any) => ({
         ...p,
         amount: p.amount.toNumber(),
@@ -106,17 +111,22 @@ export class MarketService {
     resolutionDate: Date;
     maxPool?: number;
     b?: number;
+    alpha?: number;      // LS-LMSR slope (0.05–0.15 typical). Null/undefined = classic b fijo.
+    bMin?: number;       // LS-LMSR floor (default 100)
     maxBetAmount?: number;
     maxPriceImpact?: number;
     initialProbabilityYes?: number; // 0.01–0.99, defaults to 0.5
   }) {
-    const b = data.b || 100;
     const lmsrService = new LmsrService();
-    const seedCost = lmsrService.getMaxLoss(b);
+    const useLS = data.alpha != null;
+    const bMin = data.bMin ?? 100;
+    const b = data.b ?? 100;
+    const params = { b, alpha: data.alpha ?? null, bMin: useLS ? bMin : null };
+    const seedCost = lmsrService.getSeedCostLS(params);
 
     // Compute starting q values from target probability (defaults to 50/50)
     const pYesInit = data.initialProbabilityYes ?? 0.5;
-    const { qYes: initQYes, qNo: initQNo } = lmsrService.getInitialQValues(b, pYesInit);
+    const { qYes: initQYes, qNo: initQNo } = lmsrService.getInitialQValuesLS(params, pYesInit);
     const pNoInit = 1 - pYesInit;
 
     return prisma.market.create({
@@ -131,8 +141,10 @@ export class MarketService {
           ? Number(data.maxPriceImpact)
           : undefined,
         status: "DRAFT",
-        // LMSR Initialization at target probability
+        // LMSR / LS-LMSR Initialization at target probability
         b,
+        alpha: useLS ? data.alpha : null,
+        bMin: useLS ? bMin : null,
         qYes: initQYes,
         qNo: initQNo,
         seedCost,

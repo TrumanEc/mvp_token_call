@@ -34,6 +34,8 @@ export async function GET(
         qYes: true,
         qNo: true,
         b: true,
+        alpha: true,
+        bMin: true,
         status: true,
         yesPool: true,
         noPool: true,
@@ -62,6 +64,7 @@ export async function GET(
     }
 
     const lmsr = new LmsrService();
+    const liquidityParams = { b: market.b, alpha: market.alpha, bMin: market.bMin };
     const feeRate = market.platformFee ? Number(market.platformFee) : 0.015;
 
     // Cap shares to what exists on the LMSR curve for that side
@@ -83,10 +86,10 @@ export async function GET(
     }
 
     const effectiveShares = Math.min(shares, availableOnCurve);
-    const grossAmount = lmsr.getRevenueFromSell(
+    const grossAmount = lmsr.getRevenueFromSellLS(
       market.qYes,
       market.qNo,
-      market.b,
+      liquidityParams,
       side,
       effectiveShares,
     );
@@ -97,7 +100,7 @@ export async function GET(
     // New state after sell
     const newQYes = side === "YES" ? market.qYes - effectiveShares : market.qYes;
     const newQNo = side === "NO" ? market.qNo - effectiveShares : market.qNo;
-    const newPrices = lmsr.getPrice(newQYes, newQNo, market.b);
+    const newPrices = lmsr.getPriceLS(newQYes, newQNo, liquidityParams);
 
     return NextResponse.json({
       side,

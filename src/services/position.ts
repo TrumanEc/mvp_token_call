@@ -152,6 +152,8 @@ export class PositionService {
           },
           // Store LMSR state parameters for price calculation
           _b: p.market.b,
+          _alpha: (p.market as any).alpha ?? null,
+          _bMin: (p.market as any).bMin ?? null,
           _qYes: p.market.qYes,
           _qNo: p.market.qNo,
           yes: {
@@ -221,9 +223,15 @@ export class PositionService {
       // Use real LMSR price (NOT pool ratio)
       const lmsrService = new LmsrService();
       const marketB = (g as any)._b || 1000;
+      const marketAlpha = (g as any)._alpha ?? null;
+      const marketBMin = (g as any)._bMin ?? null;
       const marketQYes = (g as any)._qYes || 0;
       const marketQNo = (g as any)._qNo || 0;
-      const lmsrReal = lmsrService.getPrice(marketQYes, marketQNo, marketB);
+      const lmsrReal = lmsrService.getPriceLS(marketQYes, marketQNo, {
+        b: marketB,
+        alpha: marketAlpha,
+        bMin: marketBMin,
+      });
       const marketOutcome = (g as any).market.outcome;
       const isResolved = (g as any).market.status === "RESOLVED";
 

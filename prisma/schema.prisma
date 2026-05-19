@@ -42,6 +42,8 @@ model Market {
   status         String                 @default("DRAFT")
   outcome        String?
   b              Float                  @default(100.0)
+  alpha          Float?                 // LS-LMSR slope α (b = max(bMin, α·Q)). Null = legacy b fijo.
+  bMin           Float?                 // LS-LMSR floor b_min (avoids singularity when Q=0)
   qYes           Float                  @default(0)
   qNo            Float                  @default(0)
   seedCost       Float                  @default(0)

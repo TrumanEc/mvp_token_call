@@ -24,6 +24,8 @@ export async function GET(
         qYes: true,
         qNo: true,
         b: true,
+        alpha: true,
+        bMin: true,
         maxBetAmount: true,
         maxPriceImpact: true,
         platformFee: true,
@@ -87,11 +89,12 @@ export async function GET(
         ? poolAfterBuy / totalWinningSharesAfter
         : 1;
 
-      const validation = lmsrService.validateBetAmount(
+      const liquidityParams = { b: market.b, alpha: market.alpha, bMin: market.bMin };
+      const validation = lmsrService.validateBetAmountLS(
         netInvestment,
         market.qYes,
         market.qNo,
-        market.b,
+        liquidityParams,
         side,
         market.maxBetAmount ?? null,
         market.maxPriceImpact ?? null,
@@ -127,10 +130,11 @@ export async function GET(
         return NextResponse.json({ error: "Invalid shares" }, { status: 400 });
       }
 
-      const netCost = lmsrService.getCostToBuy(
+      const liquidityParams2 = { b: market.b, alpha: market.alpha, bMin: market.bMin };
+      const netCost = lmsrService.getCostToBuyLS(
         market.qYes,
         market.qNo,
-        market.b,
+        liquidityParams2,
         side,
         shares,
       );
@@ -141,7 +145,7 @@ export async function GET(
 
       const newQYes = side === "YES" ? market.qYes + shares : market.qYes;
       const newQNo = side === "NO" ? market.qNo + shares : market.qNo;
-      newPrices = lmsrService.getPrice(newQYes, newQNo, market.b);
+      newPrices = lmsrService.getPriceLS(newQYes, newQNo, liquidityParams2);
       lmsrShares = shares;
       obShares = 0;
 
@@ -157,11 +161,11 @@ export async function GET(
         ? poolAfterBuy2 / totalWinningSharesAfter2
         : 1;
 
-      const validation = lmsrService.validateBetAmount(
+      const validation = lmsrService.validateBetAmountLS(
         netInvestment,
         market.qYes,
         market.qNo,
-        market.b,
+        liquidityParams2,
         side,
         market.maxBetAmount ?? null,
         market.maxPriceImpact ?? null,

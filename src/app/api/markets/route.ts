@@ -20,6 +20,8 @@ export async function POST(request: NextRequest) {
     maxBetAmount,
     maxPriceImpact,
     b,
+    alpha,
+    bMin,
     initialProbabilityYes,
   } = body;
 
@@ -43,6 +45,26 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Validate alpha (LS-LMSR)
+  if (
+    alpha !== undefined && alpha !== null &&
+    (typeof alpha !== "number" || alpha <= 0 || alpha > 1)
+  ) {
+    return NextResponse.json(
+      { error: "alpha must be a positive number ≤ 1 (typical: 0.05–0.15)" },
+      { status: 400 },
+    );
+  }
+  if (
+    bMin !== undefined && bMin !== null &&
+    (typeof bMin !== "number" || bMin <= 0)
+  ) {
+    return NextResponse.json(
+      { error: "bMin must be a positive number" },
+      { status: 400 },
+    );
+  }
+
   const market = await MarketService.create({
     playerName,
     question,
@@ -52,6 +74,8 @@ export async function POST(request: NextRequest) {
     maxBetAmount,
     maxPriceImpact,
     b,
+    alpha,
+    bMin,
     initialProbabilityYes,
   });
 

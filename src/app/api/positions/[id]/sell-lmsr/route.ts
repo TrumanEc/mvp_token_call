@@ -60,11 +60,12 @@ export async function POST(
 
       // 3. Compute revenue from LMSR curve
       const lmsr = new LmsrService();
+      const liquidityParams = { b: market.b, alpha: market.alpha, bMin: market.bMin };
       const feeRate = market.platformFee ? Number(market.platformFee) : 0.015;
-      const grossAmount = lmsr.getRevenueFromSell(
+      const grossAmount = lmsr.getRevenueFromSellLS(
         market.qYes,
         market.qNo,
-        market.b,
+        liquidityParams,
         side,
         sharesToBurn,
       );
@@ -135,7 +136,7 @@ export async function POST(
         feeAmount,
         netAmount,
         remainingShares: newPositionShares,
-        newProbabilities: lmsr.getPrice(newQYes, newQNo, market.b),
+        newProbabilities: lmsr.getPriceLS(newQYes, newQNo, liquidityParams),
       };
     });
 

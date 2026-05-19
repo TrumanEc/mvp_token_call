@@ -51,6 +51,9 @@ function AdminPage() {
     maxBetAmount: "",
     maxPriceImpact: "",
     initialProbabilityYes: "50",
+    liquidityMode: "LS" as "STATIC" | "LS",  // LS-LMSR enabled by default
+    alpha: "0.10",
+    bMin: "100",
   });
 
   useEffect(() => {
@@ -206,6 +209,7 @@ function AdminPage() {
   const handleCreate = async () => {
     setCreating(true);
     try {
+      const isLS = newMarket.liquidityMode === "LS";
       const res = await fetch("/api/markets", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -215,6 +219,8 @@ function AdminPage() {
             ? parseFloat(newMarket.maxPool)
             : undefined,
           b: parseFloat(newMarket.b) || 100,
+          alpha: isLS ? (parseFloat(newMarket.alpha) || 0.10) : undefined,
+          bMin: isLS ? (parseFloat(newMarket.bMin) || 100) : undefined,
           maxBetAmount: newMarket.maxBetAmount
             ? parseFloat(newMarket.maxBetAmount)
             : undefined,
@@ -236,6 +242,9 @@ function AdminPage() {
           maxBetAmount: "",
           maxPriceImpact: "",
           initialProbabilityYes: "50",
+          liquidityMode: "LS",
+          alpha: "0.10",
+          bMin: "100",
         });
         fetchMarkets();
       }
@@ -616,6 +625,26 @@ function AdminPage() {
                           ).toFixed(0)}
                         </div>
                       </div>
+                    </div>
+
+                    {/* Liquidity params row */}
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {market.alpha != null ? (
+                        <>
+                          <span className="px-2 py-0.5 text-[9px] font-bold rounded-full uppercase tracking-wider bg-purple-500/15 text-purple-300">
+                            LS-LMSR · α={Number(market.alpha).toFixed(2)} · b_min={Number(market.bMin).toFixed(0)}
+                          </span>
+                          {market.effectiveB != null && (
+                            <span className="px-2 py-0.5 text-[9px] font-bold rounded-full uppercase tracking-wider bg-white/5 text-gray-400">
+                              b actual: {Number(market.effectiveB).toFixed(0)} · Q: {Number(market.Q ?? 0).toFixed(0)}
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        <span className="px-2 py-0.5 text-[9px] font-bold rounded-full uppercase tracking-wider bg-blue-500/15 text-blue-300">
+                          LMSR estático · b={Number(market.b).toFixed(0)}
+                        </span>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -1709,7 +1738,79 @@ function AdminPage() {
                 }
               />
             </div>
-            <div className="grid grid-cols-3 gap-4">
+            {/* Modo de liquidez: LS-LMSR (b dinámico) vs Static (b fijo) */}
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-1">
+                Modelo de liquidez
+              </label>
+              <div className="flex gap-2 p-1 bg-[#0d0d0d] rounded-2xl">
+                <button
+                  type="button"
+                  onClick={() => setNewMarket({ ...newMarket, liquidityMode: "LS" })}
+                  className={`flex-1 py-3 rounded-xl text-[11px] font-extrabold uppercase tracking-wider transition-all ${
+                    newMarket.liquidityMode === "LS"
+                      ? "bg-purple-500 text-white shadow"
+                      : "text-gray-500 hover:text-white"
+                  }`}
+                >
+                  ⚡ LS-LMSR (b dinámico)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setNewMarket({ ...newMarket, liquidityMode: "STATIC" })}
+                  className={`flex-1 py-3 rounded-xl text-[11px] font-extrabold uppercase tracking-wider transition-all ${
+                    newMarket.liquidityMode === "STATIC"
+                      ? "bg-blue-500 text-white shadow"
+                      : "text-gray-500 hover:text-white"
+                  }`}
+                >
+                  🔒 Estático (b fijo)
+                </button>
+              </div>
+              <p className="text-[9px] text-gray-500 px-1">
+                {newMarket.liquidityMode === "LS"
+                  ? `b(Q) = max(b_min, α·Q) — el mercado se auto-profundiza con el volumen. Seed ≈ $${(parseFloat(newMarket.bMin) * 0.693).toFixed(0)}.`
+                  : `b constante = ${newMarket.b}. Slippage uniforme. Seed = $${(parseFloat(newMarket.b) * 0.693).toFixed(0)}.`}
+              </p>
+            </div>
+
+            {newMarket.liquidityMode === "LS" ? (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-bold text-purple-300 uppercase tracking-wider px-1">
+                    α (slope)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    max="1"
+                    className="w-full h-14 bg-win-bg border border-purple-500/20 rounded-2xl px-4 text-white font-bold outline-none focus:border-purple-500 transition-all"
+                    value={newMarket.alpha}
+                    onChange={(e) => setNewMarket({ ...newMarket, alpha: e.target.value })}
+                    placeholder="0.10"
+                  />
+                  <p className="text-[9px] text-gray-500 px-1 mt-1">
+                    0.05 conservador · 0.10 recomendado · 0.15 agresivo
+                  </p>
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-purple-300 uppercase tracking-wider px-1">
+                    b_min (piso)
+                  </label>
+                  <input
+                    type="number"
+                    className="w-full h-14 bg-win-bg border border-purple-500/20 rounded-2xl px-4 text-white font-bold outline-none focus:border-purple-500 transition-all"
+                    value={newMarket.bMin}
+                    onChange={(e) => setNewMarket({ ...newMarket, bMin: e.target.value })}
+                    placeholder="100"
+                  />
+                  <p className="text-[9px] text-gray-500 px-1 mt-1">
+                    Subsidio inicial = b_min · ln(2)
+                  </p>
+                </div>
+              </div>
+            ) : (
               <div>
                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-1">
                   Liquidez (b)
@@ -1718,15 +1819,16 @@ function AdminPage() {
                   type="number"
                   className="w-full h-14 bg-win-bg border border-white/5 rounded-2xl px-4 text-white font-bold outline-none focus:border-primary transition-all"
                   value={newMarket.b}
-                  onChange={(e) =>
-                    setNewMarket({ ...newMarket, b: e.target.value })
-                  }
+                  onChange={(e) => setNewMarket({ ...newMarket, b: e.target.value })}
                   placeholder="100"
                 />
                 <p className="text-[9px] text-gray-500 px-1 mt-1">
-                  Mayor b = Menos volatilidad
+                  Mayor b = Menos volatilidad (constante todo el ciclo)
                 </p>
               </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-1">
                   CAP Transacción ($)
