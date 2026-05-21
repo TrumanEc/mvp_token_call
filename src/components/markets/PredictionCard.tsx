@@ -206,15 +206,20 @@ function BuyForm({ market, userId, userBalance, onSuccess }: PredictionCardProps
             <Row
               label={<>Pago si se resuelve {sideLabel}<Tooltip content={
                 <span>
-                  Estimado actual: <strong>${estimatedPayout.toFixed(2)}</strong><br />
-                  Los ganadores comparten el pool total. La ganancia real puede variar.<br />
-                  <span className="text-green-400">↑ Máximo est. ${payoutMax.toFixed(2)}</span>
+                  Estimado bajo el estado actual del mercado.<br />
+                  Los ganadores se reparten el pool proporcionalmente.<br />
+                  <span className="text-gray-300">Rango posible:</span>{" "}
+                  <span className="text-win-error">$0 si pierde</span>
+                  {" → "}
+                  <span className="text-green-400">~${payoutMax.toFixed(2)} si entra más liquidez del lado opuesto</span>
                 </span>
               }>{null}</Tooltip></>}
               value={
                 <span className="text-primary font-extrabold" style={{ fontSize: 18 }}>
-                  ${payoutMax.toFixed(2)}
-                  <span className="text-[10px] text-gray-500 ml-1 font-normal">({roi >= 0 ? "+" : ""}{roi.toFixed(0)}%)</span>
+                  ${estimatedPayout.toFixed(2)}
+                  <span className={`text-[10px] ml-1 font-normal ${roi >= 0 ? "text-primary" : "text-win-error"}`}>
+                    ({roi >= 0 ? "+" : ""}{roi.toFixed(1)}%)
+                  </span>
                 </span>
               }
             />
@@ -348,16 +353,20 @@ function BuyForm({ market, userId, userBalance, onSuccess }: PredictionCardProps
               value={
                 quoteLoading ? "…" : (
                   <span className="text-primary font-extrabold" style={{ fontSize: 18 }}>
-                    ${payoutMax.toFixed(2)}
-                    <span className="text-[10px] text-gray-500 ml-1 font-normal">({roi >= 0 ? "+" : ""}{roi.toFixed(0)}%)</span>
+                    ${estimatedPayout.toFixed(2)}
+                    <span className={`text-[10px] ml-1 font-normal ${roi >= 0 ? "text-primary" : "text-win-error"}`}>
+                      ({roi >= 0 ? "+" : ""}{roi.toFixed(1)}%)
+                    </span>
                   </span>
                 )
               }
               labelTip={
                 <span>
-                  Estimado actual: <strong className="text-white">${estimatedPayout.toFixed(2)}</strong><br /><br />
-                  Los ganadores comparten el pool total. El monto real puede variar.<br /><br />
-                  <span className="text-green-400">↑ Máximo est.: ${payoutMax.toFixed(2)}</span>
+                  Estimado bajo el estado actual del mercado.<br /><br />
+                  Los ganadores se reparten el pool proporcionalmente.<br /><br />
+                  <span className="text-gray-300">Rango posible:</span><br />
+                  <span className="text-win-error">$0 si pierde</span>{" → "}
+                  <span className="text-green-400">~${payoutMax.toFixed(2)} si entra más liquidez del lado opuesto</span>
                 </span>
               }
             />
