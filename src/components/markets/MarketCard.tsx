@@ -115,9 +115,9 @@ export function MarketCard({ market }: MarketCardProps) {
   const sport = market.sport ?? 'futbol'
   const days = daysLeft(market.resolutionDate)
 
-  // Probability bar color
+  // Probability bar color reflects winning outcome (green YES, red NO)
   const barColor = isBinary
-    ? (topProb > 50 ? '#64c883' : '#f87171')
+    ? (topOutcome?.name === 'YES' ? '#64c883' : '#f87171')
     : (OUTCOME_COLORS[outcomes.indexOf(topOutcome!)] ?? '#60a5fa')
 
   return (
@@ -174,7 +174,7 @@ export function MarketCard({ market }: MarketCardProps) {
         <div className="mt-4">
           <div className="flex items-center justify-between mb-1.5">
             <span className="text-[11px] font-semibold text-white/50">
-              {isBinary ? 'Chance' : (topOutcome?.name ?? 'Top')}
+              {isBinary ? `Chance ${topOutcome?.name ?? 'YES'}` : (topOutcome?.name ?? 'Top')}
             </span>
             <span className="text-[18px] font-extrabold text-white leading-none">
               {topProb.toFixed(0)}%

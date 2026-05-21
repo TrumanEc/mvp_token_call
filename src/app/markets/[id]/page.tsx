@@ -62,11 +62,12 @@ function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const outcomes = market.outcomes ?? [];
   const isBinary = outcomes.length === 2 && outcomes[0]?.name === 'YES';
   const topOutcome = outcomes.length > 0
-    ? (isBinary
-        ? outcomes[0] // For binary markets always show YES
-        : outcomes.reduce((a: any, b: any) => a.probability > b.probability ? a : b))
+    ? outcomes.reduce((a: any, b: any) => a.probability > b.probability ? a : b)
     : null;
   const topProb = topOutcome?.probability ?? market.odds.yesOdds;
+  const topLabel = isBinary
+    ? `Chance ${topOutcome?.name ?? 'YES'}`
+    : topOutcome?.name ?? '';
 
   // User has shares if they own any active position
   const userHasShares = market.positions.some(
@@ -164,7 +165,7 @@ function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
                     {topProb.toFixed(0)}%
                   </span>
                   <span className="text-sm font-bold text-gray-400 uppercase tracking-[0.1em]">
-                    {isBinary ? 'Chance YES' : topOutcome?.name ?? ''}
+                    {topLabel}
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5">

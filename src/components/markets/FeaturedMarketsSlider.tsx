@@ -78,10 +78,16 @@ export function FeaturedMarketsSlider({ markets }: { markets: FeaturedMarket[] }
   const topOutcome = outcomes.length > 0
     ? outcomes.reduce((a, b) => a.probability > b.probability ? a : b)
     : null
+  // YES/NO bar still shows YES vs NO for binary markets
   const yesOdds = isBinary
     ? (outcomes[0]?.probability ?? market.odds.yesOdds)
     : (topOutcome?.probability ?? market.odds.yesOdds)
   const noOdds = isBinary ? (outcomes[1]?.probability ?? market.odds.noOdds) : 0
+  // Big number always shows the top outcome's probability
+  const topProb = topOutcome?.probability ?? market.odds.yesOdds
+  const topLabel = isBinary
+    ? `Chance ${topOutcome?.name ?? 'YES'}`
+    : topOutcome?.name ?? 'Top'
   const sport = market.sport ?? 'futbol'
 
   // Arc gauge constants
@@ -90,8 +96,10 @@ export function FeaturedMarketsSlider({ markets }: { markets: FeaturedMarket[] }
   const arcNR = arcR - arcSW
   const arcCirc = arcNR * 2 * Math.PI
   const arcSemi = arcCirc / 2
-  const arcOffset = arcSemi - (yesOdds / 100) * arcSemi
-  const arcColor = isBinary ? '#64c883' : '#60a5fa'
+  const arcOffset = arcSemi - (topProb / 100) * arcSemi
+  const arcColor = isBinary
+    ? (topOutcome?.name === 'YES' ? '#64c883' : '#f87171')
+    : '#60a5fa'
 
   const hasBanner = !!market.bannerUrl
   const hasImage = !!market.imageUrl
@@ -214,10 +222,10 @@ export function FeaturedMarketsSlider({ markets }: { markets: FeaturedMarket[] }
                 </svg>
                 <div className="text-center -mt-2">
                   <div className="text-[36px] font-extrabold text-white leading-none tracking-tighter drop-shadow">
-                    {yesOdds.toFixed(0)}%
+                    {topProb.toFixed(0)}%
                   </div>
                   <div className="text-[9px] font-bold uppercase tracking-widest text-white/50 mt-1">
-                    {isBinary ? 'Chance YES' : topOutcome?.name ?? 'Top'}
+                    {topLabel}
                   </div>
                 </div>
               </div> */}
@@ -242,9 +250,9 @@ export function FeaturedMarketsSlider({ markets }: { markets: FeaturedMarket[] }
                 ) : (
                   <>
                     <div className="flex justify-between text-[9px] font-bold uppercase tracking-widest text-white/35 mb-1">
-                      <span>{topOutcome?.name} {yesOdds.toFixed(0)}%</span>
+                      <span>{topOutcome?.name} {topProb.toFixed(0)}%</span>
                     </div>
-                    <div className="h-0.5 bg-white/10 rounded-full overflow-hidden flex">
+                    <div className="h-2 bg-white/10 rounded-full overflow-hidden flex">
                       {outcomes.map((o, i) => {
                         const colors = ['#64c883', '#f87171', '#60a5fa', '#fbbf24', '#a78bfa', '#f472b6', '#34d399']
                         return (
