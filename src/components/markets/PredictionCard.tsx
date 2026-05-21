@@ -462,6 +462,8 @@ function SellForm({ market, userId, onSuccess }: { market: any; userId: string; 
   const [error, setError] = useState("");
   const [sellQuote, setSellQuote] = useState<SellQuote | null>(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
+  // Max quote: real net amount user gets if selling ALL their shares (slippage + fee included)
+  const [maxQuote, setMaxQuote] = useState<SellQuote | null>(null);
 
   // Re-default when ownership changes (e.g., after a sell)
   useEffect(() => {
@@ -479,15 +481,43 @@ function SellForm({ market, userId, onSuccess }: { market: any; userId: string; 
 
   const currentSharePrice = selectedGroup ? selectedGroup.probability / 100 : 0.5;
 
+  // Fetch the REAL max (after slippage + fee) by quoting all shares
+  useEffect(() => {
+    if (!selectedPos || totalSideShares <= 0) { setMaxQuote(null); return; }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(
+          `/api/markets/${market.id}/sell-quote?outcomeId=${selectedPos.outcomeId ?? ''}&side=${selectedPos.side ?? ''}&shares=${totalSideShares}`
+        );
+        const data = await res.json();
+        if (!cancelled && res.ok) setMaxQuote(data);
+      } catch { /* noop */ }
+    })();
+    return () => { cancelled = true; };
+  }, [selectedOutcomeId, market.id, totalSideShares, selectedPos]);
+
   const valueNum = parseFloat(value) || 0;
-  const maxValue = totalSideShares * currentSharePrice * 0.985;
-  const exceedsMax = valueNum > 0 && valueNum > maxValue;
-  const sharesNum = valueNum > 0 ? Math.min(valueNum / (currentSharePrice * 0.985), totalSideShares) : 0;
+  // Real max from backend (slippage-aware). Fallback to frontend approximation while loading.
+  const maxValue = maxQuote?.netAmount ?? (totalSideShares * currentSharePrice * 0.985);
+  const exceedsMax = valueNum > 0 && valueNum > maxValue + 0.005; // tiny epsilon
+  // Map value → shares using the real max as anchor. Linear approximation around the max
+  // is very accurate (LMSR slippage is mostly linear over a single user's position).
+  const sharesNum = valueNum > 0
+    ? (valueNum >= maxValue - 0.005
+        ? totalSideShares
+        : Math.min((valueNum / maxValue) * totalSideShares, totalSideShares))
+    : 0;
 
   useEffect(() => { setStep("configure"); setError(""); }, [value, selectedOutcomeId]);
 
   useEffect(() => {
     if (!selectedPos || sharesNum <= 0) { setSellQuote(null); return; }
+    // Reuse maxQuote when selling everything (avoid redundant call)
+    if (sharesNum >= totalSideShares - 1e-6 && maxQuote) {
+      setSellQuote(maxQuote);
+      return;
+    }
     setQuoteLoading(true);
     const t = setTimeout(async () => {
       try {
@@ -500,7 +530,7 @@ function SellForm({ market, userId, onSuccess }: { market: any; userId: string; 
       } catch { /* noop */ } finally { setQuoteLoading(false); }
     }, 400);
     return () => clearTimeout(t);
-  }, [sharesNum, selectedOutcomeId, market.id, selectedPos]);
+  }, [sharesNum, selectedOutcomeId, market.id, selectedPos, totalSideShares, maxQuote]);
 
   const handleConfirm = async () => {
     if (!selectedPos) return;
