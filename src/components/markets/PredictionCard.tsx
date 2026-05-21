@@ -400,14 +400,53 @@ function SellForm({ market, userId, onSuccess }: { market: any; userId: string; 
     (p: any) => p.currentOwner.id === userId && p.shares > 0
   );
 
-  // Aggregate by side
-  const yesPosGroup: any[] = myPositions.filter((p: any) => p.side === "YES");
-  const noPosGroup:  any[] = myPositions.filter((p: any) => p.side === "NO");
-  const yesShares = yesPosGroup.reduce((s: number, p: any) => s + p.shares, 0);
-  const noShares  = noPosGroup.reduce((s: number, p: any) => s + p.shares, 0);
+  // Build outcome groups dynamically from market.outcomes (supports N outcomes)
+  const outcomes: any[] = market.outcomes || [];
+  type OutcomeGroup = {
+    outcomeId: string;
+    name: string;
+    shares: number;
+    totalAmount: number;
+    positions: any[];
+    probability: number; // 0–100
+  };
 
-  const defaultSide = yesPosGroup.length > 0 ? "YES" : "NO";
-  const [selectedSide, setSelectedSide] = useState<"YES" | "NO">(defaultSide as "YES" | "NO");
+  const outcomeGroups: OutcomeGroup[] = outcomes.map((o: any) => {
+    const positionsForOutcome = myPositions.filter((p: any) => p.outcomeId === o.id);
+    const shares = positionsForOutcome.reduce((s: number, p: any) => s + p.shares, 0);
+    const totalAmount = positionsForOutcome.reduce((s: number, p: any) => s + Number(p.amount), 0);
+    return {
+      outcomeId: o.id,
+      name: o.name,
+      shares,
+      totalAmount,
+      positions: positionsForOutcome,
+      probability: typeof o.probability === "number" ? o.probability : 50,
+    };
+  });
+
+  // Legacy binary fallback: if market has no outcomes (legacy YES/NO via side), build from side
+  if (outcomeGroups.length === 0 && myPositions.length > 0) {
+    const yes = myPositions.filter((p: any) => p.side === "YES");
+    const no  = myPositions.filter((p: any) => p.side === "NO");
+    if (yes.length > 0) outcomeGroups.push({
+      outcomeId: "_legacy_yes", name: "YES",
+      shares: yes.reduce((s: number, p: any) => s + p.shares, 0),
+      totalAmount: yes.reduce((s: number, p: any) => s + Number(p.amount), 0),
+      positions: yes, probability: market.odds?.yesOdds ?? 50,
+    });
+    if (no.length > 0) outcomeGroups.push({
+      outcomeId: "_legacy_no", name: "NO",
+      shares: no.reduce((s: number, p: any) => s + p.shares, 0),
+      totalAmount: no.reduce((s: number, p: any) => s + Number(p.amount), 0),
+      positions: no, probability: market.odds?.noOdds ?? 50,
+    });
+  }
+
+  const ownedGroups = outcomeGroups.filter(g => g.shares > 0);
+
+  const defaultGroupId = ownedGroups[0]?.outcomeId ?? "";
+  const [selectedOutcomeId, setSelectedOutcomeId] = useState<string>(defaultGroupId);
   const [value, setValue] = useState("");
   const [step, setStep] = useState<"configure" | "review">("configure");
   const [loading, setLoading] = useState(false);
@@ -415,21 +454,28 @@ function SellForm({ market, userId, onSuccess }: { market: any; userId: string; 
   const [sellQuote, setSellQuote] = useState<SellQuote | null>(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
 
-  // Best position for the selected side (most shares)
-  const sideGroup = selectedSide === "YES" ? yesPosGroup : noPosGroup;
-  const selectedPos = sideGroup.sort((a: any, b: any) => b.shares - a.shares)[0] ?? null;
-  const totalSideShares = selectedSide === "YES" ? yesShares : noShares;
+  // Re-default when ownership changes (e.g., after a sell)
+  useEffect(() => {
+    if (!ownedGroups.find(g => g.outcomeId === selectedOutcomeId) && ownedGroups.length > 0) {
+      setSelectedOutcomeId(ownedGroups[0].outcomeId);
+    }
+  }, [ownedGroups.length]);
 
-  const currentSharePrice = selectedPos
-    ? (selectedPos.side === "YES" ? market.odds.yesOdds : market.odds.noOdds) / 100
-    : 0.5;
+  const selectedGroup = outcomeGroups.find(g => g.outcomeId === selectedOutcomeId) || null;
+  // Best position for the selected outcome (most shares)
+  const selectedPos = selectedGroup
+    ? [...selectedGroup.positions].sort((a: any, b: any) => b.shares - a.shares)[0] ?? null
+    : null;
+  const totalSideShares = selectedGroup?.shares ?? 0;
+
+  const currentSharePrice = selectedGroup ? selectedGroup.probability / 100 : 0.5;
 
   const valueNum = parseFloat(value) || 0;
   const maxValue = totalSideShares * currentSharePrice * 0.985;
   const exceedsMax = valueNum > 0 && valueNum > maxValue;
   const sharesNum = valueNum > 0 ? Math.min(valueNum / (currentSharePrice * 0.985), totalSideShares) : 0;
 
-  useEffect(() => { setStep("configure"); setError(""); }, [value, selectedSide]);
+  useEffect(() => { setStep("configure"); setError(""); }, [value, selectedOutcomeId]);
 
   useEffect(() => {
     if (!selectedPos || sharesNum <= 0) { setSellQuote(null); return; }
@@ -437,7 +483,7 @@ function SellForm({ market, userId, onSuccess }: { market: any; userId: string; 
     const t = setTimeout(async () => {
       try {
         const res = await fetch(
-          `/api/markets/${market.id}/sell-quote?outcomeId=${selectedPos.outcomeId ?? ''}&side=${selectedPos.side}&shares=${sharesNum}`
+          `/api/markets/${market.id}/sell-quote?outcomeId=${selectedPos.outcomeId ?? ''}&side=${selectedPos.side ?? ''}&shares=${sharesNum}`
         );
         const data = await res.json();
         if (res.ok) setSellQuote(data);
@@ -445,7 +491,7 @@ function SellForm({ market, userId, onSuccess }: { market: any; userId: string; 
       } catch { /* noop */ } finally { setQuoteLoading(false); }
     }, 400);
     return () => clearTimeout(t);
-  }, [sharesNum, selectedSide, market.id, selectedPos]);
+  }, [sharesNum, selectedOutcomeId, market.id, selectedPos]);
 
   const handleConfirm = async () => {
     if (!selectedPos) return;
@@ -477,6 +523,15 @@ function SellForm({ market, userId, onSuccess }: { market: any; userId: string; 
   // ── Review step ──────────────────────────────────────────────────────────────
   if (step === "review") {
     const feeRate = ((sellQuote?.feeRate ?? 0.015) * 100).toFixed(1);
+    const reviewName = selectedGroup?.name ?? "";
+    const isBinaryYes = reviewName === "YES";
+    const isBinaryNo  = reviewName === "NO";
+    const reviewColor = isBinaryYes ? "bg-primary/10" : isBinaryNo ? "bg-win-error/10" : "bg-purple-500/10";
+    const reviewBadge = isBinaryYes
+      ? "bg-primary/20 text-primary"
+      : isBinaryNo
+        ? "bg-win-error/20 text-win-error"
+        : "bg-purple-500/20 text-purple-300";
     return (
       <div className="space-y-5">
         <button onClick={() => setStep("configure")}
@@ -484,10 +539,10 @@ function SellForm({ market, userId, onSuccess }: { market: any; userId: string; 
           ← Volver
         </button>
         <div className="bg-win-bg rounded-2xl border border-white/8">
-          <div className={`px-4 py-3 flex items-center gap-2 ${selectedSide === "YES" ? "bg-primary/10" : "bg-win-error/10"}`}>
-            <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full ${
-              selectedSide === "YES" ? "bg-primary/20 text-primary" : "bg-win-error/20 text-win-error"
-            }`}>{labelEs(selectedSide)}</span>
+          <div className={`px-4 py-3 flex items-center gap-2 ${reviewColor}`}>
+            <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full ${reviewBadge}`}>
+              {isBinaryYes || isBinaryNo ? labelEs(reviewName) : reviewName}
+            </span>
             <span className="text-[11px] font-semibold text-white">Venta al mercado</span>
           </div>
           <div className="px-4 py-1">
@@ -512,22 +567,22 @@ function SellForm({ market, userId, onSuccess }: { market: any; userId: string; 
   // ── Configure step ───────────────────────────────────────────────────────────
   return (
     <div className="space-y-4">
-      {/* Accumulated position tiles: SÍ / NO */}
+      {/* Accumulated position tiles: dynamic per outcome */}
       <div>
         <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Posición</div>
-        <div className="grid grid-cols-2 gap-2">
-          {[
-            { side: "YES" as const, shares: yesShares, group: yesPosGroup },
-            { side: "NO"  as const, shares: noShares,  group: noPosGroup  },
-          ].map(({ side, shares, group }) => {
-            const active = selectedSide === side;
-            const color = side === "YES" ? "#64c883" : "#f87171";
-            const totalAmt = group.reduce((s: number, p: any) => s + Number(p.amount), 0);
-            const hasShares = shares > 0;
+        <div className={`grid gap-2 ${outcomeGroups.length <= 2 ? "grid-cols-2" : outcomeGroups.length === 3 ? "grid-cols-3" : "grid-cols-2"}`}>
+          {outcomeGroups.map((g) => {
+            const active = selectedOutcomeId === g.outcomeId;
+            const isBinaryYes = g.name === "YES";
+            const isBinaryNo  = g.name === "NO";
+            // Color per outcome: YES=green, NO=red, others=purple variants
+            const color = isBinaryYes ? "#64c883" : isBinaryNo ? "#f87171" : "#a78bfa";
+            const hasShares = g.shares > 0;
+            const label = isBinaryYes || isBinaryNo ? labelEs(g.name as any) : g.name;
             return (
               <button
-                key={side}
-                onClick={() => { if (hasShares) { setSelectedSide(side); setValue(""); } }}
+                key={g.outcomeId}
+                onClick={() => { if (hasShares) { setSelectedOutcomeId(g.outcomeId); setValue(""); } }}
                 disabled={!hasShares}
                 className="rounded-xl border px-3 py-2.5 text-left transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                 style={active
@@ -536,14 +591,17 @@ function SellForm({ market, userId, onSuccess }: { market: any; userId: string; 
                 }
               >
                 <div className="flex items-center gap-1.5 mb-1">
-                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded"
-                    style={{ background: `${color}22`, color }}>
-                    {labelEs(side)}
+                  <span
+                    className="text-[9px] font-bold px-1.5 py-0.5 rounded truncate max-w-full"
+                    style={{ background: `${color}22`, color }}
+                    title={label}
+                  >
+                    {label}
                   </span>
                 </div>
-                <div className="text-[15px] font-extrabold text-white leading-none">{shares.toFixed(2)}</div>
+                <div className="text-[15px] font-extrabold text-white leading-none">{g.shares.toFixed(2)}</div>
                 <div className="text-[10px] text-gray-500 mt-0.5">
-                  participaciones · <span className="text-gray-400">${totalAmt.toFixed(2)}</span>
+                  participaciones · <span className="text-gray-400">${g.totalAmount.toFixed(2)}</span>
                 </div>
               </button>
             );
