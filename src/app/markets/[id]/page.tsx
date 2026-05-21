@@ -62,7 +62,9 @@ function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const outcomes = market.outcomes ?? [];
   const isBinary = outcomes.length === 2 && outcomes[0]?.name === 'YES';
   const topOutcome = outcomes.length > 0
-    ? outcomes.reduce((a: any, b: any) => a.probability > b.probability ? a : b)
+    ? (isBinary
+        ? outcomes[0] // For binary markets always show YES
+        : outcomes.reduce((a: any, b: any) => a.probability > b.probability ? a : b))
     : null;
   const topProb = topOutcome?.probability ?? market.odds.yesOdds;
 
