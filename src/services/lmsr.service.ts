@@ -73,11 +73,11 @@ export class LmsrService {
    */
   getRevenueFromSellN(qVector: number[], b: number, outcomeIdx: number, deltaShares: number): number {
     if (deltaShares <= 0) return 0;
-    const effectiveDelta = Math.min(deltaShares, Math.max(0, qVector[outcomeIdx]));
-    if (effectiveDelta <= 0) return 0;
+    // q[i] can be negative under non-uniform initial priors. The math is valid for any real q.
+    // The user-shares cap is enforced at the API layer (sell-lmsr endpoint).
     const before = this.costFunctionN(qVector, b);
     const qNew = [...qVector];
-    qNew[outcomeIdx] -= effectiveDelta;
+    qNew[outcomeIdx] -= deltaShares;
     const after = this.costFunctionN(qNew, b);
     return Math.max(0, before - after);
   }
@@ -246,14 +246,14 @@ export class LmsrService {
     outcomeIdx: number, shares: number, N = LS_INTEGRATION_STEPS,
   ): number {
     if (shares <= 0) return 0;
-    const onCurve = qVector[outcomeIdx];
-    const effectiveShares = Math.min(shares, Math.max(0, onCurve));
-    if (effectiveShares <= 0) return 0;
-
+    // NOTE: qVector[outcomeIdx] can be negative under LS-LMSR with non-uniform priors
+    // (q_i represents the offset from the symmetric reference, not raw mintage).
+    // The actual "burnable" amount is bounded by what the user owns — enforced at the API layer.
+    // The LMSR integral works for any real q (mathematically valid).
     if (params.alpha == null) {
-      return this.getRevenueFromSellN(qVector, params.b, outcomeIdx, effectiveShares);
+      return this.getRevenueFromSellN(qVector, params.b, outcomeIdx, shares);
     }
-    const step = effectiveShares / N;
+    const step = shares / N;
     let revenue = 0;
     const current = [...qVector];
     for (let i = 0; i < N; i++) {
