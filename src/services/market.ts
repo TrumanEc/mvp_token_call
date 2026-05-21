@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/prisma";
 import { Decimal } from "@prisma/client/runtime/library";
-import { OddsCalculator } from "./odds-calculator";
 import { LmsrService } from "./lmsr.service";
 
 export type MarketStatus =
@@ -11,23 +10,53 @@ export type MarketStatus =
   | "VOIDED";
 
 export class MarketService {
-  static async getAll(status?: MarketStatus) {
+  static async getAll(status?: MarketStatus, hidePaused = true) {
+    const now = new Date();
+
     const markets = await prisma.market.findMany({
-      where: status ? { status } : undefined,
+      where: {
+        ...(status ? { status } : {}),
+        // Hide paused markets from public listing
+        // A market is "paused" if primaryMarketPaused=true OR scheduledAt already passed
+        ...(hidePaused
+          ? {
+              primaryMarketPaused: false,
+              OR: [
+                { primaryPauseScheduledAt: null },
+                { primaryPauseScheduledAt: { gt: now } },
+              ],
+            }
+          : {}),
+      },
+      include: {
+        outcomes: { orderBy: { displayOrder: "asc" } },
+      },
       orderBy: { createdAt: "desc" },
     });
 
     const lmsrService = new LmsrService();
 
     return markets.map((market) => {
-      const prices = lmsrService.getPrice(market.qYes, market.qNo, market.b);
+      const qVector = LmsrService.buildQVector(market.outcomes);
+      const params = { b: market.b, alpha: market.alpha, bMin: market.bMin };
+      const prices = lmsrService.getPricesLSN(qVector, params);
+
+      const outcomesWithPrices = market.outcomes
+        .sort((a, b) => a.displayOrder - b.displayOrder)
+        .map((o, i) => ({
+          id: o.id,
+          name: o.name,
+          probability: prices[i] * 100,
+          pool: o.pool.toNumber(),
+        }));
+
       return {
         ...market,
-        yesPool: market.yesPool.toNumber(),
-        noPool: market.noPool.toNumber(),
+        totalPool: market.totalPool.toNumber(),
+        outcomes: outcomesWithPrices,
         odds: {
-          yesOdds: prices.pYes * 100,
-          noOdds: prices.pNo * 100,
+          yesOdds: outcomesWithPrices[0]?.probability ?? 50,
+          noOdds: outcomesWithPrices[1]?.probability ?? 50,
         },
       };
     });
@@ -37,9 +66,11 @@ export class MarketService {
     const market = await prisma.market.findUnique({
       where: { id },
       include: {
+        outcomes: { orderBy: { displayOrder: "asc" } },
         positions: {
           include: {
             currentOwner: { select: { id: true, username: true } },
+            outcome: { select: { id: true, name: true } },
           },
         },
         listings: true,
@@ -50,58 +81,103 @@ export class MarketService {
         orders: {
           where: { status: { in: ["OPEN", "PARTIAL"] } },
           orderBy: { pricePerShare: "asc" },
-          include: { user: { select: { id: true, username: true } } }
-        }
+          include: {
+            user: { select: { id: true, username: true } },
+            outcome: { select: { id: true, name: true } },
+          },
+        },
       },
     });
 
     if (!market) return null;
 
     const lmsrService = new LmsrService();
-    const liquidityParams = { b: market.b, alpha: market.alpha, bMin: market.bMin };
-    const effectiveB = lmsrService.getEffectiveB(market.qYes, market.qNo, liquidityParams);
-    const prices = lmsrService.getPriceLS(market.qYes, market.qNo, liquidityParams);
+    const qVector = LmsrService.buildQVector(market.outcomes);
+    const params = { b: market.b, alpha: market.alpha, bMin: market.bMin };
+    const effectiveB = lmsrService.getEffectiveBN(qVector, params);
+    const prices = lmsrService.getPricesLSN(qVector, params);
 
-    // Calculate legacy-style odds for compatibility if needed, or just use LMSR prices * 100
-    const odds = {
-      yesOdds: prices.pYes * 100,
-      noOdds: prices.pNo * 100,
-    };
+    const outcomesWithPrices = market.outcomes.map((o, i) => ({
+      id: o.id,
+      name: o.name,
+      displayOrder: o.displayOrder,
+      qOutstanding: o.qOutstanding,
+      pool: o.pool.toNumber(),
+      probability: prices[i] * 100,
+      price: prices[i],
+    }));
+
+    const Q = qVector.reduce((s, q) => s + q, 0);
+
     return {
       ...market,
-      yesPool: market.yesPool.toNumber(),
-      noPool: market.noPool.toNumber(),
+      totalPool: market.totalPool.toNumber(),
       maxPool: market.maxPool?.toNumber() ?? null,
-      orders: (market as any).orders || [],
-      odds, // Overwrite legacy odds with LMSR odds
+      outcomes: outcomesWithPrices,
+      orders: market.orders,
+      odds: {
+        yesOdds: outcomesWithPrices[0]?.probability ?? 50,
+        noOdds: outcomesWithPrices[1]?.probability ?? 50,
+      },
       effectiveB,
-      Q: market.qYes + market.qNo,
+      Q,
       isLiquiditySensitive: market.alpha != null,
-      positions: (market as any).positions.map((p: any) => ({
-        ...p,
-        amount: p.amount.toNumber(),
-        payout: p.payout?.toNumber(),
-        initialProbability: p.initialProbability.toNumber(),
-        shares: Number(p.shares || 0),
-        purchasePrice: Number(p.purchasePrice || 0),
-        // Calculate current fair value for position
-        fairValue:
-          Number(p.shares || 0) * (p.side === "YES" ? prices.pYes : prices.pNo),
-        currentPrice: p.side === "YES" ? prices.pYes : prices.pNo,
-      })),
-      history: (market as any).lmsrSnapshots
+      positions: market.positions.map((p) => {
+        const outcomeIdx = outcomesWithPrices.findIndex(o => o.id === p.outcomeId);
+        const outcomePrice = outcomeIdx >= 0 ? prices[outcomeIdx] : 0;
+        return {
+          ...p,
+          amount: p.amount.toNumber(),
+          payout: p.payout?.toNumber(),
+          initialProbability: p.initialProbability.toNumber(),
+          shares: Number(p.shares || 0),
+          purchasePrice: Number(p.purchasePrice || 0),
+          fairValue: Number(p.shares || 0) * outcomePrice,
+          currentPrice: outcomePrice,
+        };
+      }),
+      history: market.lmsrSnapshots
         .map((s: any) => {
-          const p = s.pYesAfter > 1 ? s.pYesAfter / 100 : s.pYesAfter;
+          const pAfter = s.pAfter as Record<string, number>;
+          const firstOutcome = outcomesWithPrices[0];
+          const p = firstOutcome ? (pAfter[firstOutcome.id] ?? 0.5) : 0.5;
           return {
             timestamp: s.createdAt,
-            price: p, // Chart expects 0-1 price
+            price: p > 1 ? p / 100 : p,
+            prices: pAfter,
             volume: s.cost,
-            qYes: s.qYesAfter,
-            qNo: s.qNoAfter,
+            qAfter: s.qAfter,
+            pAfter: s.pAfter,
           };
         })
-        .reverse(), // Oldest first for chart
+        .reverse(),
     };
+  }
+
+  static async updateMeta(id: string, data: {
+    question?: string;
+    description?: string | null;
+    resolutionDate?: Date;
+    sport?: string | null;
+    imageUrl?: string | null;
+    bannerUrl?: string | null;
+    isFeatured?: boolean;
+    rules?: string | null;
+    criterio?: string | null;
+    tags?: string[];
+  }) {
+    return prisma.market.update({ where: { id }, data });
+  }
+
+  static async deleteMarket(id: string) {
+    return prisma.$transaction(async (tx) => {
+      // Manual cascade delete for relations missing onDelete: Cascade
+      await tx.order.deleteMany({ where: { marketId: id } });
+      await tx.marketRouterAuditLog.deleteMany({ where: { marketId: id } });
+      
+      // The rest are handled by onDelete: Cascade in prisma schema
+      return tx.market.delete({ where: { id } });
+    });
   }
 
   static async create(data: {
@@ -111,23 +187,41 @@ export class MarketService {
     resolutionDate: Date;
     maxPool?: number;
     b?: number;
-    alpha?: number;      // LS-LMSR slope (0.05–0.15 typical). Null/undefined = classic b fijo.
-    bMin?: number;       // LS-LMSR floor (default 100)
+    alpha?: number;
+    bMin?: number;
     maxBetAmount?: number;
     maxPriceImpact?: number;
-    initialProbabilityYes?: number; // 0.01–0.99, defaults to 0.5
+    outcomes: { name: string; initialProbability?: number }[];
+    sport?: string;
+    imageUrl?: string;
+    bannerUrl?: string;
+    isFeatured?: boolean;
+    rules?: string;
+    criterio?: string;
+    tags?: string[];
   }) {
     const lmsrService = new LmsrService();
     const useLS = data.alpha != null;
     const bMin = data.bMin ?? 100;
     const b = data.b ?? 100;
     const params = { b, alpha: data.alpha ?? null, bMin: useLS ? bMin : null };
-    const seedCost = lmsrService.getSeedCostLS(params);
 
-    // Compute starting q values from target probability (defaults to 50/50)
-    const pYesInit = data.initialProbabilityYes ?? 0.5;
-    const { qYes: initQYes, qNo: initQNo } = lmsrService.getInitialQValuesLS(params, pYesInit);
-    const pNoInit = 1 - pYesInit;
+    const outcomeNames = data.outcomes.map(o => o.name);
+    const numOutcomes = outcomeNames.length;
+    if (numOutcomes < 2) throw new Error("At least 2 outcomes required");
+
+    const priors = data.outcomes.map(o => o.initialProbability ?? 1 / numOutcomes);
+    const priorSum = priors.reduce((s, p) => s + p, 0);
+    const normalizedPriors = priors.map(p => p / priorSum);
+
+    const seedCost = lmsrService.getSeedCostLSN(params, numOutcomes);
+    const qValues = lmsrService.getInitialQValuesLSN(params, normalizedPriors);
+
+    const initialPrices = lmsrService.getPricesLSN(qValues, params);
+    const oddsMap: Record<string, number> = {};
+    outcomeNames.forEach((name, i) => {
+      oddsMap[name] = initialPrices[i] * 100;
+    });
 
     return prisma.market.create({
       data: {
@@ -137,39 +231,35 @@ export class MarketService {
         resolutionDate: data.resolutionDate,
         maxPool: data.maxPool ? new Decimal(data.maxPool) : undefined,
         maxBetAmount: data.maxBetAmount ? Number(data.maxBetAmount) : undefined,
-        maxPriceImpact: data.maxPriceImpact
-          ? Number(data.maxPriceImpact)
-          : undefined,
+        maxPriceImpact: data.maxPriceImpact ? Number(data.maxPriceImpact) : undefined,
+        sport: data.sport,
+        imageUrl: data.imageUrl,
+        bannerUrl: data.bannerUrl,
+        isFeatured: data.isFeatured ?? false,
+        rules: data.rules,
+        criterio: data.criterio,
+        tags: data.tags ?? [],
         status: "DRAFT",
-        // LMSR / LS-LMSR Initialization at target probability
         b,
         alpha: useLS ? data.alpha : null,
         bMin: useLS ? bMin : null,
-        qYes: initQYes,
-        qNo: initQNo,
         seedCost,
+        outcomes: {
+          create: outcomeNames.map((name, i) => ({
+            name,
+            qOutstanding: qValues[i],
+            displayOrder: i,
+          })),
+        },
         history: {
           create: {
-            yesOdds: new Decimal(pYesInit * 100),
-            noOdds: new Decimal(pNoInit * 100),
+            odds: oddsMap,
             totalPool: new Decimal(0),
           },
         },
-        lmsrSnapshots: {
-          create: {
-            qYesBefore: 0,
-            qNoBefore: 0,
-            pYesBefore: 0.5,
-            side: "INIT",
-            deltaShares: 0,
-            cost: seedCost,
-            qYesAfter: initQYes,
-            qNoAfter: initQNo,
-            pYesAfter: pYesInit,
-            triggerType: "INIT",
-            userId: "SYSTEM",
-          },
-        },
+      },
+      include: {
+        outcomes: { orderBy: { displayOrder: "asc" } },
       },
     });
   }
@@ -188,7 +278,6 @@ export class MarketService {
     });
   }
 
-  /** Returns true if the primary market is paused (manual or scheduled). */
   static isPrimaryPaused(market: {
     primaryMarketPaused: boolean;
     primaryPauseScheduledAt: Date | null;
@@ -202,11 +291,7 @@ export class MarketService {
     return false;
   }
 
-  /** Pause the primary market immediately (manual) or schedule an auto-pause. */
-  static async pausePrimary(
-    id: string,
-    opts: { scheduledAt?: Date } = {},
-  ) {
+  static async pausePrimary(id: string, opts: { scheduledAt?: Date } = {}) {
     if (opts.scheduledAt) {
       return prisma.market.update({
         where: { id },
@@ -222,7 +307,6 @@ export class MarketService {
     });
   }
 
-  /** Resume the primary market (removes manual flag and any schedule). */
   static async unpausePrimary(id: string) {
     return prisma.market.update({
       where: { id },
@@ -230,50 +314,28 @@ export class MarketService {
     });
   }
 
-  /**
-   * Recover seed from an inactive market (no trades since creation).
-   * Voids the market and returns the seed cost to a designated admin wallet / reserve.
-   * Only allowed when:
-   *   - Market is DRAFT or ACTIVE
-   *   - No positions have been created (zero trading activity)
-   *   - Market has been open for at least `minDaysOpen` days without trades
-   */
-  static async recoverInactiveSeed(
-    id: string,
-    options: { minDaysOpen?: number } = {},
-  ) {
+  static async recoverInactiveSeed(id: string, options: { minDaysOpen?: number } = {}) {
     const minDaysOpen = options.minDaysOpen ?? 0;
 
     return prisma.$transaction(async (tx) => {
       const market = await tx.market.findUnique({
         where: { id },
-        include: {
-          positions: { select: { id: true }, take: 1 },
-        },
+        include: { positions: { select: { id: true }, take: 1 } },
       });
 
       if (!market) throw new Error("Market not found");
-
       if (!["DRAFT", "ACTIVE"].includes(market.status)) {
         throw new Error("Only DRAFT or ACTIVE markets can be recovered");
       }
-
       if (market.positions.length > 0) {
-        throw new Error(
-          "Market has trading activity — use resolve/void instead",
-        );
+        throw new Error("Market has trading activity — use resolve/void instead");
       }
 
-      const daysSinceCreation =
-        (Date.now() - market.createdAt.getTime()) / (1000 * 60 * 60 * 24);
-
+      const daysSinceCreation = (Date.now() - market.createdAt.getTime()) / (1000 * 60 * 60 * 24);
       if (daysSinceCreation < minDaysOpen) {
-        throw new Error(
-          `Market must be open at least ${minDaysOpen} days before seed recovery (currently ${daysSinceCreation.toFixed(1)} days)`,
-        );
+        throw new Error(`Market must be open at least ${minDaysOpen} days before seed recovery (currently ${daysSinceCreation.toFixed(1)} days)`);
       }
 
-      // Cancel any open orders (safety check)
       await tx.order.updateMany({
         where: { marketId: id, status: { in: ["OPEN", "PARTIAL"] } },
         data: { status: "CANCELLED" },
@@ -293,23 +355,15 @@ export class MarketService {
     });
   }
 
-  /**
-   * Find all markets eligible for seed recovery:
-   * ACTIVE markets with zero positions older than minDaysOpen.
-   */
-  static async getInactiveMarkets(minDaysOpen: number = 7) {
-    const cutoffDate = new Date(
-      Date.now() - minDaysOpen * 24 * 60 * 60 * 1000,
-    );
+  static async getInactiveMarkets(minDaysOpen = 7) {
+    const cutoffDate = new Date(Date.now() - minDaysOpen * 24 * 60 * 60 * 1000);
 
     const markets = await prisma.market.findMany({
       where: {
         status: { in: ["DRAFT", "ACTIVE"] },
         createdAt: { lte: cutoffDate },
       },
-      include: {
-        _count: { select: { positions: true } },
-      },
+      include: { _count: { select: { positions: true } } },
       orderBy: { createdAt: "asc" },
     });
 
@@ -323,10 +377,7 @@ export class MarketService {
         createdAt: m.createdAt,
         seedCost: m.seedCost,
         daysSinceCreation: parseFloat(
-          (
-            (Date.now() - m.createdAt.getTime()) /
-            (1000 * 60 * 60 * 24)
-          ).toFixed(1),
+          ((Date.now() - m.createdAt.getTime()) / (1000 * 60 * 60 * 24)).toFixed(1),
         ),
       }));
   }

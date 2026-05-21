@@ -6,7 +6,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
-  
+
   try {
     // Fetch snapshots ordered by time
     const snapshots = await prisma.lmsrSnapshot.findMany({
@@ -14,21 +14,24 @@ export async function GET(
       orderBy: { createdAt: 'asc' },
       select: {
         createdAt: true,
-        pYesAfter: true,
-        qYesAfter: true,
-        qNoAfter: true,
+        outcomeId: true,
+        side: true,
+        pAfter: true,
+        qAfter: true,
         cost: true,
         triggerType: true,
       }
     })
 
-    // Transform for chart plotting if needed, or return raw
+    // Transform for chart plotting
+    // pAfter and qAfter are JSON maps: { outcomeId: value }
     const history = snapshots.map(s => ({
       timestamp: s.createdAt,
-      price: s.pYesAfter, // Plot probability of YES
-      qYes: s.qYesAfter,
-      qNo: s.qNoAfter,
-      volume: s.cost, // Transaction volume
+      prices: s.pAfter as Record<string, number>,   // all outcome prices after this event
+      qValues: s.qAfter as Record<string, number>,  // all q values after this event
+      outcomeId: s.outcomeId,                        // which outcome was traded
+      side: s.side,
+      volume: s.cost,
     }))
 
     return NextResponse.json(history)

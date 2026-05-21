@@ -17,6 +17,12 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const body = await request.json()
   const { action, scheduledAt } = body
 
+  if (action === 'updateMeta') {
+    const { imageUrl, bannerUrl, isFeatured, rules, criterio, tags } = body
+    const market = await MarketService.updateMeta(id, { imageUrl, bannerUrl, isFeatured, rules, criterio, tags })
+    return NextResponse.json(market)
+  }
+
   if (action === 'activate') {
     const market = await MarketService.activate(id)
     return NextResponse.json(market)

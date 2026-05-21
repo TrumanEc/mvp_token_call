@@ -3,14 +3,16 @@ import { SettlementService } from '@/services/settlement'
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const { outcome } = await request.json()
+  const body = await request.json()
 
-  if (!outcome || !['YES', 'NO', 'VOID'].includes(outcome)) {
-    return NextResponse.json({ error: 'Invalid outcome' }, { status: 400 })
+  // Accept either `winningOutcomeId` (new) or `outcome` (legacy binary compat)
+  const winningOutcomeId = body.winningOutcomeId || body.outcome
+  if (!winningOutcomeId) {
+    return NextResponse.json({ error: 'winningOutcomeId is required (or "VOID")' }, { status: 400 })
   }
 
   try {
-    const result = await SettlementService.resolve(id, outcome)
+    const result = await SettlementService.resolve(id, winningOutcomeId)
     return NextResponse.json(result)
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Resolution failed'
@@ -20,7 +22,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  
+
   try {
     const report = await SettlementService.getReport(id)
     return NextResponse.json(report)

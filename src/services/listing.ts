@@ -1,8 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { Decimal } from '@prisma/client/runtime/library'
-import { OddsCalculator } from './odds-calculator'
 import { BalanceService } from './balance'
-import { PositionService } from './position'
 import { LmsrService } from './lmsr.service'
 export class ListingService {
   /**
@@ -16,7 +14,11 @@ export class ListingService {
     return prisma.$transaction(async (tx) => {
       const originalPosition = await tx.position.findUnique({
         where: { id: data.positionId },
-        include: { market: true },
+        include: {
+          market: {
+            include: { outcomes: { orderBy: { displayOrder: 'asc' } } },
+          },
+        },
       })
 
       if (!originalPosition) throw new Error('Position not found')
@@ -53,10 +55,14 @@ export class ListingService {
         })
       }
 
-      // LMSR Logic
+      // LMSR Logic (N-outcome)
       const lmsrService = new LmsrService()
-      const { pYes, pNo } = lmsrService.getPrice(positionToList.market.qYes, positionToList.market.qNo, positionToList.market.b)
-      const fairValuePerShare = positionToList.side === 'YES' ? pYes : pNo
+      const outcomes = positionToList.market.outcomes
+      const qVector = LmsrService.buildQVector(outcomes)
+      const lmsrParams = { b: positionToList.market.b, alpha: positionToList.market.alpha, bMin: positionToList.market.bMin }
+      const prices = lmsrService.getPricesLSN(qVector, lmsrParams)
+      const outcomeIdx = LmsrService.outcomeIndex(outcomes, positionToList.outcomeId)
+      const fairValuePerShare = prices[outcomeIdx]
       const totalFairValue = fairValuePerShare * positionToList.shares
 
       const askPrice = new Decimal(data.askPrice)
@@ -195,6 +201,7 @@ export class ListingService {
         const buyerPosition = await tx.position.create({
           data: {
             marketId: listing.marketId,
+            outcomeId: listing.position.outcomeId,
             originalOwnerId: listing.position.originalOwnerId, // Keep lineage
             currentOwnerId: data.buyerId,
             side: listing.position.side,
@@ -235,34 +242,45 @@ export class ListingService {
     })
   }
 
-  static async getActive(marketId?: string, side?: 'YES' | 'NO') {
+  static async getActive(marketId?: string, outcomeFilter?: string) {
     const listings = await prisma.marketplaceListing.findMany({
       where: {
         status: 'ACTIVE',
         ...(marketId && { marketId }),
-        ...(side && { position: { side } }),
+        ...(outcomeFilter && { position: { OR: [{ outcomeId: outcomeFilter }, { side: outcomeFilter }] } }),
       },
       include: {
-        position: { include: { market: true } },
+        position: {
+          include: {
+            market: {
+              include: { outcomes: { orderBy: { displayOrder: 'asc' } } },
+            },
+            outcome: { select: { id: true, name: true } },
+          },
+        },
         seller: { select: { id: true, username: true } },
       },
       orderBy: { listedAt: 'desc' },
     })
-    
+
     const lmsrService = new LmsrService()
 
     return listings.map((listing) => {
-      // LMSR Fair Value Logic for display
-      const { pYes, pNo } = lmsrService.getPrice(listing.position.market.qYes, listing.position.market.qNo, listing.position.market.b)
-      const currentFairValuePerShare = listing.position.side === 'YES' ? pYes : pNo
-      
+      // LMSR Fair Value Logic for display (N-outcome)
+      const outcomes = listing.position.market.outcomes
+      const qVector = LmsrService.buildQVector(outcomes)
+      const lmsrParams = { b: listing.position.market.b, alpha: listing.position.market.alpha, bMin: listing.position.market.bMin }
+      const prices = lmsrService.getPricesLSN(qVector, lmsrParams)
+      const outcomeIdx = LmsrService.outcomeIndex(outcomes, listing.position.outcomeId)
+      const currentFairValuePerShare = prices[outcomeIdx]
+
       const shares = new Decimal(listing.shares)
       const currentTotalFairValue = new Decimal(currentFairValuePerShare).times(shares)
-      
+
       const potentialReturn = shares // $1 per share if win
       const askPrice = new Decimal(listing.askPrice)
       const potentialProfit = potentialReturn.minus(askPrice)
-      
+
       const roi = askPrice.isZero()
         ? 0
         : potentialProfit.dividedBy(askPrice).times(100).toNumber()
@@ -271,25 +289,24 @@ export class ListingService {
         ...listing,
         askPrice: listing.askPrice.toNumber(),
         marketId: listing.marketId,
-        suggestedPrice: currentTotalFairValue.toNumber(), // Dynamic fair value based on current market state
+        suggestedPrice: currentTotalFairValue.toNumber(),
         shares: listing.shares,
         askPricePerShare: listing.askPricePerShare,
-        
+
         currentFairValue: currentTotalFairValue.toNumber(),
         potentialReturn: potentialReturn.toNumber(),
         potentialProfit: potentialProfit.toNumber(),
         roi,
-        
+
         position: {
           ...listing.position,
           amount: listing.position.amount.toNumber(),
           shares: listing.position.shares,
           avgCostPerShare: listing.position.avgCostPerShare,
+          outcome: listing.position.outcome,
           market: {
             ...listing.position.market,
-            // Pools might be legacy or useful for volume
-            yesPool: listing.position.market.yesPool.toNumber(),
-            noPool: listing.position.market.noPool.toNumber(),
+            totalPool: listing.position.market.totalPool.toNumber(),
           },
         },
       }
@@ -325,36 +342,44 @@ export class ListingService {
         ...(marketId && { marketId }),
       },
       include: {
-        position: { include: { market: true } },
+        position: {
+          include: {
+            market: {
+              include: { outcomes: { orderBy: { displayOrder: 'asc' } } },
+            },
+            outcome: { select: { id: true, name: true } },
+          },
+        },
         seller: { select: { id: true, username: true } },
         buyer: { select: { id: true, username: true } },
       },
       orderBy: { listedAt: 'desc' },
     })
 
+    const lmsrService = new LmsrService()
+
     return listings.map((listing) => {
-      // For history, we can't always calculate current odds/payouts meaningfully if market changed,
-      // but showing snapshot data or current market data is acceptable.
-      // We'll stick to current market data for now.
-      const odds = OddsCalculator.calculateOdds(
-        listing.position.market.yesPool,
-        listing.position.market.noPool
-      )
-      const payout = listing.position.side === 'YES' ? odds.yesPayout : odds.noPayout
+      // Use LMSR N-outcome pricing for current fair value
+      const outcomes = listing.position.market.outcomes
+      const qVector = LmsrService.buildQVector(outcomes)
+      const lmsrParams = { b: listing.position.market.b, alpha: listing.position.market.alpha, bMin: listing.position.market.bMin }
+      const prices = lmsrService.getPricesLSN(qVector, lmsrParams)
+      const outcomeIdx = LmsrService.outcomeIndex(outcomes, listing.position.outcomeId)
+      const currentPrice = prices[outcomeIdx]
 
       return {
         ...listing,
         askPrice: listing.askPrice.toNumber(),
         suggestedPrice: listing.suggestedPrice.toNumber(),
-        // For history, current payout might differ from sold time, but useful context
-        currentPayout: payout, 
+        currentPrice,
+        outcome: listing.position.outcome,
         position: {
           ...listing.position,
           amount: listing.position.amount.toNumber(),
+          outcome: listing.position.outcome,
           market: {
             ...listing.position.market,
-            yesPool: listing.position.market.yesPool.toNumber(),
-            noPool: listing.position.market.noPool.toNumber(),
+            totalPool: listing.position.market.totalPool.toNumber(),
           },
         },
       }
@@ -365,26 +390,39 @@ export class ListingService {
     return prisma.$transaction(async (tx) => {
       const listing = await tx.marketplaceListing.findUnique({
         where: { id: listingId },
-        include: { position: { include: { market: true } } },
+        include: {
+          position: {
+            include: {
+              market: {
+                include: { outcomes: { orderBy: { displayOrder: 'asc' } } },
+              },
+            },
+          },
+        },
       })
 
       if (!listing) throw new Error('Listing not found')
       if (listing.sellerId !== userId) throw new Error('Not listing owner')
       if (listing.status !== 'ACTIVE') throw new Error('Listing not active')
 
-      const fairValue = OddsCalculator.calculateFairValue(
-        { amount: listing.position.amount, side: listing.position.side as 'YES' | 'NO' },
-        { yesPool: listing.position.market.yesPool, noPool: listing.position.market.noPool }
-      )
+      // N-outcome fair value
+      const lmsrService = new LmsrService()
+      const outcomes = listing.position.market.outcomes
+      const qVector = LmsrService.buildQVector(outcomes)
+      const lmsrParams = { b: listing.position.market.b, alpha: listing.position.market.alpha, bMin: listing.position.market.bMin }
+      const prices = lmsrService.getPricesLSN(qVector, lmsrParams)
+      const outcomeIdx = LmsrService.outcomeIndex(outcomes, listing.position.outcomeId)
+      const fairValuePerShare = prices[outcomeIdx]
+      const totalFairValue = new Decimal(fairValuePerShare * listing.position.shares)
 
       const askPrice = new Decimal(newPrice)
-      if (askPrice.greaterThan(fairValue.times(1.2))) {
+      if (askPrice.greaterThan(totalFairValue.times(1.2))) {
         throw new Error('New price too high')
       }
 
       return tx.marketplaceListing.update({
         where: { id: listingId },
-        data: { askPrice, suggestedPrice: fairValue },
+        data: { askPrice, suggestedPrice: totalFairValue },
       })
     })
   }

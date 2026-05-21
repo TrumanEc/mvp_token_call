@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { Decimal } from '@prisma/client/runtime/library'
+import { LmsrService } from '@/services/lmsr.service'
 
 export async function GET(
   request: NextRequest,
@@ -11,7 +12,16 @@ export async function GET(
     const user = await prisma.user.findUnique({
       where: { id: userId },
       include: {
-        currentPositions: { include: { market: true } },
+        currentPositions: {
+          include: {
+            market: {
+              include: {
+                outcomes: { orderBy: { displayOrder: 'asc' } },
+              },
+            },
+            outcome: { select: { id: true, name: true } },
+          },
+        },
         transactions: true
       }
     })
@@ -26,22 +36,25 @@ export async function GET(
       .filter(t => t.type === 'PAYOUT_RECEIVED' || t.type === 'POSITION_SOLD')
       .reduce((sum, t) => sum.plus(new Decimal(t.amount)), new Decimal(0))
 
+    const lmsrService = new LmsrService()
+
     const potentialFutureGains = user.currentPositions
       .filter(p => p.status === 'ACTIVE')
       .reduce((sum, p) => {
-        const yes = new Decimal(p.market.yesPool)
-        const no = new Decimal(p.market.noPool)
-        const total = yes.plus(no)
-        const fee = new Decimal(p.market.platformFee || 0.1)
-        const netPool = total.times(new Decimal(1).minus(fee))
-        
-        let payout = new Decimal(0)
-        if (p.side === 'YES' && !yes.isZero()) {
-          payout = new Decimal(p.amount).dividedBy(yes).times(netPool)
-        } else if (p.side === 'NO' && !no.isZero()) {
-          payout = new Decimal(p.amount).dividedBy(no).times(netPool)
-        }
-        return sum.plus(payout)
+        // Use LMSR N-outcome pricing to estimate potential payout
+        const outcomes = p.market.outcomes
+        const qVector = LmsrService.buildQVector(outcomes)
+        const lmsrParams = { b: p.market.b, alpha: p.market.alpha, bMin: p.market.bMin }
+        const prices = lmsrService.getPricesLSN(qVector, lmsrParams)
+        const outcomeIdx = LmsrService.outcomeIndex(outcomes, p.outcomeId)
+        const price = prices[outcomeIdx]
+
+        // If this outcome wins, payout = shares * 1 (normalized).
+        // Potential value = shares * price (expected value)
+        // But for "potential future gains" we show payout IF this outcome wins:
+        // payout = shares (each share pays $1 on win)
+        const potentialPayout = new Decimal(p.shares)
+        return sum.plus(potentialPayout)
       }, new Decimal(0))
 
     return NextResponse.json({
@@ -55,10 +68,13 @@ export async function GET(
       },
       positions: user.currentPositions.map(p => ({
         id: p.id,
+        outcome: p.outcome.name,
+        outcomeId: p.outcomeId,
         side: p.side,
         amount: p.amount.toNumber(),
+        shares: p.shares,
         initialProbability: p.initialProbability.toNumber(),
-        marketName: p.market.playerName || 'Evento / Partido',
+        marketName: p.market.playerName || p.market.question,
         createdAt: p.createdAt
       }))
     })

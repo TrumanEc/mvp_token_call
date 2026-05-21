@@ -1,9 +1,66 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import React, { useState, useEffect, useRef } from "react";
+
+// ─── Tooltip ──────────────────────────────────────────────────────────────────
+function Tooltip({ children, content }: { children: React.ReactNode; content: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  return (
+    <span ref={ref} className="relative inline-flex items-center">
+      <span
+        onClick={() => setOpen((v) => !v)}
+        className="ml-1 w-3.5 h-3.5 rounded-full border border-gray-600 text-gray-500 text-[8px] font-bold flex items-center justify-center cursor-pointer hover:border-gray-400 hover:text-gray-300 transition-colors select-none"
+      >
+        i
+      </span>
+      {open && (
+        <span className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 bg-[#1a1a1a] border border-white/15 rounded-xl p-3 shadow-2xl">
+          <span className="block text-[11px] text-gray-300 leading-relaxed">{content}</span>
+          <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#1a1a1a]" />
+        </span>
+      )}
+      {children}
+    </span>
+  );
+}
+
+// ─── Row helper ───────────────────────────────────────────────────────────────
+function Row({ label, value, sub, labelTip, valueClass = "text-white" }: {
+  label: React.ReactNode; value: React.ReactNode; sub?: string;
+  labelTip?: React.ReactNode; valueClass?: string;
+}) {
+  return (
+    <div className="flex items-center justify-between py-2.5 border-b border-white/5 last:border-0">
+      <span className="text-[11px] text-gray-500 flex items-center">
+        {label}{labelTip && <Tooltip content={labelTip}>{null}</Tooltip>}
+      </span>
+      <span className={`text-[12px] font-bold ${valueClass} text-right`}>
+        {value}
+        {sub && <span className="block text-[9px] text-gray-600 font-normal">{sub}</span>}
+      </span>
+    </div>
+  );
+}
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+interface OutcomeData {
+  id: string;
+  name: string;
+  probability: number;
+  price: number;
+  displayOrder?: number;
+}
 
 interface PredictionCardProps {
   market: any;
@@ -13,909 +70,591 @@ interface PredictionCardProps {
   prefillOrder?: { side: "YES" | "NO"; price: number; shares: number } | null;
 }
 
-// ─── BUY MODE ────────────────────────────────────────────────────────────────
-function BuyForm({
-  market,
-  userId,
-  userBalance,
-  onSuccess,
-  prefillOrder,
-}: PredictionCardProps) {
-  const [side, setSide] = useState<"YES" | "NO">("YES");
+interface Quote {
+  shares: number;
+  avgPrice: number;
+  totalCost: number;
+  feeAmount: number;
+  platformFeeRate: number;
+  estimatedPayoutPerShare: number;
+  newProbabilities: Record<string, number>;
+  maxAllowedAmount: number;
+  wouldExceedCap: boolean;
+  capReason: string | null;
+}
+
+interface SellQuote {
+  shares: number;
+  grossAmount: number;
+  feeAmount: number;
+  netAmount: number;
+  avgPricePerShare: number;
+  feeRate: number;
+  newProbabilities: Record<string, number>;
+  capped: boolean;
+  capReason: string | null;
+}
+
+const OUTCOME_COLORS = ['#64c883', '#f87171', '#60a5fa', '#fbbf24', '#a78bfa', '#f472b6', '#34d399'];
+
+/** YES → Sí, everything else stays */
+function labelEs(name: string) {
+  if (name === "YES") return "SÍ";
+  if (name === "NO")  return "NO";
+  return name;
+}
+
+// ─── BUY FORM ─────────────────────────────────────────────────────────────────
+function BuyForm({ market, userId, userBalance, onSuccess }: PredictionCardProps) {
+  const outcomes: OutcomeData[] = market.outcomes ?? [];
+  const isBinary = outcomes.length === 2 && outcomes[0]?.name === "YES";
+
+  const [selectedOutcomeId, setSelectedOutcomeId] = useState<string>(outcomes[0]?.id ?? "");
   const [amount, setAmount] = useState("");
+  const [step, setStep] = useState<"configure" | "review">("configure");
   const [loading, setLoading] = useState(false);
   const [quoteLoading, setQuoteLoading] = useState(false);
   const [error, setError] = useState("");
+  const [quote, setQuote] = useState<Quote | null>(null);
 
-  const [quote, setQuote] = useState<{
-    shares: number;
-    avgPrice: number;
-    totalCost: number;
-    newProbabilities: { yes: number; no: number };
-    feeAmount?: number;
-    platformFeeRate?: number;
-    maxAllowedAmount: number;
-    capReason: string | null;
-    wouldExceedCap: boolean;
-    lmsrShares?: number;
-    obShares?: number;
-    lmsrFeeAmount?: number;
-    obFeeAmount?: number;
-    lmsrFeeRate?: number;
-    obFeeRate?: number;
-    estimatedPayoutPerShare?: number;
-  } | null>(null);
+  const selectedOutcome = outcomes.find(o => o.id === selectedOutcomeId) ?? outcomes[0];
+  const selectedIdx = outcomes.indexOf(selectedOutcome);
+  const side = selectedOutcome?.name ?? "YES";
+  const sideLabel = labelEs(side);
 
-  const isPrimaryPaused =
-    market.primaryMarketPaused ||
-    (market.primaryPauseScheduledAt &&
-      new Date(market.primaryPauseScheduledAt) <= new Date());
-
-  // P2P liquidity available for the selected side
-  const obOrders: any[] = (market.orders || []).filter(
-    (o: any) => o.type === "SELL" && o.side === side && ["OPEN", "PARTIAL"].includes(o.status)
-  );
-  const obAvailableShares = obOrders.reduce((s: number, o: any) => s + (o.remainingShares || 0), 0);
-  const obAvailableNetCost = obOrders.reduce((s: number, o: any) => s + (o.remainingShares || 0) * o.pricePerShare, 0);
-  const obAvailableGross = obAvailableNetCost > 0 ? obAvailableNetCost / 0.98 : 0; // 2% P2P fee
-
-  const currentPrice =
-    (side === "YES" ? market.odds.yesOdds : market.odds.noOdds) / 100;
   const amountNum = parseFloat(amount) || 0;
-  const netAmount = quote
-    ? quote.totalCost - (quote.feeAmount ?? 0)
-    : amountNum * 0.985; // 1.5% fee fallback
-  const estimatedShares = quote
-    ? quote.shares
-    : netAmount > 0
-      ? netAmount / currentPrice
-      : 0;
+  const currentPrice = (selectedOutcome?.price ?? selectedOutcome?.probability / 100) ?? 0.5;
 
-  // Option B: payout proporcional — el pool completo se divide entre los shares ganadores
-  const payoutPerShare = quote?.estimatedPayoutPerShare ?? 1;
-  const potentialReturnValue = estimatedShares * payoutPerShare;
-  const potentialProfit = potentialReturnValue - amountNum;
-  const roi = amountNum > 0 ? (potentialProfit / amountNum) * 100 : 0;
+  const quickPicks = [
+    { label: "25%", value: userBalance * 0.25 },
+    { label: "50%", value: userBalance * 0.5 },
+    { label: "75%", value: userBalance * 0.75 },
+    { label: "MAX", value: userBalance },
+  ];
 
-  useEffect(() => {
-    if (prefillOrder && prefillOrder.shares && prefillOrder.price) {
-      setSide(prefillOrder.side);
-      // Populate amount with the exact gross cost to consume that specific order size
-      // Total cost without fee = price * shares
-      // Gross cost = (price * shares) / (1 - platformFeeRate), but we don't know the exact fee rate here without quote.
-      // We can just set amount to roughly what it takes (a bit more is fine, quote will adjust max)
-      // Actually, since users see limit orders naturally, providing just price * shares is good enough to pre-fill close to it.
-      const rawCost = prefillOrder.shares * prefillOrder.price;
-      const estimatedGross = rawCost / 0.9; 
-      setAmount(estimatedGross.toFixed(2));
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-  }, [prefillOrder]);
+  const estimatedShares = quote ? quote.shares : amountNum > 0 ? (amountNum * 0.985) / currentPrice : 0;
+  const payoutPerShare = quote?.estimatedPayoutPerShare ?? 1 / currentPrice;
+  const estimatedPayout = estimatedShares * payoutPerShare;
+  const profit = estimatedPayout - amountNum;
+  const roi = amountNum > 0 ? (profit / amountNum) * 100 : 0;
+  const feeAmt = quote?.feeAmount ?? amountNum * (market.platformFee ?? 0.015);
+  const feeRate = ((quote?.platformFeeRate ?? market.platformFee ?? 0.015) * 100).toFixed(1);
+  const payoutMax = estimatedPayout * 1.3;
 
   useEffect(() => {
-    const fetchQuote = async () => {
-      if (amountNum <= 0) { setQuote(null); return; }
-      setQuoteLoading(true);
+    if (amountNum <= 0) { setQuote(null); return; }
+    setQuoteLoading(true);
+    const t = setTimeout(async () => {
       try {
-        const res = await fetch(
-          `/api/markets/${market.id}/price-quote?side=${side}&amount=${amountNum}`
-        );
+        const res = await fetch(`/api/markets/${market.id}/price-quote?outcomeId=${selectedOutcomeId}&amount=${amountNum}`);
         const data = await res.json();
         if (res.ok) setQuote(data);
-        else setError(data.details || data.error || "Error al obtener cotización");
-      } catch { /* swallow */ } finally { setQuoteLoading(false); }
-    };
-    const t = setTimeout(fetchQuote, 500);
+        else setError(data.error || "Error al cotizar");
+      } catch { /* noop */ } finally { setQuoteLoading(false); }
+    }, 400);
     return () => clearTimeout(t);
-  }, [amountNum, side, market.id]);
+  }, [amountNum, selectedOutcomeId, market.id]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    if (amountNum <= 0) { setError("Ingresa un monto válido"); return; }
-    if (amountNum > userBalance) { setError("Saldo insuficiente"); return; }
-    setLoading(true);
+  useEffect(() => { setStep("configure"); setError(""); }, [selectedOutcomeId, amount]);
+
+  const handleConfirm = async () => {
+    setError(""); setLoading(true);
     try {
       const res = await fetch("/api/positions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ marketId: market.id, userId, side, amount: amountNum }),
+        body: JSON.stringify({ marketId: market.id, userId, outcomeId: selectedOutcomeId, side, amount: amountNum }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Error al crear posición");
-      setAmount(""); setQuote(null); onSuccess();
+      setAmount(""); setQuote(null); setStep("configure"); onSuccess();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error desconocido");
+      setStep("configure");
     } finally { setLoading(false); }
   };
 
-  return (
-    <>
-      {/* YES / NO selector */}
-      <div className="grid grid-cols-2 gap-4">
+  // ── Review step ────────────────────────────────────────────────────────────
+  if (step === "review") {
+    return (
+      <div className="space-y-5">
         <button
-          type="button"
-          onClick={() => setSide("YES")}
-          className={`h-16 rounded-2xl flex flex-col items-center justify-center transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] ${
-            side === "YES"
-              ? "bg-primary text-win-bg shadow-lg shadow-primary/20"
-              : "bg-win-success-tint/40 text-primary/60 border border-primary/10"
-          }`}
+          onClick={() => setStep("configure")}
+          className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-500 hover:text-white transition-colors"
         >
-          <span className="text-xl font-bold">Yes</span>
-          <span className="text-[10px] font-bold opacity-70">
-            ${(market.odds.yesOdds / 100).toFixed(2)}
-          </span>
+          ← Volver
         </button>
-        <button
-          type="button"
-          onClick={() => setSide("NO")}
-          className={`h-16 rounded-2xl flex flex-col items-center justify-center transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] ${
-            side === "NO"
-              ? "bg-win-error text-win-bg shadow-lg shadow-win-error/20"
-              : "bg-win-error-tint/40 text-win-error/60 border border-win-error/10"
-          }`}
-        >
-          <span className="text-xl font-bold">No</span>
-          <span className="text-[10px] font-bold opacity-70">
-            ${(market.odds.noOdds / 100).toFixed(2)}
-          </span>
-        </button>
-      </div>
 
-      {/* Form */}
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <div className="flex justify-between text-[11px] font-bold text-gray-500 uppercase tracking-wider px-1">
-            <span>MONTO A INVERTIR</span>
-            <span>Saldo: ${userBalance.toFixed(2)}</span>
+        <div className="bg-win-bg rounded-2xl border border-white/8">
+          <div className="px-4 py-3 flex items-center gap-2" style={{ background: `${OUTCOME_COLORS[selectedIdx] ?? '#60a5fa'}15` }}>
+            <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full"
+              style={{ background: `${OUTCOME_COLORS[selectedIdx] ?? '#60a5fa'}30`, color: OUTCOME_COLORS[selectedIdx] ?? '#60a5fa' }}>
+              {sideLabel}
+            </span>
+            <span className="text-[11px] font-semibold text-white">{market.question}</span>
           </div>
-          <div className="relative group">
-            <input
-              type="number"
-              placeholder="0.00"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              disabled={isPrimaryPaused && obAvailableShares <= 0}
-              className="w-full bg-win-bg border border-win-hover rounded-xl px-4 py-3 text-white font-bold text-lg outline-none transition-all group-focus-within:border-primary group-focus-within:ring-1 group-focus-within:ring-primary/20 disabled:opacity-40 disabled:cursor-not-allowed"
+          <div className="px-4 py-1">
+            <Row label="Invertir" value={`$${amountNum.toFixed(2)}`} />
+            <Row label="Precio promedio" value={`$${(quote?.avgPrice ?? currentPrice).toFixed(4)}`} />
+            <Row
+              label="Fee plataforma"
+              value={`-$${feeAmt.toFixed(2)}`}
+              valueClass="text-gray-400"
+              labelTip={`Comisión WIN del ${feeRate}% sobre el monto invertido.`}
             />
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold">$</div>
+            <Row label="Participaciones" value={`${estimatedShares.toFixed(2)}`} />
+            <Row
+              label={<>Pago si se resuelve {sideLabel}<Tooltip content={
+                <span>
+                  Estimado actual: <strong>${estimatedPayout.toFixed(2)}</strong><br />
+                  Los ganadores comparten el pool total. La ganancia real puede variar.<br />
+                  <span className="text-green-400">↑ Máximo est. ${payoutMax.toFixed(2)}</span>
+                </span>
+              }>{null}</Tooltip></>}
+              value={
+                <span className="text-primary font-extrabold" style={{ fontSize: 18 }}>
+                  ${payoutMax.toFixed(2)}
+                  <span className="text-[10px] text-gray-500 ml-1 font-normal">({roi >= 0 ? "+" : ""}{roi.toFixed(0)}%)</span>
+                </span>
+              }
+            />
           </div>
-
-          {/* P2P liquidity info when primary is paused */}
-          {isPrimaryPaused && (
-            obAvailableShares > 0 ? (
-              <div className="flex items-center justify-between px-3 py-2 bg-blue-500/10 border border-blue-500/20 rounded-xl">
-                <div>
-                  <p className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">Disponible en P2P</p>
-                  <p className="text-[11px] text-gray-300 mt-0.5">
-                    <span className="font-bold text-white">{obAvailableShares.toFixed(2)} shares</span>
-                    {" · "}costo total ~<span className="font-bold text-white">${obAvailableGross.toFixed(2)}</span>
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setAmount(Math.min(obAvailableGross, userBalance).toFixed(2))}
-                  className="shrink-0 ml-3 px-3 py-1.5 bg-blue-500/20 text-blue-400 border border-blue-500/30 text-[10px] font-bold rounded-lg uppercase tracking-wider hover:bg-blue-500/30 transition-all"
-                >
-                  Máx P2P
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 px-3 py-2 bg-win-error/10 border border-win-error/20 rounded-xl">
-                <span className="text-win-error text-sm">⊘</span>
-                <p className="text-[11px] text-win-error font-bold">
-                  Sin órdenes P2P disponibles para {side}. Espera a que otros usuarios pongan posiciones en venta.
-                </p>
-              </div>
-            )
-          )}
         </div>
 
-        {amountNum > 0 && (
-          <div className="space-y-2">
-            {quote?.feeAmount !== undefined && quote.feeAmount > 0 && (
-              <>
-                {quote.lmsrFeeAmount !== undefined && quote.lmsrFeeAmount > 0 && (
-                  <div className="flex justify-between items-center px-4 py-3 bg-win-bg/50 rounded-xl border border-white/5">
-                    <span className="text-xs text-purple-400">Comisión WIN ({((quote.lmsrFeeRate ?? 0.1) * 100).toFixed(0)}%)</span>
-                    <span className="text-sm font-bold text-win-error">- ${quote.lmsrFeeAmount.toFixed(2)}</span>
-                  </div>
-                )}
-                {quote.obFeeAmount !== undefined && quote.obFeeAmount > 0 && (
-                  <div className="flex justify-between items-center px-4 py-3 bg-win-bg/50 rounded-xl border border-white/5">
-                    <span className="text-xs text-blue-400">Comisión P2P ({((quote.obFeeRate ?? 0.02) * 100).toFixed(0)}%)</span>
-                    <span className="text-sm font-bold text-win-error">- ${quote.obFeeAmount.toFixed(2)}</span>
-                  </div>
-                )}
-                {(quote.lmsrFeeAmount === undefined || quote.lmsrFeeAmount === 0) && (quote.obFeeAmount === undefined || quote.obFeeAmount === 0) && quote.feeAmount > 0 && (
-                  <div className="flex justify-between items-center px-4 py-3 bg-win-bg/50 rounded-xl border border-white/5">
-                    <span className="text-xs text-gray-400">Comisión WIN ({((quote.platformFeeRate ?? 0.1) * 100).toFixed(0)}%)</span>
-                    <span className="text-sm font-bold text-win-error">- ${quote.feeAmount.toFixed(2)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between items-center px-4 py-3 bg-win-bg/50 rounded-xl border border-white/5">
-                  <span className="text-xs text-gray-400">Inversión Neta</span>
-                  <span className="text-sm font-bold text-white">${(quote.totalCost - quote.feeAmount).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between items-center px-4 py-3 bg-win-bg/50 rounded-xl border border-white/5">
-                  <span className="text-xs text-gray-400">Costo Total</span>
-                  <span className="text-sm font-bold text-white">${quote.totalCost.toFixed(2)}</span>
-                </div>
-              </>
-            )}
-            <div className="flex flex-col px-4 py-3 bg-win-bg/50 rounded-xl border border-white/5 space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-gray-400">Acciones Estimadas</span>
-                <span className="text-sm font-bold text-white">
-                  {quoteLoading ? "..." : estimatedShares.toFixed(2)}
-                </span>
-              </div>
-              {!quoteLoading && quote && (quote.lmsrShares || 0) + (quote.obShares || 0) > 0 && (
-                <div className="pt-1">
-                  <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden flex">
-                    {(quote.obShares || 0) > 0 && (
-                      <div style={{ width: `${(quote.obShares! / quote.shares) * 100}%` }} className="h-full bg-blue-500" />
-                    )}
-                    {(quote.lmsrShares || 0) > 0 && (
-                      <div style={{ width: `${(quote.lmsrShares! / quote.shares) * 100}%` }} className="h-full bg-purple-500" />
-                    )}
-                  </div>
-                  <div className="flex justify-between mt-1.5 text-[9px] font-bold uppercase tracking-wider">
-                    {(quote.obShares || 0) > 0 ? (
-                      <span className="text-blue-400">P2P: {((quote.obShares! / quote.shares) * 100).toFixed(2)}%</span>
-                    ) : <span />}
-                    {(quote.lmsrShares || 0) > 0 ? (
-                      <span className="text-purple-400">WIN: {((quote.lmsrShares! / quote.shares) * 100).toFixed(2)}%</span>
-                    ) : <span />}
-                  </div>
-                </div>
-              )}
-            </div>
-            <div className="flex justify-between items-center px-4 py-3 bg-win-bg/50 rounded-xl border border-white/5">
-              <span className="text-xs text-gray-400">Precio Promedio</span>
-              <span className="text-sm font-bold text-white">
-                {quoteLoading ? "..." : `$${(quote ? quote.avgPrice : currentPrice).toFixed(4)}`}
-              </span>
-            </div>
-            {quote && (
-              <div className="flex justify-between items-center px-4 py-3 bg-win-bg/50 rounded-xl border border-white/5">
-                <span className="text-xs text-gray-400">Nuevo Precio del Mercado</span>
-                <div className="flex gap-3">
-                  <span className="text-sm font-bold text-primary">Y ${quote.newProbabilities.yes.toFixed(2)}</span>
-                  <span className="text-sm font-bold text-win-error">N ${quote.newProbabilities.no.toFixed(2)}</span>
-                </div>
-              </div>
-            )}
-            <div className="flex flex-col gap-1 px-4 py-4 bg-primary/5 rounded-xl border border-primary/10">
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-primary">
-                  Pago estimado si gana {side} ({roi >= 0 ? "+" : ""}{roi.toFixed(0)}% ROI)
-                </span>
-                <span className="text-base font-extrabold text-primary">
-                  {quoteLoading ? "..." : `$${potentialReturnValue.toFixed(2)}`}
-                </span>
-              </div>
-              {!quoteLoading && quote?.estimatedPayoutPerShare !== undefined && (
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] text-gray-500">~${quote.estimatedPayoutPerShare.toFixed(3)} por share (proporcional al pool)</span>
-                  <span className="text-[10px] text-gray-500">{estimatedShares.toFixed(2)} sh</span>
-                </div>
-              )}
-            </div>
-            <div className="flex items-start gap-2 px-3 py-2 bg-white/[0.02] rounded-xl border border-white/5">
-              <span className="text-[9px] text-gray-500 leading-relaxed">
-                ℹ️ Pago proporcional: los ganadores comparten el pool completo del mercado. El pago real puede ser mayor o menor al estimado según el volumen final.
-              </span>
+        {quote?.newProbabilities && (
+          <div className="px-3 py-2 rounded-xl bg-white/3 border border-white/5">
+            <span className="text-[10px] text-gray-600 block mb-1">Nuevo precio del mercado</span>
+            <div className="flex flex-wrap gap-2 text-[11px] font-bold">
+              {outcomes.map((o, i) => {
+                const newProb = quote.newProbabilities[o.id] ?? quote.newProbabilities[o.name];
+                const pct = newProb != null ? (newProb > 1 ? newProb : newProb * 100) : o.probability;
+                return (
+                  <span key={o.id} style={{ color: OUTCOME_COLORS[i % OUTCOME_COLORS.length] }}>
+                    {labelEs(o.name)} {pct.toFixed(0)}%
+                  </span>
+                );
+              })}
             </div>
           </div>
         )}
 
-        {quote?.wouldExceedCap && (
-          <div className="bg-win-error/10 border border-win-error/20 p-3 rounded-xl text-win-error text-[11px] mb-2">
-            <p className="font-bold mb-0.5">⚠️ Límite excedido</p>
-            <p>{quote.capReason}</p>
-            <p className="mt-1">Máximo permitido: <strong>${quote.maxAllowedAmount?.toFixed(2)}</strong></p>
-            <button type="button" onClick={() => setAmount(quote.maxAllowedAmount?.toString() || "")}
-              className="mt-2 text-[10px] font-extrabold underline uppercase tracking-tighter">
-              Ajustar al máximo
-            </button>
-          </div>
-        )}
+        {error && <p className="text-win-error text-[11px] text-center">{error}</p>}
 
-        {error && <p className="text-win-error text-xs text-center font-medium">{error}</p>}
-
-        <Button
-          type="submit"
-          disabled={
-            !amount ||
-            loading ||
-            quoteLoading ||
-            amountNum <= 0 ||
-            !!quote?.wouldExceedCap ||
-            (isPrimaryPaused && obAvailableShares <= 0)
-          }
-          loading={loading || quoteLoading}
-          className={`w-full py-6 rounded-2xl text-lg font-bold transition-all shadow-xl ${
-            isPrimaryPaused && obAvailableShares <= 0
-              ? "bg-gray-700 text-gray-500 cursor-not-allowed"
-              : side === "YES"
-                ? "bg-primary text-win-bg hover:bg-primary-hover shadow-primary/20"
-                : "bg-win-error text-white hover:bg-win-error-hover shadow-win-error/20"
-          }`}
+        <button
+          onClick={handleConfirm}
+          disabled={loading}
+          className="w-full py-4 rounded-2xl text-[13px] font-bold uppercase tracking-wider transition-all shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{
+            background: OUTCOME_COLORS[selectedIdx] ?? '#60a5fa',
+            color: selectedIdx === 0 && isBinary ? '#0d1117' : '#fff',
+            boxShadow: `0 10px 25px ${OUTCOME_COLORS[selectedIdx] ?? '#60a5fa'}33`,
+          }}
         >
-          {isPrimaryPaused && obAvailableShares <= 0
-            ? "Sin liquidez P2P"
-            : `Confirmar ${side}`}
-        </Button>
-      </form>
-    </>
+          {loading ? "Procesando…" : `Confirmar ${sideLabel}`}
+        </button>
+      </div>
+    );
+  }
+
+  // ── Configure step ─────────────────────────────────────────────────────────
+  return (
+    <div className="space-y-4">
+      {/* Outcome selector */}
+      {isBinary ? (
+        <div className="grid grid-cols-2 gap-3">
+          {outcomes.map((o, i) => {
+            const active = selectedOutcomeId === o.id;
+            const color = OUTCOME_COLORS[i % OUTCOME_COLORS.length];
+            return (
+              <button
+                key={o.id}
+                onClick={() => setSelectedOutcomeId(o.id)}
+                className="h-14 rounded-2xl flex flex-col items-center justify-center transition-all duration-200 border"
+                style={active
+                  ? { background: color, borderColor: color, color: i === 0 ? '#0d1117' : '#fff' }
+                  : { background: `${color}18`, borderColor: `${color}30`, color: color }
+                }
+              >
+                <span className="text-base font-extrabold">{labelEs(o.name)}</span>
+                <span className="text-[11px] font-bold opacity-75">{o.probability.toFixed(0)}%</span>
+              </button>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Elegir resultado</div>
+          <div className="grid grid-cols-2 gap-2">
+            {outcomes.map((o, i) => {
+              const active = selectedOutcomeId === o.id;
+              const color = OUTCOME_COLORS[i % OUTCOME_COLORS.length];
+              return (
+                <button
+                  key={o.id}
+                  onClick={() => setSelectedOutcomeId(o.id)}
+                  className="px-3 py-2.5 rounded-xl flex flex-col items-start transition-all duration-200 border"
+                  style={active
+                    ? { borderColor: `${color}60`, background: `${color}12`, boxShadow: `0 4px 12px ${color}22` }
+                    : { borderColor: 'rgba(255,255,255,0.05)' }
+                  }
+                >
+                  <span className="text-[11px] font-bold truncate w-full text-left" style={{ color: active ? color : '#9ca3af' }}>{o.name}</span>
+                  <span className="text-[10px] font-bold" style={{ color: active ? color : '#6b7280' }}>{o.probability.toFixed(0)}%</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Amount input */}
+      <div>
+        <div className="flex justify-between text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5 px-0.5">
+          <span>Monto a invertir</span>
+          <span>Saldo: <span className="text-gray-300">${userBalance.toFixed(2)}</span></span>
+        </div>
+        <div className="relative">
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-lg">$</span>
+          <input
+            type="number" placeholder="0.00" value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            onWheel={(e) => e.currentTarget.blur()}
+            className="w-full bg-win-bg border border-white/10 rounded-xl pl-8 pr-4 py-3 text-white font-bold text-lg outline-none focus:border-primary/40 focus:ring-1 focus:ring-primary/10 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+          />
+        </div>
+        <div className="grid grid-cols-4 gap-2 mt-2">
+          {quickPicks.map(({ label, value }) => (
+            <button key={label} onClick={() => setAmount(value.toFixed(2))}
+              className="py-1.5 rounded-lg bg-white/5 border border-white/8 text-[10px] font-bold text-gray-400 hover:text-white hover:bg-white/10 transition-all">
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Quote summary */}
+      {amountNum > 0 && (
+        <div className="bg-win-bg rounded-2xl border border-white/8">
+          <div className="px-4 py-1">
+            <Row label="Precio promedio"
+              value={quoteLoading ? "…" : `$${(quote?.avgPrice ?? currentPrice).toFixed(4)}`} />
+            <Row
+              label={<>Costo estimado</>}
+              value={quoteLoading ? "…" : `$${amountNum.toFixed(2)}`}
+              labelTip={`Incluye fee WIN del ${feeRate}% = $${feeAmt.toFixed(2)}. Inversión neta: $${(amountNum - feeAmt).toFixed(2)}.`}
+            />
+            <Row
+              label={<>Pago si se resuelve {sideLabel}</>}
+              value={
+                quoteLoading ? "…" : (
+                  <span className="text-primary font-extrabold" style={{ fontSize: 18 }}>
+                    ${payoutMax.toFixed(2)}
+                    <span className="text-[10px] text-gray-500 ml-1 font-normal">({roi >= 0 ? "+" : ""}{roi.toFixed(0)}%)</span>
+                  </span>
+                )
+              }
+              labelTip={
+                <span>
+                  Estimado actual: <strong className="text-white">${estimatedPayout.toFixed(2)}</strong><br /><br />
+                  Los ganadores comparten el pool total. El monto real puede variar.<br /><br />
+                  <span className="text-green-400">↑ Máximo est.: ${payoutMax.toFixed(2)}</span>
+                </span>
+              }
+            />
+          </div>
+        </div>
+      )}
+
+      {quote?.wouldExceedCap && (
+        <div className="px-3 py-2 bg-win-error/10 border border-win-error/20 rounded-xl">
+          <p className="text-[11px] text-win-error font-bold">⚠ Límite excedido</p>
+          <p className="text-[10px] text-gray-400 mt-0.5">{quote.capReason}</p>
+          <button onClick={() => setAmount(quote.maxAllowedAmount.toFixed(2))}
+            className="mt-1.5 text-[10px] font-bold text-primary underline">
+            Ajustar a ${quote.maxAllowedAmount.toFixed(2)}
+          </button>
+        </div>
+      )}
+
+      {error && <p className="text-win-error text-[11px] text-center">{error}</p>}
+
+      <button
+        disabled={!amount || amountNum <= 0 || quoteLoading || !!quote?.wouldExceedCap}
+        onClick={() => { setError(""); setStep("review"); }}
+        className="w-full py-3.5 rounded-2xl text-[13px] font-bold uppercase tracking-wider transition-all shadow-lg disabled:opacity-30 disabled:cursor-not-allowed"
+        style={{
+          background: OUTCOME_COLORS[selectedIdx] ?? '#60a5fa',
+          color: selectedIdx === 0 && isBinary ? '#0d1117' : '#fff',
+          boxShadow: `0 10px 20px ${OUTCOME_COLORS[selectedIdx] ?? '#60a5fa'}22`,
+        }}
+      >
+        Revisar Orden →
+      </button>
+    </div>
   );
 }
 
-// ─── SELL MODE ────────────────────────────────────────────────────────────────
-interface SellFormProps {
-  market: any;
-  userId: string;
-  onSuccess: () => void;
-}
-
-function SellForm({ market, userId, onSuccess }: SellFormProps) {
-  // myPositions = my active positions with shares > 0 and not already for sale
+// ─── SELL FORM ────────────────────────────────────────────────────────────────
+function SellForm({ market, userId, onSuccess }: { market: any; userId: string; onSuccess: () => void }) {
   const myPositions = (market.positions || []).filter(
-    (p: any) => p.currentOwner.id === userId && p.shares > 0 && !p.isForSale
+    (p: any) => p.currentOwner.id === userId && p.shares > 0
   );
 
-  const [sellMode, setSellMode] = useState<"LMSR" | "P2P">("LMSR");
-  const [selectedPositionId, setSelectedPositionId] = useState<string>(
-    myPositions[0]?.id || ""
-  );
-  const [sharesToSell, setSharesToSell] = useState("");
-  const [pricePerShare, setPricePerShare] = useState("");
+  // Aggregate by side
+  const yesPosGroup: any[] = myPositions.filter((p: any) => p.side === "YES");
+  const noPosGroup:  any[] = myPositions.filter((p: any) => p.side === "NO");
+  const yesShares = yesPosGroup.reduce((s: number, p: any) => s + p.shares, 0);
+  const noShares  = noPosGroup.reduce((s: number, p: any) => s + p.shares, 0);
+
+  const defaultSide = yesPosGroup.length > 0 ? "YES" : "NO";
+  const [selectedSide, setSelectedSide] = useState<"YES" | "NO">(defaultSide as "YES" | "NO");
+  const [value, setValue] = useState("");
+  const [step, setStep] = useState<"configure" | "review">("configure");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
+  const [sellQuote, setSellQuote] = useState<SellQuote | null>(null);
+  const [quoteLoading, setQuoteLoading] = useState(false);
 
-  // LMSR sell-back quote
-  const [sellQuote, setSellQuote] = useState<{
-    shares: number;
-    grossAmount: number;
-    feeAmount: number;
-    netAmount: number;
-    avgPricePerShare: number;
-    feeRate: number;
-    newProbabilities: { yes: number; no: number };
-    liquidityAvailable: number;
-    capped: boolean;
-    capReason: string | null;
-  } | null>(null);
-  const [sellQuoteLoading, setSellQuoteLoading] = useState(false);
+  // Best position for the selected side (most shares)
+  const sideGroup = selectedSide === "YES" ? yesPosGroup : noPosGroup;
+  const selectedPos = sideGroup.sort((a: any, b: any) => b.shares - a.shares)[0] ?? null;
+  const totalSideShares = selectedSide === "YES" ? yesShares : noShares;
 
-  const isPrimaryPaused =
-    market.primaryMarketPaused ||
-    (market.primaryPauseScheduledAt &&
-      new Date(market.primaryPauseScheduledAt) <= new Date());
+  const currentSharePrice = selectedPos
+    ? (selectedPos.side === "YES" ? market.odds.yesOdds : market.odds.noOdds) / 100
+    : 0.5;
 
-  // Force P2P mode when primary is paused
+  const valueNum = parseFloat(value) || 0;
+  const maxValue = totalSideShares * currentSharePrice * 0.985;
+  const exceedsMax = valueNum > 0 && valueNum > maxValue;
+  const sharesNum = valueNum > 0 ? Math.min(valueNum / (currentSharePrice * 0.985), totalSideShares) : 0;
+
+  useEffect(() => { setStep("configure"); setError(""); }, [value, selectedSide]);
+
   useEffect(() => {
-    if (isPrimaryPaused && sellMode === "LMSR") setSellMode("P2P");
-  }, [isPrimaryPaused, sellMode]);
-
-  const selectedPos = myPositions.find((p: any) => p.id === selectedPositionId);
-  const maxShares = selectedPos?.shares || 0;
-  const numShares = parseFloat(sharesToSell) || 0;
-  const numPrice = parseFloat(pricePerShare) || 0;
-  const estimatedRevenue = numShares * numPrice;
-
-  // Fetch LMSR sell-back quote
-  useEffect(() => {
-    if (sellMode !== "LMSR" || !selectedPos || numShares <= 0) {
-      setSellQuote(null);
-      return;
-    }
-    const fetchQuote = async () => {
-      setSellQuoteLoading(true);
+    if (!selectedPos || sharesNum <= 0) { setSellQuote(null); return; }
+    setQuoteLoading(true);
+    const t = setTimeout(async () => {
       try {
         const res = await fetch(
-          `/api/markets/${market.id}/sell-quote?side=${selectedPos.side}&shares=${numShares}`
+          `/api/markets/${market.id}/sell-quote?outcomeId=${selectedPos.outcomeId ?? ''}&side=${selectedPos.side}&shares=${sharesNum}`
         );
         const data = await res.json();
         if (res.ok) setSellQuote(data);
-        else setError(data.error || "Error al obtener cotización");
-      } catch { /* noop */ }
-      finally { setSellQuoteLoading(false); }
-    };
-    const t = setTimeout(fetchQuote, 400);
+        else setError(data.error || "Error al cotizar");
+      } catch { /* noop */ } finally { setQuoteLoading(false); }
+    }, 400);
     return () => clearTimeout(t);
-  }, [sellMode, numShares, selectedPositionId, market.id, selectedPos]);
+  }, [sharesNum, selectedSide, market.id, selectedPos]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    if (!selectedPos) { setError("Selecciona una posición"); return; }
-    if (numShares <= 0 || numShares > maxShares) {
-      setError(`Debes vender entre 0.01 y ${maxShares.toFixed(2)} shares`);
-      return;
-    }
-    setLoading(true);
+  const handleConfirm = async () => {
+    if (!selectedPos) return;
+    setError(""); setLoading(true);
     try {
-      if (sellMode === "LMSR") {
-        // Sell-back via LMSR
-        const res = await fetch(`/api/positions/${selectedPositionId}/sell-lmsr`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId, shares: numShares }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Error al vender al mercado");
-        setSuccess(true);
-        setSharesToSell(""); setSellQuote(null);
-        setTimeout(() => { setSuccess(false); onSuccess(); }, 1200);
-      } else {
-        // P2P limit order
-        if (numPrice <= 0 || numPrice >= 1) {
-          setError("El precio por share debe estar entre $0.01 y $0.99");
-          setLoading(false); return;
-        }
-        const res = await fetch("/api/orders", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            marketId: market.id,
-            userId,
-            positionId: selectedPositionId,
-            shares: numShares,
-            pricePerShare: numPrice,
-            executionType: "LIMIT_SELL",
-          }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Error al listar la orden");
-        setSuccess(true);
-        setSharesToSell(""); setPricePerShare("");
-        setTimeout(() => { setSuccess(false); onSuccess(); }, 1200);
-      }
+      const res = await fetch(`/api/positions/${selectedPos.id}/sell-lmsr`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, shares: sharesNum }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Error al vender");
+      setValue(""); setSellQuote(null); setStep("configure"); onSuccess();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Error desconocido");
+      setError(e instanceof Error ? e.message : "Error");
+      setStep("configure");
     } finally { setLoading(false); }
   };
 
   if (myPositions.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-10 gap-3">
-        <div className="text-4xl opacity-20">📭</div>
-        <p className="text-gray-500 text-sm font-bold text-center">
-          No tienes posiciones disponibles<br/>para vender en este mercado
-        </p>
+      <div className="flex flex-col items-center py-10 gap-2">
+        <span className="text-3xl opacity-20">📭</span>
+        <p className="text-[12px] text-gray-500 text-center">No tienes participaciones disponibles para vender</p>
       </div>
     );
   }
 
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {/* Sell mode toggle */}
-      <div className="flex gap-1 bg-[#0d0d0d] rounded-xl p-1">
-        <button
-          type="button"
-          onClick={() => !isPrimaryPaused && setSellMode("LMSR")}
-          disabled={isPrimaryPaused}
-          className={`flex-1 py-2 rounded-lg text-[10px] font-extrabold uppercase tracking-wider transition-all ${
-            isPrimaryPaused
-              ? "text-gray-600 cursor-not-allowed"
-              : sellMode === "LMSR"
-                ? "bg-purple-500 text-white shadow"
-                : "text-gray-500 hover:text-white"
-          }`}
-        >
-          ⚡ Vender al mercado
+  // ── Review step ──────────────────────────────────────────────────────────────
+  if (step === "review") {
+    const feeRate = ((sellQuote?.feeRate ?? 0.015) * 100).toFixed(1);
+    return (
+      <div className="space-y-5">
+        <button onClick={() => setStep("configure")}
+          className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-500 hover:text-white transition-colors">
+          ← Volver
         </button>
-        <button
-          type="button"
-          onClick={() => setSellMode("P2P")}
-          className={`flex-1 py-2 rounded-lg text-[10px] font-extrabold uppercase tracking-wider transition-all ${
-            sellMode === "P2P"
-              ? "bg-orange-500 text-white shadow"
-              : "text-gray-500 hover:text-orange-400"
-          }`}
-        >
-          📋 Orden P2P (límite)
-        </button>
-      </div>
-
-      {/* Mode description */}
-      <div className="px-3 py-2 bg-white/[0.02] border border-white/5 rounded-xl">
-        <p className="text-[10px] text-gray-400 leading-relaxed">
-          {sellMode === "LMSR" ? (
-            <>
-              <span className="font-bold text-purple-400">Venta instantánea:</span> quemas tus shares contra el AMM (LMSR) y recibes cash al precio actual de la curva, menos {((market.platformFee ?? 0.015) * 100).toFixed(1)}% de fee.
-            </>
-          ) : (
-            <>
-              <span className="font-bold text-orange-400">Orden P2P:</span> publicas un precio límite. Tus shares se venden cuando otro usuario las compre. Sin fees como maker.
-            </>
-          )}
-        </p>
-      </div>
-
-      {isPrimaryPaused && (
-        <div className="flex items-start gap-2 px-3 py-2 bg-orange-500/10 border border-orange-500/20 rounded-xl">
-          <span className="text-orange-400 text-sm">⏸</span>
-          <p className="text-[10px] text-orange-400">
-            Primario pausado: la venta al mercado (LMSR) no está disponible. Solo puedes crear órdenes P2P.
-          </p>
-        </div>
-      )}
-
-      {/* Position selector */}
-      {myPositions.length > 1 && (
-        <div className="space-y-1">
-          <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider px-1">
-            Selecciona posición
+        <div className="bg-win-bg rounded-2xl border border-white/8">
+          <div className={`px-4 py-3 flex items-center gap-2 ${selectedSide === "YES" ? "bg-primary/10" : "bg-win-error/10"}`}>
+            <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full ${
+              selectedSide === "YES" ? "bg-primary/20 text-primary" : "bg-win-error/20 text-win-error"
+            }`}>{labelEs(selectedSide)}</span>
+            <span className="text-[11px] font-semibold text-white">Venta al mercado</span>
           </div>
-          <div className="grid gap-2">
-            {myPositions.map((pos: any) => (
+          <div className="px-4 py-1">
+            <Row label="Participaciones a vender" value={`${sharesNum.toFixed(2)}`} />
+            <Row label="Precio promedio" value={`$${(sellQuote?.avgPricePerShare ?? 0).toFixed(4)}`} />
+            <Row label="Monto bruto" value={`$${(sellQuote?.grossAmount ?? 0).toFixed(2)}`} />
+            <Row label="Fee plataforma" value={`-$${(sellQuote?.feeAmount ?? 0).toFixed(2)}`}
+              valueClass="text-gray-400"
+              labelTip={`Comisión WIN del ${feeRate}% sobre el monto bruto.`} />
+            <Row label="Recibirás" value={`$${(sellQuote?.netAmount ?? 0).toFixed(2)}`} valueClass="text-orange-300" />
+          </div>
+        </div>
+        {error && <p className="text-win-error text-[11px] text-center">{error}</p>}
+        <button onClick={handleConfirm} disabled={loading}
+          className="w-full py-4 rounded-2xl text-[13px] font-bold uppercase tracking-wider bg-orange-500 text-white hover:brightness-110 shadow-lg shadow-orange-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+          {loading ? "Procesando…" : "Confirmar Venta"}
+        </button>
+      </div>
+    );
+  }
+
+  // ── Configure step ───────────────────────────────────────────────────────────
+  return (
+    <div className="space-y-4">
+      {/* Accumulated position tiles: SÍ / NO */}
+      <div>
+        <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Posición</div>
+        <div className="grid grid-cols-2 gap-2">
+          {[
+            { side: "YES" as const, shares: yesShares, group: yesPosGroup },
+            { side: "NO"  as const, shares: noShares,  group: noPosGroup  },
+          ].map(({ side, shares, group }) => {
+            const active = selectedSide === side;
+            const color = side === "YES" ? "#64c883" : "#f87171";
+            const totalAmt = group.reduce((s: number, p: any) => s + Number(p.amount), 0);
+            const hasShares = shares > 0;
+            return (
               <button
-                key={pos.id}
-                type="button"
-                onClick={() => { setSelectedPositionId(pos.id); setSharesToSell(""); }}
-                className={`flex items-center justify-between px-4 py-3 rounded-xl border transition-all text-left ${
-                  selectedPositionId === pos.id
-                    ? pos.side === "YES"
-                      ? "border-primary/40 bg-primary/5"
-                      : "border-win-error/40 bg-win-error/5"
-                    : "border-white/5 bg-win-bg hover:border-white/10"
-                }`}
+                key={side}
+                onClick={() => { if (hasShares) { setSelectedSide(side); setValue(""); } }}
+                disabled={!hasShares}
+                className="rounded-xl border px-3 py-2.5 text-left transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                style={active
+                  ? { borderColor: `${color}60`, background: `${color}12` }
+                  : { borderColor: 'rgba(255,255,255,0.05)', background: 'transparent' }
+                }
               >
-                <div className="flex items-center gap-3">
-                  <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded ${
-                    pos.side === "YES" ? "bg-primary/15 text-primary" : "bg-win-error/15 text-win-error"
-                  }`}>
-                    {pos.side}
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded"
+                    style={{ background: `${color}22`, color }}>
+                    {labelEs(side)}
                   </span>
-                  <span className="text-xs text-gray-400">{new Date(pos.createdAt).toLocaleDateString()}</span>
                 </div>
-                <span className="text-sm font-bold text-white">{pos.shares.toFixed(2)} sh</span>
+                <div className="text-[15px] font-extrabold text-white leading-none">{shares.toFixed(2)}</div>
+                <div className="text-[10px] text-gray-500 mt-0.5">
+                  participaciones · <span className="text-gray-400">${totalAmt.toFixed(2)}</span>
+                </div>
               </button>
-            ))}
-          </div>
+            );
+          })}
         </div>
-      )}
+      </div>
 
-      {/* Single position info (if only one) */}
-      {myPositions.length === 1 && selectedPos && (
-        <div className={`flex items-center justify-between px-4 py-3 rounded-xl border ${
-          selectedPos.side === "YES" ? "border-primary/20 bg-primary/5" : "border-win-error/20 bg-win-error/5"
-        }`}>
-          <div className="flex items-center gap-3">
-            <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded ${
-              selectedPos.side === "YES" ? "bg-primary/20 text-primary" : "bg-win-error/20 text-win-error"
-            }`}>
-              {selectedPos.side}
-            </span>
-            <div>
-              <div className="text-xs font-bold text-white">{selectedPos.shares.toFixed(2)} shares disponibles</div>
-              <div className="text-[9px] text-gray-500">
-                Compradas @ ${(selectedPos.amount / selectedPos.shares).toFixed(4)} c/u
-                {selectedPos.totalCost > 0 && (
-                  <span className="text-gray-600 ml-1">
-                    · neto ${(selectedPos.totalCost / selectedPos.shares).toFixed(4)}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-          <div className="text-right">
-            <div className="text-xs font-bold text-gray-300">${selectedPos.amount.toFixed(2)}</div>
-            <div className="text-[9px] text-gray-500">invertido</div>
-          </div>
-        </div>
-      )}
-
-      {/* Inputs */}
-      <div className="space-y-2">
-        <div className="flex justify-between text-[10px] font-bold text-gray-500 uppercase tracking-wider px-1">
-          <span>Shares a vender</span>
-          <button type="button" className="text-orange-400 hover:text-orange-300 transition-colors"
-            onClick={() => setSharesToSell(maxShares.toFixed(2))}>
-            MAX {maxShares.toFixed(2)}
+      {/* Input */}
+      <div>
+        <div className="flex justify-between text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5 px-0.5">
+          <span>Monto a recibir (aprox.)</span>
+          <button onClick={() => setValue(maxValue.toFixed(2))}
+            className="text-orange-400 hover:text-orange-300 transition-colors">
+            MAX ${maxValue.toFixed(2)}
           </button>
         </div>
-        <div className="relative group">
+        <div className="relative">
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-lg">$</span>
           <input
-            type="number"
-            placeholder="0.00"
-            value={sharesToSell}
-            onChange={(e) => setSharesToSell(e.target.value)}
-            min="0.01"
-            max={maxShares}
-            step="0.01"
-            className="w-full bg-win-bg border border-win-hover rounded-xl px-4 py-3 text-white font-bold text-lg outline-none transition-all group-focus-within:border-orange-500/50 group-focus-within:ring-1 group-focus-within:ring-orange-500/20"
-          />
-          <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold text-sm">sh</div>
-        </div>
-      </div>
-
-      {sellMode === "P2P" && (
-        <div className="space-y-2">
-          <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider px-1">
-            Precio límite por share
-          </div>
-          <div className="relative group">
-            <input
-              type="number"
-              placeholder="0.50"
-              value={pricePerShare}
-              onChange={(e) => setPricePerShare(e.target.value)}
-              min="0.01"
-              max="0.99"
-              step="0.01"
-              className="w-full bg-win-bg border border-win-hover rounded-xl px-4 py-3 text-white font-bold text-lg outline-none transition-all group-focus-within:border-orange-500/50 group-focus-within:ring-1 group-focus-within:ring-orange-500/20"
-            />
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold">$</div>
-          </div>
-        </div>
-      )}
-
-      {/* Summary — P2P */}
-      {sellMode === "P2P" && numShares > 0 && numPrice > 0 && (
-        <div className="space-y-2">
-          <div className="flex justify-between items-center px-4 py-3 bg-win-bg/50 rounded-xl border border-white/5">
-            <span className="text-xs text-gray-400">Órdenes a colocar</span>
-            <span className="text-sm font-bold text-white">{numShares.toFixed(2)} sh @ ${numPrice.toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between items-center px-4 py-3 bg-win-bg/50 rounded-xl border border-white/5">
-            <span className="text-xs text-gray-400">Comisión (Maker)</span>
-            <span className="text-sm font-bold text-primary">0%</span>
-          </div>
-          <div className="flex justify-between items-center px-4 py-4 bg-orange-500/5 rounded-xl border border-orange-500/10">
-            <span className="text-xs text-orange-400">Recibirás si se ejecuta</span>
-            <span className="text-base font-extrabold text-orange-300">${estimatedRevenue.toFixed(2)}</span>
-          </div>
-        </div>
-      )}
-
-      {/* Summary — LMSR sell-back */}
-      {sellMode === "LMSR" && numShares > 0 && (
-        <div className="space-y-2">
-          <div className="flex justify-between items-center px-4 py-3 bg-win-bg/50 rounded-xl border border-white/5">
-            <span className="text-xs text-gray-400">Shares a quemar</span>
-            <span className="text-sm font-bold text-white">
-              {sellQuoteLoading ? "..." : (sellQuote?.shares ?? numShares).toFixed(2)} sh
-            </span>
-          </div>
-          {sellQuote?.capped && (
-            <div className="flex items-start gap-2 px-3 py-2 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
-              <span className="text-yellow-400 text-xs">⚠️</span>
-              <p className="text-[10px] text-yellow-300">
-                Limitado a {sellQuote.shares.toFixed(2)} shares por liquidez en la curva LMSR.
-              </p>
-            </div>
-          )}
-          <div className="flex justify-between items-center px-4 py-3 bg-win-bg/50 rounded-xl border border-white/5">
-            <span className="text-xs text-gray-400">Precio promedio</span>
-            <span className="text-sm font-bold text-white">
-              {sellQuoteLoading ? "..." : `$${(sellQuote?.avgPricePerShare ?? 0).toFixed(4)}`}
-            </span>
-          </div>
-          <div className="flex justify-between items-center px-4 py-3 bg-win-bg/50 rounded-xl border border-white/5">
-            <span className="text-xs text-gray-400">Monto bruto</span>
-            <span className="text-sm font-bold text-white">
-              {sellQuoteLoading ? "..." : `$${(sellQuote?.grossAmount ?? 0).toFixed(2)}`}
-            </span>
-          </div>
-          <div className="flex justify-between items-center px-4 py-3 bg-win-bg/50 rounded-xl border border-white/5">
-            <span className="text-xs text-purple-400">
-              Comisión WIN ({((sellQuote?.feeRate ?? 0.015) * 100).toFixed(1)}%)
-            </span>
-            <span className="text-sm font-bold text-win-error">
-              - ${(sellQuote?.feeAmount ?? 0).toFixed(2)}
-            </span>
-          </div>
-          {sellQuote && (
-            <div className="flex justify-between items-center px-4 py-3 bg-win-bg/50 rounded-xl border border-white/5">
-              <span className="text-xs text-gray-400">Nuevo precio del mercado</span>
-              <div className="flex gap-3">
-                <span className="text-sm font-bold text-primary">Y ${sellQuote.newProbabilities.yes.toFixed(2)}</span>
-                <span className="text-sm font-bold text-win-error">N ${sellQuote.newProbabilities.no.toFixed(2)}</span>
-              </div>
-            </div>
-          )}
-          <div className="flex justify-between items-center px-4 py-4 bg-purple-500/10 rounded-xl border border-purple-500/20">
-            <span className="text-xs text-purple-300">Recibirás ahora</span>
-            <span className="text-base font-extrabold text-purple-300">
-              {sellQuoteLoading ? "..." : `$${(sellQuote?.netAmount ?? 0).toFixed(2)}`}
-            </span>
-          </div>
-        </div>
-      )}
-
-      {error && <p className="text-win-error text-xs text-center font-medium">{error}</p>}
-      {success && (
-        <p className="text-primary text-xs text-center font-bold">
-          {sellMode === "LMSR" ? "✓ Shares vendidos al mercado" : "✓ Orden listada en el Order Book"}
-        </p>
-      )}
-
-      <Button
-        type="submit"
-        disabled={
-          loading ||
-          numShares <= 0 ||
-          numShares > maxShares ||
-          (sellMode === "P2P" && (numPrice <= 0 || numPrice >= 1)) ||
-          (sellMode === "LMSR" && (sellQuoteLoading || !sellQuote || sellQuote.grossAmount <= 0))
-        }
-        loading={loading}
-        className={`w-full py-6 rounded-2xl text-lg font-bold text-white shadow-xl transition-all ${
-          sellMode === "LMSR"
-            ? "bg-purple-500 hover:bg-purple-400 shadow-purple-500/20"
-            : "bg-orange-500 hover:bg-orange-400 shadow-orange-500/20"
-        }`}
-      >
-        {sellMode === "LMSR" ? "Vender al mercado" : "Listar en Order Book"}
-      </Button>
-    </form>
-  );
-}
-
-// ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
-export function PredictionCard({
-  market, userId, userBalance, onSuccess, prefillOrder
-}: PredictionCardProps) {
-  const searchParams = useSearchParams();
-  const initialTab = searchParams.get("tab") === "sell" ? "SELL" : "BUY";
-  const [mode, setMode] = useState<"BUY" | "SELL">(initialTab);
-
-  // Force buy mode if an order is prefilled
-  useEffect(() => {
-    if (prefillOrder) {
-      setMode("BUY");
-    }
-  }, [prefillOrder]);
-
-  const yesOdds = market.odds.yesOdds;
-  const totalVolume = market.yesPool + market.noPool;
-  const formatVolume = (val: number) =>
-    val >= 1000 ? `$${(val / 1000).toFixed(1)}k` : `$${val.toFixed(0)}`;
-
-  // Only show SELL tab if user has active positions with available shares
-  const hasPositionsToSell = (market.positions || []).some(
-    (p: any) => p.currentOwner.id === userId && p.shares > 0 && !p.isForSale
-  );
-
-  // Gauge
-  const radius = 45;
-  const stroke = 8;
-  const normalizedRadius = radius - stroke;
-  const circumference = normalizedRadius * 2 * Math.PI;
-  const semiCircumference = circumference / 2;
-  const strokeDashoffset = semiCircumference - (yesOdds / 100) * semiCircumference;
-
-  return (
-    <div className="bg-win-card rounded-3xl p-6 shadow-2xl border border-white/5 space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <h3 className="text-xl font-semibold text-white max-w-[60%] leading-tight">
-          {market.question}
-        </h3>
-        <div className="relative flex flex-col items-center flex-shrink-0 w-[90px]">
-          <svg height={radius + stroke} width={radius * 2} className="absolute block overflow-visible">
-            <circle stroke="#2a2a2a" fill="transparent" strokeWidth={stroke}
-              strokeDasharray={`${semiCircumference} ${circumference}`}
-              style={{ strokeDashoffset: 0 }} r={normalizedRadius} cx={radius} cy={radius}
-              strokeLinecap="round" className="transform -rotate-180 origin-center" />
-            <circle stroke="#64c883" fill="transparent" strokeWidth={stroke}
-              strokeDasharray={`${semiCircumference} ${circumference}`}
-              style={{ strokeDashoffset, transition: "stroke-dashoffset 0.5s ease-in-out" }}
-              r={normalizedRadius} cx={radius} cy={radius}
-              strokeLinecap="round" className="transform -rotate-180 origin-center" />
-          </svg>
-          <div className="absolute top-[-10px] inset-x-0 text-center">
-            <span className="block text-xl font-extrabold text-white leading-none tracking-tighter">
-              {yesOdds.toFixed(0)}%
-            </span>
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.1em] mt-2 block">
-              Chance
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Primary market pause banner */}
-      {(() => {
-        const isPaused =
-          market.primaryMarketPaused ||
-          (market.primaryPauseScheduledAt &&
-            new Date(market.primaryPauseScheduledAt) <= new Date());
-        const isScheduled =
-          !market.primaryMarketPaused &&
-          market.primaryPauseScheduledAt &&
-          new Date(market.primaryPauseScheduledAt) > new Date();
-        if (isPaused) {
-          return (
-            <div className="flex items-start gap-3 px-4 py-3 bg-orange-500/10 border border-orange-500/20 rounded-xl">
-              <span className="text-orange-400 text-base mt-0.5">⏸</span>
-              <div>
-                <p className="text-[11px] font-bold text-orange-400 uppercase tracking-wider">
-                  Mercado primario pausado
-                </p>
-                <p className="text-[10px] text-gray-400 mt-0.5">
-                  No se pueden comprar nuevas posiciones. El mercado secundario (P2P) sigue activo — puedes comprar posiciones de otros usuarios en el orden de compra.
-                </p>
-              </div>
-            </div>
-          );
-        }
-        if (isScheduled) {
-          return (
-            <div className="flex items-start gap-3 px-4 py-3 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
-              <span className="text-yellow-400 text-base mt-0.5">⏱</span>
-              <div>
-                <p className="text-[11px] font-bold text-yellow-400 uppercase tracking-wider">
-                  Pausa programada
-                </p>
-                <p className="text-[10px] text-gray-400 mt-0.5">
-                  El mercado primario se pausará el{" "}
-                  {new Date(market.primaryPauseScheduledAt).toLocaleString("es-CO", {
-                    day: "2-digit",
-                    month: "short",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                  . Hasta entonces puedes seguir comprando.
-                </p>
-              </div>
-            </div>
-          );
-        }
-        return null;
-      })()}
-
-      {/* BUY / SELL tabs */}
-      <div className="flex gap-1 bg-win-bg rounded-xl p-1">
-        <button
-          type="button"
-          onClick={() => setMode("BUY")}
-          className={`flex-1 py-2 rounded-lg text-[11px] font-extrabold uppercase tracking-wider transition-all ${
-            mode === "BUY"
-              ? "bg-primary text-win-bg shadow"
-              : "text-gray-500 hover:text-white"
-          }`}
-        >
-          {market.primaryMarketPaused ||
-          (market.primaryPauseScheduledAt &&
-            new Date(market.primaryPauseScheduledAt) <= new Date())
-            ? "Comprar P2P"
-            : "Comprar"}
-        </button>
-        {hasPositionsToSell && (
-          <button
-            type="button"
-            onClick={() => setMode("SELL")}
-            className={`flex-1 py-2 rounded-lg text-[11px] font-extrabold uppercase tracking-wider transition-all ${
-              mode === "SELL"
-                ? "bg-orange-500 text-white shadow"
-                : "text-gray-500 hover:text-orange-400"
+            type="number" placeholder="0.00" value={value}
+            onChange={(e) => setValue(e.target.value)}
+            onWheel={(e) => e.currentTarget.blur()}
+            className={`w-full bg-win-bg border rounded-xl pl-8 pr-4 py-3 text-white font-bold text-lg outline-none transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
+              exceedsMax ? "border-win-error/50 focus:border-win-error/70" : "border-white/10 focus:border-orange-500/40"
             }`}
-          >
-            Vender
-          </button>
+          />
+        </div>
+        {sharesNum > 0 && !exceedsMax && (
+          <p className="text-[10px] text-gray-600 mt-1 px-1">≈ {sharesNum.toFixed(2)} participaciones a vender</p>
         )}
       </div>
 
-      {/* Form content */}
+      {exceedsMax && (
+        <div className="px-3 py-2.5 bg-win-error/10 border border-win-error/20 rounded-xl">
+          <p className="text-[11px] text-win-error font-bold">⚠ Supera el máximo disponible</p>
+          <p className="text-[10px] text-gray-400 mt-0.5">Máximo que puedes recibir: ${maxValue.toFixed(2)}</p>
+          <button onClick={() => setValue(maxValue.toFixed(2))}
+            className="mt-1.5 text-[10px] font-bold text-orange-400 underline">
+            Ajustar al máximo
+          </button>
+        </div>
+      )}
+
+      {/* Quote summary */}
+      {sharesNum > 0 && (
+        <div className="bg-win-bg rounded-2xl border border-white/8">
+          <div className="px-4 py-1">
+            <Row label="Participaciones" value={quoteLoading ? "…" : `${(sellQuote?.shares ?? sharesNum).toFixed(2)}`} />
+            <Row label="Precio promedio" value={quoteLoading ? "…" : `$${(sellQuote?.avgPricePerShare ?? 0).toFixed(4)}`} />
+            <Row label="Fee plataforma" value={quoteLoading ? "…" : `-$${(sellQuote?.feeAmount ?? 0).toFixed(2)}`}
+              valueClass="text-gray-400"
+              labelTip={`Comisión WIN del ${((sellQuote?.feeRate ?? 0.015) * 100).toFixed(1)}% sobre el monto bruto.`} />
+            <Row label="Recibirás" value={quoteLoading ? "…" : `$${(sellQuote?.netAmount ?? 0).toFixed(2)}`}
+              valueClass="text-orange-300" />
+          </div>
+        </div>
+      )}
+
+      {error && <p className="text-win-error text-[11px] text-center">{error}</p>}
+
+      <button
+        disabled={!sharesNum || sharesNum <= 0 || exceedsMax || quoteLoading || !sellQuote}
+        onClick={() => { setError(""); setStep("review"); }}
+        className="w-full py-3.5 rounded-2xl text-[13px] font-bold uppercase tracking-wider bg-orange-500 text-white hover:brightness-105 shadow-lg shadow-orange-500/15 disabled:opacity-30 disabled:cursor-not-allowed transition-all">
+        Revisar Venta →
+      </button>
+    </div>
+  );
+}
+
+// ─── MAIN ─────────────────────────────────────────────────────────────────────
+export function PredictionCard({ market, userId, userBalance, onSuccess }: PredictionCardProps) {
+  const [mode, setMode] = useState<"BUY" | "SELL">("BUY");
+
+  return (
+    <div className="bg-win-card rounded-3xl p-5 shadow-2xl border border-white/5 space-y-5">
+      {/* Header: solo título, sin arco */}
+      <p className="font-bold text-white leading-snug" style={{ fontSize: 18 }}>
+        {market.question}
+      </p>
+
+      {/* COMPRAR / VENDER — siempre visibles, 50% opacidad en inactivo */}
+      <div className="flex gap-2">
+        <button
+          onClick={() => setMode("BUY")}
+          className="flex-1 py-2.5 rounded-xl text-[12px] font-extrabold uppercase tracking-wider transition-all"
+          style={{
+            background: mode === "BUY" ? "#64c883" : "rgba(100,200,131,0.35)",
+            color: "#0d1117",
+          }}
+        >
+          Comprar
+        </button>
+        <button
+          onClick={() => setMode("SELL")}
+          className="flex-1 py-2.5 rounded-xl text-[12px] font-extrabold uppercase tracking-wider transition-all"
+          style={{
+            background: mode === "SELL" ? "#f97316" : "rgba(249,115,22,0.35)",
+            color: mode === "SELL" ? "#fff" : "rgba(255,255,255,0.8)",
+          }}
+        >
+          Vender
+        </button>
+      </div>
+
+      {/* Content */}
       {mode === "BUY" ? (
-        <BuyForm market={market} userId={userId} userBalance={userBalance} onSuccess={onSuccess} prefillOrder={prefillOrder} />
+        <BuyForm market={market} userId={userId} userBalance={userBalance} onSuccess={onSuccess} />
       ) : (
         <SellForm market={market} userId={userId} onSuccess={onSuccess} />
       )}
-
-      {/* Footer */}
-      <div className="text-center pt-2">
-        <span className="text-sm font-bold text-gray-500">
-          {formatVolume(totalVolume)} Vol.
-        </span>
-      </div>
     </div>
   );
 }

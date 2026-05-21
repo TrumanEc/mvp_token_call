@@ -6,29 +6,29 @@ import { OrderType } from "@prisma/client";
 
 export class RouterService {
   /**
-   * "Best Buy": Ejecuta una compra al mercado (Market Buy),
-   * enrutando los fondos entre el OrderBook (órdenes de limit sell) y el LMSR.
-   * Garantiza algorítmicamente el precio más bajo posible por share.
+   * Execute a market buy for a specific outcome, routing between LMSR and OrderBook.
    */
   static async executeMarketBuy(data: {
     marketId: string;
     userId: string;
-    side: "YES" | "NO";
-    budget: number; // Monto BRUTO total a gastar (incluyendo comisiones)
+    outcomeId: string;
+    budget: number;
   }) {
     return prisma.$transaction(async (tx) => {
       const budgetNum = data.budget;
-
       if (budgetNum <= 0) throw new Error("Monto a comprar debe ser positivo.");
 
       const market = await tx.market.findUnique({
         where: { id: data.marketId },
-        select: { id: true, qYes: true, qNo: true, b: true, alpha: true, bMin: true, status: true, yesPool: true, noPool: true, platformFee: true, primaryMarketPaused: true, primaryPauseScheduledAt: true },
+        include: { outcomes: { orderBy: { displayOrder: "asc" } } },
       });
 
       if (!market || market.status !== "ACTIVE") {
         throw new Error("El mercado no está activo");
       }
+
+      const outcomeRecord = market.outcomes.find(o => o.id === data.outcomeId);
+      if (!outcomeRecord) throw new Error("Outcome no encontrado en este mercado");
 
       const isPrimaryPaused =
         market.primaryMarketPaused ||
@@ -38,99 +38,100 @@ export class RouterService {
       const user = await tx.user.findUnique({ where: { id: data.userId } });
       if (!user) throw new Error("Usuario no encontrado");
 
-      const totalDeductDec = new Decimal(budgetNum);
-      if (new Decimal(user.balance).lessThan(totalDeductDec)) {
+      if (new Decimal(user.balance).lessThan(new Decimal(budgetNum))) {
         throw new Error("Balance insuficiente");
       }
 
       const lmsrService = new LmsrService();
-      const liquidityParams = { b: market.b, alpha: market.alpha, bMin: market.bMin };
-      let remainingGross = budgetNum;
+      const params = { b: market.b, alpha: market.alpha, bMin: market.bMin };
 
-      // Variables de tracking
+      // Build mutable q-vector from outcomes
+      const sortedOutcomes = [...market.outcomes].sort((a, b) => a.displayOrder - b.displayOrder);
+      const currentQ = sortedOutcomes.map(o => o.qOutstanding);
+      const outcomeIdx = sortedOutcomes.findIndex(o => o.id === data.outcomeId);
+
+      let remainingGross = budgetNum;
       let lmsrSharesCollected = 0;
       let lmsrNetSpent = 0;
       let obSharesCollected = 0;
       let obNetSpent = 0;
       let lmsrFeeAmount = 0;
       let obFeeAmount = 0;
-      let selfMatchSpentNet = 0; // Tracks the net proceeds paid to the user themselves during wash trades
-      
+      let selfMatchSpentNet = 0;
+
       const lmsrFeeRate = market.platformFee ? Number(market.platformFee) : 0.015;
-      const obFeeRate = 0.02; // 2% P2P
+      const obFeeRate = 0.02;
 
-      // Estado mutado del LMSR en memoria
-      let currentQYes = market.qYes;
-      let currentQNo = market.qNo;
+      const executionPath: Array<{
+        fuente: string; invertidoBruto: number; invertidoNeto: number;
+        shares: number; precioPromedio: number;
+      }> = [];
 
-      const executionPath: Array<{ fuente: string; invertidoBruto: number; invertidoNeto: number; shares: number; precioPromedio: number }> = [];
-
-      // 1. Extraer todas las Limit Sells relevantes
+      // Fetch limit sells for this outcome
       const asks = await tx.order.findMany({
         where: {
           marketId: data.marketId,
+          outcomeId: data.outcomeId,
           type: OrderType.SELL,
-          side: data.side,
-          status: { in: ["OPEN", "PARTIAL"] }
+          status: { in: ["OPEN", "PARTIAL"] },
         },
         orderBy: { pricePerShare: "asc" },
-        include: { user: true, position: true }
+        include: { user: true, position: true },
       });
 
       let askIndex = 0;
 
-      // START ROUTING LOOP
+      // Snapshot q before
+      const qBefore = [...currentQ];
+
       while (remainingGross > 0.0001) {
-        const { pYes, pNo } = lmsrService.getPriceLS(currentQYes, currentQNo, liquidityParams);
-        const lmsrSpotPrice = data.side === "YES" ? pYes : pNo;
+        const prices = lmsrService.getPricesLSN(currentQ, params);
+        const lmsrSpotPrice = prices[outcomeIdx];
 
         let bestAsk = askIndex < asks.length ? asks[askIndex] : null;
 
-        // Caso A: El LMSR está por debajo o igual al precio del OrderBook
-        // Si el mercado primario está pausado, saltar LMSR y solo operar vía OB
         if (isPrimaryPaused && !bestAsk) break;
         if (!isPrimaryPaused && (!bestAsk || lmsrSpotPrice < bestAsk.pricePerShare - 0.0001)) {
           let safeNetToLMSR = remainingGross * (1 - lmsrFeeRate);
 
           if (bestAsk) {
-            const netToReachTarget = lmsrService.getCostToReachTargetPriceLS(
-              currentQYes, currentQNo, liquidityParams, data.side, bestAsk.pricePerShare
+            const netToReachTarget = lmsrService.getCostToReachTargetPriceLSN(
+              currentQ, params, outcomeIdx, bestAsk.pricePerShare,
             );
             if (netToReachTarget > 0 && netToReachTarget <= safeNetToLMSR) {
-               safeNetToLMSR = netToReachTarget;
+              safeNetToLMSR = netToReachTarget;
             }
           }
 
-          const sharesGenerados = lmsrService.getSharesToBuyLS(currentQYes, currentQNo, liquidityParams, data.side, safeNetToLMSR);
-          
+          const sharesGenerados = lmsrService.getSharesToBuyLSN(
+            currentQ, params, outcomeIdx, safeNetToLMSR,
+          );
+
           if (sharesGenerados > 0 && safeNetToLMSR > 0) {
-             const stepGross = safeNetToLMSR / (1 - lmsrFeeRate);
-             const stepFee = stepGross - safeNetToLMSR;
+            const stepGross = safeNetToLMSR / (1 - lmsrFeeRate);
+            const stepFee = stepGross - safeNetToLMSR;
 
-             lmsrSharesCollected += sharesGenerados;
-             lmsrNetSpent += safeNetToLMSR;
-             lmsrFeeAmount += stepFee;
-             remainingGross -= stepGross;
-             
-             if (data.side === "YES") currentQYes += sharesGenerados;
-             else currentQNo += sharesGenerados;
+            lmsrSharesCollected += sharesGenerados;
+            lmsrNetSpent += safeNetToLMSR;
+            lmsrFeeAmount += stepFee;
+            remainingGross -= stepGross;
 
-             executionPath.push({
-               fuente: "LMSR",
-               invertidoBruto: stepGross,
-               invertidoNeto: safeNetToLMSR,
-               shares: sharesGenerados,
-               precioPromedio: safeNetToLMSR / sharesGenerados
-             });
+            currentQ[outcomeIdx] += sharesGenerados;
+
+            executionPath.push({
+              fuente: "LMSR",
+              invertidoBruto: stepGross,
+              invertidoNeto: safeNetToLMSR,
+              shares: sharesGenerados,
+              precioPromedio: safeNetToLMSR / sharesGenerados,
+            });
           } else {
-             break;
+            break;
           }
-        }
-        // Caso B: El OrderBook ofrece mejor precio
-        else if (bestAsk) {
+        } else if (bestAsk) {
           const netToClearAsk = bestAsk.remainingShares * bestAsk.pricePerShare;
           const grossToClearAsk = netToClearAsk / (1 - obFeeRate);
-          
+
           let spentGross = 0;
           let spentNet = 0;
           let sharesBought = 0;
@@ -158,45 +159,49 @@ export class RouterService {
           remainingGross -= spentGross;
 
           executionPath.push({
-             fuente: "OrderBook",
-             invertidoBruto: spentGross,
-             invertidoNeto: spentNet,
-             shares: sharesBought,
-             precioPromedio: bestAsk.pricePerShare
+            fuente: "OrderBook",
+            invertidoBruto: spentGross,
+            invertidoNeto: spentNet,
+            shares: sharesBought,
+            precioPromedio: bestAsk.pricePerShare,
           });
 
           await tx.order.update({
-             where: { id: bestAsk.id },
-             data: { remainingShares: bestAsk.remainingShares, status: newStatus }
+            where: { id: bestAsk.id },
+            data: { remainingShares: bestAsk.remainingShares, status: newStatus },
           });
 
           if (bestAsk.positionId) {
-             const posBefore = await tx.position.findUnique({ where: { id: bestAsk.positionId }});
-             if (posBefore) {
-               const posSharesLeft = posBefore.shares - sharesBought;
-               await tx.position.update({
-                 where: { id: bestAsk.positionId },
-                 data: { shares: Math.max(0, posSharesLeft), isForSale: posSharesLeft > 0 }
-               });
-             }
+            const posBefore = await tx.position.findUnique({ where: { id: bestAsk.positionId } });
+            if (posBefore) {
+              const posSharesLeft = posBefore.shares - sharesBought;
+              await tx.position.update({
+                where: { id: bestAsk.positionId },
+                data: { shares: Math.max(0, posSharesLeft), isForSale: posSharesLeft > 0 },
+              });
+            }
           }
 
           if (bestAsk.userId === data.userId) {
-             selfMatchSpentNet += spentNet;
+            selfMatchSpentNet += spentNet;
           }
 
           await BalanceService.credit(
-            tx, bestAsk.userId, spentNet, "POSITION_SOLD", 
-            `Sold ${sharesBought.toFixed(2)} ${data.side} shares via Limit Order`, data.marketId
+            tx, bestAsk.userId, spentNet, "POSITION_SOLD",
+            `Sold ${sharesBought.toFixed(2)} ${outcomeRecord.name} shares via Limit Order`,
+            data.marketId,
           );
 
           if (bestAsk.positionId) {
-             await tx.positionTransfer.create({
-               data: {
-                 positionId: bestAsk.positionId, fromUserId: bestAsk.userId, toUserId: data.userId,
-                 price: new Decimal(spentNet), listingId: bestAsk.id
-               }
-             });
+            await tx.positionTransfer.create({
+              data: {
+                positionId: bestAsk.positionId,
+                fromUserId: bestAsk.userId,
+                toUserId: data.userId,
+                price: new Decimal(spentNet),
+                listingId: bestAsk.id,
+              },
+            });
           }
         } else {
           break;
@@ -212,12 +217,13 @@ export class RouterService {
         }
         throw new Error("No se pudieron adquirir shares. Intenta con un monto mayor.");
       }
-      const avgPriceOverall = realSpentGross > 0 ? (realSpentGross / totalSharesCollected) : 0;
+
+      const avgPriceOverall = realSpentGross > 0 ? realSpentGross / totalSharesCollected : 0;
 
       await BalanceService.deduct(
         tx, data.userId, new Decimal(realSpentGross), "BET_PLACED",
-        `Market Buy: ${totalSharesCollected.toFixed(2)} ${data.side} for $${realSpentGross.toFixed(2)}`,
-        data.marketId
+        `Market Buy: ${totalSharesCollected.toFixed(2)} ${outcomeRecord.name} for $${realSpentGross.toFixed(2)}`,
+        data.marketId,
       );
 
       const netAmountForPosition = realSpentGross - selfMatchSpentNet;
@@ -226,81 +232,105 @@ export class RouterService {
       const userPosition = await tx.position.create({
         data: {
           marketId: data.marketId,
+          outcomeId: data.outcomeId,
           originalOwnerId: data.userId,
           currentOwnerId: data.userId,
-          side: data.side,
+          side: outcomeRecord.name,
           amount: new Decimal(netAmountForPosition),
           status: "ACTIVE",
           shares: totalSharesCollected,
           purchasePrice: new Decimal(avgPriceOverall),
           totalCost: netTotalCostForPosition,
-          avgCostPerShare: totalSharesCollected > 0 ? netTotalCostForPosition / totalSharesCollected : 0
+          avgCostPerShare: totalSharesCollected > 0 ? netTotalCostForPosition / totalSharesCollected : 0,
         },
-        include: { market: true, currentOwner: true }
+        include: { market: true, currentOwner: true, outcome: true },
       });
 
       if (lmsrNetSpent > 0) {
-         const bBefore = lmsrService.getEffectiveB(market.qYes, market.qNo, liquidityParams);
-         const stateBefore = lmsrService.getMarketState(market.qYes, market.qNo, bBefore);
-         await tx.market.update({
-           where: { id: data.marketId },
-           data: {
-             qYes: currentQYes,
-             qNo: currentQNo,
-             yesPool: data.side === "YES" ? { increment: lmsrNetSpent } : undefined,
-             noPool:  data.side === "NO"  ? { increment: lmsrNetSpent } : undefined,
-           }
-         });
-         const bAfter = lmsrService.getEffectiveB(currentQYes, currentQNo, liquidityParams);
-         const stateAfter = lmsrService.getMarketState(currentQYes, currentQNo, bAfter);
-         await tx.lmsrSnapshot.create({
-            data: {
-              marketId: data.marketId,
-              userId: data.userId,
-              side: data.side,
-              triggerType: "ROUTED_BUY",
-              cost: lmsrNetSpent,
-              deltaShares: lmsrSharesCollected,
-              qYesBefore: stateBefore.qYes, qNoBefore: stateBefore.qNo, pYesBefore: stateBefore.pYes,
-              qYesAfter: stateAfter.qYes, qNoAfter: stateAfter.qNo, pYesAfter: stateAfter.pYes
-            }
-         });
+        // Update the outcome's qOutstanding
+        await tx.marketOutcome.update({
+          where: { id: data.outcomeId },
+          data: {
+            qOutstanding: currentQ[outcomeIdx],
+            pool: { increment: lmsrNetSpent },
+          },
+        });
+
+        // Update market totalPool
+        await tx.market.update({
+          where: { id: data.marketId },
+          data: { totalPool: { increment: lmsrNetSpent } },
+        });
+
+        // Build snapshot
+        const pBefore = lmsrService.getPricesLSN(qBefore, params);
+        const pAfter = lmsrService.getPricesLSN(currentQ, params);
+
+        const qBeforeMap: Record<string, number> = {};
+        const qAfterMap: Record<string, number> = {};
+        const pBeforeMap: Record<string, number> = {};
+        const pAfterMap: Record<string, number> = {};
+        sortedOutcomes.forEach((o, i) => {
+          qBeforeMap[o.id] = qBefore[i];
+          qAfterMap[o.id] = currentQ[i];
+          pBeforeMap[o.id] = pBefore[i];
+          pAfterMap[o.id] = pAfter[i];
+        });
+
+        await tx.lmsrSnapshot.create({
+          data: {
+            marketId: data.marketId,
+            outcomeId: data.outcomeId,
+            userId: data.userId,
+            side: outcomeRecord.name,
+            triggerType: "ROUTED_BUY",
+            cost: lmsrNetSpent,
+            deltaShares: lmsrSharesCollected,
+            qBefore: qBeforeMap,
+            pBefore: pBeforeMap,
+            qAfter: qAfterMap,
+            pAfter: pAfterMap,
+          },
+        });
       }
 
       return {
-         position: userPosition,
-         executionSummary: {
-            spentGross: realSpentGross,
-            spentNet: lmsrNetSpent + obNetSpent,
-            fee: lmsrFeeAmount + obFeeAmount,
-            lmsrFee: lmsrFeeAmount,
-            obFee: obFeeAmount,
-            sharesCollected: totalSharesCollected,
-            averagePrice: avgPriceOverall,
-            lmsrShares: lmsrSharesCollected,
-            obShares: obSharesCollected,
-            path: executionPath
-        }
+        position: userPosition,
+        executionSummary: {
+          spentGross: realSpentGross,
+          spentNet: lmsrNetSpent + obNetSpent,
+          fee: lmsrFeeAmount + obFeeAmount,
+          lmsrFee: lmsrFeeAmount,
+          obFee: obFeeAmount,
+          sharesCollected: totalSharesCollected,
+          averagePrice: avgPriceOverall,
+          lmsrShares: lmsrSharesCollected,
+          obShares: obSharesCollected,
+          path: executionPath,
+        },
       };
     }, { maxWait: 15000, timeout: 30000 });
   }
 
   static async simulateMarketBuy(data: {
     marketId: string;
-    side: "YES" | "NO";
-    budget: number; // Monto BRUTO total
+    outcomeId: string;
+    budget: number;
   }) {
     const budgetNum = data.budget;
     if (budgetNum <= 0) throw new Error("Monto a comprar debe ser positivo.");
 
     const market = await prisma.market.findUnique({
       where: { id: data.marketId },
-      select: { id: true, qYes: true, qNo: true, b: true, alpha: true, bMin: true, status: true, platformFee: true, primaryMarketPaused: true, primaryPauseScheduledAt: true },
+      include: { outcomes: { orderBy: { displayOrder: "asc" } } },
     });
 
     if (!market || market.status !== "ACTIVE") {
       throw new Error("El mercado no está activo");
     }
+
+    const outcomeRecord = market.outcomes.find(o => o.id === data.outcomeId);
+    if (!outcomeRecord) throw new Error("Outcome no encontrado");
 
     const simIsPrimaryPaused =
       market.primaryMarketPaused ||
@@ -308,9 +338,13 @@ export class RouterService {
         new Date(market.primaryPauseScheduledAt) <= new Date());
 
     const lmsrService = new LmsrService();
-    const liquidityParams = { b: market.b, alpha: market.alpha, bMin: market.bMin };
-    let remainingGross = budgetNum;
+    const params = { b: market.b, alpha: market.alpha, bMin: market.bMin };
 
+    const sortedOutcomes = [...market.outcomes].sort((a, b) => a.displayOrder - b.displayOrder);
+    const currentQ = sortedOutcomes.map(o => o.qOutstanding);
+    const outcomeIdx = sortedOutcomes.findIndex(o => o.id === data.outcomeId);
+
+    let remainingGross = budgetNum;
     const lmsrFeeRate = market.platformFee ? Number(market.platformFee) : 0.015;
     const obFeeRate = 0.02;
 
@@ -321,45 +355,44 @@ export class RouterService {
     let lmsrFeeAmount = 0;
     let obFeeAmount = 0;
 
-    let currentQYes = market.qYes;
-    let currentQNo = market.qNo;
-
     const asks = await prisma.order.findMany({
       where: {
         marketId: data.marketId,
+        outcomeId: data.outcomeId,
         type: OrderType.SELL,
-        side: data.side,
-        status: { in: ["OPEN", "PARTIAL"] }
+        status: { in: ["OPEN", "PARTIAL"] },
       },
-      orderBy: { pricePerShare: "asc" }
+      orderBy: { pricePerShare: "asc" },
     });
 
     const clonedAsks = asks.map(a => ({ ...a }));
     let askIndex = 0;
 
     while (remainingGross > 0.0001) {
-      const { pYes, pNo } = lmsrService.getPriceLS(currentQYes, currentQNo, liquidityParams);
-      const lmsrSpotPrice = data.side === "YES" ? pYes : pNo;
-
+      const prices = lmsrService.getPricesLSN(currentQ, params);
+      const lmsrSpotPrice = prices[outcomeIdx];
       let bestAsk = askIndex < clonedAsks.length ? clonedAsks[askIndex] : null;
 
       if (simIsPrimaryPaused && !bestAsk) break;
       if (!simIsPrimaryPaused && (!bestAsk || lmsrSpotPrice < bestAsk.pricePerShare - 0.0001)) {
         let safeNetToLMSR = remainingGross * (1 - lmsrFeeRate);
         if (bestAsk) {
-          const netToReachTarget = lmsrService.getCostToReachTargetPriceLS(currentQYes, currentQNo, liquidityParams, data.side, bestAsk.pricePerShare);
+          const netToReachTarget = lmsrService.getCostToReachTargetPriceLSN(
+            currentQ, params, outcomeIdx, bestAsk.pricePerShare,
+          );
           if (netToReachTarget > 0 && netToReachTarget <= safeNetToLMSR) safeNetToLMSR = netToReachTarget;
         }
 
-        const sharesGenerados = lmsrService.getSharesToBuyLS(currentQYes, currentQNo, liquidityParams, data.side, safeNetToLMSR);
+        const sharesGenerados = lmsrService.getSharesToBuyLSN(
+          currentQ, params, outcomeIdx, safeNetToLMSR,
+        );
         if (sharesGenerados > 0 && safeNetToLMSR > 0.0001) {
-           const stepGross = safeNetToLMSR / (1 - lmsrFeeRate);
-           lmsrSharesCollected += sharesGenerados;
-           lmsrNetSpent += safeNetToLMSR;
-           lmsrFeeAmount += (stepGross - safeNetToLMSR);
-           remainingGross -= stepGross;
-           if (data.side === "YES") currentQYes += sharesGenerados;
-           else currentQNo += sharesGenerados;
+          const stepGross = safeNetToLMSR / (1 - lmsrFeeRate);
+          lmsrSharesCollected += sharesGenerados;
+          lmsrNetSpent += safeNetToLMSR;
+          lmsrFeeAmount += (stepGross - safeNetToLMSR);
+          remainingGross -= stepGross;
+          currentQ[outcomeIdx] += sharesGenerados;
         } else break;
       } else if (bestAsk) {
         const netToClearAsk = bestAsk.remainingShares * bestAsk.pricePerShare;
@@ -388,20 +421,25 @@ export class RouterService {
 
     const realSpentGross = budgetNum - remainingGross;
     const totalSharesCollected = lmsrSharesCollected + obSharesCollected;
-    const avgPriceOverall = realSpentGross > 0 ? (realSpentGross / totalSharesCollected) : 0;
-    const newPrices = lmsrService.getPriceLS(currentQYes, currentQNo, liquidityParams);
+    const avgPriceOverall = realSpentGross > 0 ? realSpentGross / totalSharesCollected : 0;
+    const newPrices = lmsrService.getPricesLSN(currentQ, params);
+
+    const probabilitiesMap: Record<string, number> = {};
+    sortedOutcomes.forEach((o, i) => {
+      probabilitiesMap[o.id] = newPrices[i];
+    });
 
     return {
-       spentGross: realSpentGross,
-       spentNet: lmsrNetSpent + obNetSpent,
-       fee: lmsrFeeAmount + obFeeAmount,
-       lmsrFee: lmsrFeeAmount,
-       obFee: obFeeAmount,
-       sharesCollected: totalSharesCollected,
-       averagePrice: avgPriceOverall,
-       lmsrShares: lmsrSharesCollected,
-       obShares: obSharesCollected,
-       newProbabilities: { yes: newPrices.pYes, no: newPrices.pNo }
+      spentGross: realSpentGross,
+      spentNet: lmsrNetSpent + obNetSpent,
+      fee: lmsrFeeAmount + obFeeAmount,
+      lmsrFee: lmsrFeeAmount,
+      obFee: obFeeAmount,
+      sharesCollected: totalSharesCollected,
+      averagePrice: avgPriceOverall,
+      lmsrShares: lmsrSharesCollected,
+      obShares: obSharesCollected,
+      newProbabilities: probabilitiesMap,
     };
   }
 }

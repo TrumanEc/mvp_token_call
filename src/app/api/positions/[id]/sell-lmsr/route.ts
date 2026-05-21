@@ -4,10 +4,6 @@ import { LmsrService } from "@/services/lmsr.service";
 import { BalanceService } from "@/services/balance";
 import { Decimal } from "@prisma/client/runtime/library";
 
-/**
- * Sell-back via LMSR: burn shares against the curve, receive cash net of fee.
- * POST /api/positions/[id]/sell-lmsr  { userId, shares }
- */
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -21,10 +17,12 @@ export async function POST(
 
   try {
     const result = await prisma.$transaction(async (tx) => {
-      // 1. Load position + market
       const position = await tx.position.findUnique({
         where: { id: positionId },
-        include: { market: true },
+        include: {
+          market: { include: { outcomes: { orderBy: { displayOrder: "asc" } } } },
+          outcome: true,
+        },
       });
       if (!position) throw new Error("Posición no encontrada");
       if (position.currentOwnerId !== userId) throw new Error("No eres dueño de esta posición");
@@ -36,107 +34,87 @@ export async function POST(
 
       const isPrimaryPaused =
         market.primaryMarketPaused ||
-        (market.primaryPauseScheduledAt &&
-          new Date(market.primaryPauseScheduledAt) <= new Date());
+        (market.primaryPauseScheduledAt && new Date(market.primaryPauseScheduledAt) <= new Date());
       if (isPrimaryPaused) {
         throw new Error("El mercado primario está pausado. Crea una orden P2P en su lugar.");
       }
 
-      // 2. Validate shares
       const availableShares = position.shares;
       if (shares > availableShares + 1e-6) {
         throw new Error(`Solo tienes ${availableShares.toFixed(2)} shares disponibles`);
       }
       const effectiveShares = Math.min(shares, availableShares);
 
-      const side = position.side as "YES" | "NO";
-      const availableOnCurve = side === "YES" ? market.qYes : market.qNo;
+      const sortedOutcomes = [...market.outcomes].sort((a, b) => a.displayOrder - b.displayOrder);
+      const qVector = sortedOutcomes.map(o => o.qOutstanding);
+      const outcomeIdx = sortedOutcomes.findIndex(o => o.id === position.outcomeId);
+      const outcomeRecord = sortedOutcomes[outcomeIdx];
+
+      const availableOnCurve = outcomeRecord.qOutstanding;
       if (availableOnCurve <= 0) {
-        throw new Error("No hay liquidez en la curva LMSR para vender este lado");
+        throw new Error("No hay liquidez en la curva LMSR para vender este outcome");
       }
 
-      // Cap to curve availability (shouldn't normally happen since user owns shares)
       const sharesToBurn = Math.min(effectiveShares, availableOnCurve);
 
-      // 3. Compute revenue from LMSR curve
       const lmsr = new LmsrService();
       const liquidityParams = { b: market.b, alpha: market.alpha, bMin: market.bMin };
       const feeRate = market.platformFee ? Number(market.platformFee) : 0.015;
-      const grossAmount = lmsr.getRevenueFromSellLS(
-        market.qYes,
-        market.qNo,
-        liquidityParams,
-        side,
-        sharesToBurn,
-      );
+      const grossAmount = lmsr.getRevenueFromSellLSN(qVector, liquidityParams, outcomeIdx, sharesToBurn);
       if (grossAmount <= 0) throw new Error("La venta no genera ingresos en este momento");
 
       const feeAmount = grossAmount * feeRate;
       const netAmount = grossAmount - feeAmount;
 
-      // 4. Update market state (burn shares, decrement pool)
-      const newQYes = side === "YES" ? market.qYes - sharesToBurn : market.qYes;
-      const newQNo = side === "NO" ? market.qNo - sharesToBurn : market.qNo;
+      // Update outcome qOutstanding and pool
+      const currentPool = new Decimal(outcomeRecord.pool);
+      const decFromPool = Decimal.min(currentPool, new Decimal(grossAmount));
 
-      // Pool decreases by grossAmount (the cash leaving the market).
-      // We decrement from the winning side's pool first.
-      const currentSidePool = new Decimal(side === "YES" ? market.yesPool : market.noPool);
-      const decFromSide = Decimal.min(currentSidePool, new Decimal(grossAmount));
-      const remainder = new Decimal(grossAmount).minus(decFromSide);
-
-      await tx.market.update({
-        where: { id: market.id },
+      await tx.marketOutcome.update({
+        where: { id: position.outcomeId },
         data: {
-          qYes: newQYes,
-          qNo: newQNo,
-          ...(side === "YES"
-            ? {
-                yesPool: { decrement: decFromSide },
-                ...(remainder.gt(0) ? { noPool: { decrement: remainder } } : {}),
-              }
-            : {
-                noPool: { decrement: decFromSide },
-                ...(remainder.gt(0) ? { yesPool: { decrement: remainder } } : {}),
-              }),
+          qOutstanding: outcomeRecord.qOutstanding - sharesToBurn,
+          pool: { decrement: decFromPool },
         },
       });
 
-      // 5. Update position
+      // Update market totalPool
+      await tx.market.update({
+        where: { id: market.id },
+        data: { totalPool: { decrement: new Decimal(grossAmount) } },
+      });
+
+      // Update position
       const newPositionShares = availableShares - sharesToBurn;
       const newTotalCost = Math.max(0, position.totalCost * (newPositionShares / availableShares));
       const newAmount = position.amount.times(newPositionShares).dividedBy(availableShares);
 
       await tx.position.update({
         where: { id: positionId },
-        data: {
-          shares: newPositionShares,
-          amount: newAmount,
-          totalCost: newTotalCost,
-          // Keep status ACTIVE even if shares == 0; admin/cleanup can handle later
-        },
+        data: { shares: newPositionShares, amount: newAmount, totalCost: newTotalCost },
       });
 
-      // 6. Credit user balance net of fee
       await BalanceService.credit(
-        tx,
-        userId,
-        new Decimal(netAmount),
-        "POSITION_SOLD",
-        `Sell-back LMSR: ${sharesToBurn.toFixed(2)} ${side} shares por $${netAmount.toFixed(2)} (fee $${feeAmount.toFixed(2)})`,
+        tx, userId, new Decimal(netAmount), "POSITION_SOLD",
+        `Sell-back LMSR: ${sharesToBurn.toFixed(2)} ${outcomeRecord.name} shares por $${netAmount.toFixed(2)} (fee $${feeAmount.toFixed(2)})`,
         market.id,
       );
 
-      // 7. Record transfer (audit trail) — fromUser=user, toUser=user (burn = self-transfer to "market")
-      // Actually we'll just rely on the Transaction record for audit. Optional: PositionTransfer requires both users.
+      // Build new probabilities
+      const newQ = [...qVector];
+      newQ[outcomeIdx] -= sharesToBurn;
+      const newPrices = lmsr.getPricesLSN(newQ, liquidityParams);
+      const newProbabilities: Record<string, number> = {};
+      sortedOutcomes.forEach((o, i) => { newProbabilities[o.id] = newPrices[i]; });
 
       return {
         positionId,
+        outcomeId: position.outcomeId,
+        outcomeName: outcomeRecord.name,
         sharesSold: sharesToBurn,
-        grossAmount,
-        feeAmount,
-        netAmount,
+        grossAmount, feeAmount, netAmount,
         remainingShares: newPositionShares,
-        newProbabilities: lmsr.getPriceLS(newQYes, newQNo, liquidityParams),
+        newProbabilities,
       };
     });
 

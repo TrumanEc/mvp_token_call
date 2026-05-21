@@ -151,6 +151,7 @@ export class PositionService {
             playerName: p.market.playerName,
             question: p.market.question,
             status: p.market.status,
+            imageUrl: (p.market as any).imageUrl ?? null,
             winningOutcomeId: p.market.winningOutcomeId,
             winningOutcomeName: sortedOutcomes.find(o => o.id === p.market.winningOutcomeId)?.name || null,
             totalPool: p.market.totalPool.toNumber(),

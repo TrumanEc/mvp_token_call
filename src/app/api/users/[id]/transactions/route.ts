@@ -42,7 +42,7 @@ export async function GET(
             playerName: true,
             question: true,
             status: true,
-            outcome: true,
+            winningOutcomeId: true,
           },
         })
       : [];
@@ -65,7 +65,7 @@ export async function GET(
               playerName: market.playerName,
               question: market.question,
               status: market.status,
-              outcome: market.outcome,
+              winningOutcomeId: market.winningOutcomeId,
             }
           : null,
       };

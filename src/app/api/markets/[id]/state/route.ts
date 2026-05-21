@@ -7,18 +7,27 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
-  
+
   try {
     const market = await prisma.market.findUnique({
       where: { id },
       select: {
         id: true,
-        qYes: true,
-        qNo: true,
         b: true,
-        yesPool: true,
-        noPool: true,
+        alpha: true,
+        bMin: true,
+        totalPool: true,
         seedCost: true,
+        outcomes: {
+          orderBy: { displayOrder: 'asc' },
+          select: {
+            id: true,
+            name: true,
+            qOutstanding: true,
+            pool: true,
+            displayOrder: true,
+          },
+        },
       }
     })
 
@@ -26,28 +35,31 @@ export async function GET(
       return NextResponse.json({ error: 'Market not found' }, { status: 404 })
     }
 
+    const qVector = LmsrService.buildQVector(market.outcomes)
     const lmsrService = new LmsrService()
-    const prices = lmsrService.getPrice(market.qYes, market.qNo, market.b)
-    
-    // Calculate current market value / liquidity depth
-    // In LMSR, liqudity is constant 'b', but effective depth varies with price
-    
+    const lmsrParams = { b: market.b, alpha: market.alpha, bMin: market.bMin }
+    const pricesArray = lmsrService.getPricesLSN(qVector, lmsrParams)
+
+    // Build prices map: outcomeId -> price
+    const prices: Record<string, { name: string; price: number; qOutstanding: number; pool: number }> = {}
+    market.outcomes.forEach((outcome, idx) => {
+      prices[outcome.id] = {
+        name: outcome.name,
+        price: pricesArray[idx],
+        qOutstanding: outcome.qOutstanding,
+        pool: Number(outcome.pool),
+      }
+    })
+
     return NextResponse.json({
       marketId: market.id,
       b: market.b,
-      qYes: market.qYes,
-      qNo: market.qNo,
-      prices: {
-        yes: prices.pYes,
-        no: prices.pNo
-      },
+      alpha: market.alpha,
+      bMin: market.bMin,
+      outcomes: prices,
       liquidityParameter: market.b,
       maxLoss: market.seedCost,
-      // Legacy pools for reference
-      legacyPools: {
-        yes: market.yesPool,
-        no: market.noPool
-      }
+      totalPool: Number(market.totalPool),
     })
   } catch (error) {
     console.error('Error fetching market state:', error)

@@ -40,6 +40,44 @@ function AdminPage() {
   const [lmsrLogs, setLmsrLogs] = useState<any[]>([]);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [loadingLogs, setLoadingLogs] = useState(false);
+  const [editingMarket, setEditingMarket] = useState<any>(null);
+
+  const handleDeleteMarket = async (id: string) => {
+    if (!window.confirm("¿Estás seguro de que deseas eliminar permanentemente este mercado y TODO su historial (posiciones, órdenes, transacciones)? Esta acción NO se puede deshacer.")) return;
+    try {
+      const res = await fetch(`/api/admin/markets/${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const d = await res.json();
+        throw new Error(d.error || "Error eliminando el mercado");
+      }
+      alert("Mercado eliminado correctamente");
+      setSelectedMarketStats(null);
+      fetchMarkets();
+    } catch (e: any) {
+      alert(e.message);
+    }
+  };
+
+  const handleUpdateMarket = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const res = await fetch(`/api/admin/markets/${editingMarket.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editingMarket),
+      });
+      if (!res.ok) {
+        const d = await res.json();
+        throw new Error(d.error || "Error actualizando mercado");
+      }
+      alert("Mercado actualizado correctamente");
+      setEditingMarket(null);
+      fetchMarketDetails(editingMarket.id);
+      fetchMarkets();
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
 
   const [newMarket, setNewMarket] = useState({
     playerName: "",
@@ -50,11 +88,26 @@ function AdminPage() {
     b: "100",
     maxBetAmount: "",
     maxPriceImpact: "",
+    marketType: "BINARY" as "BINARY" | "MULTIPLE",
     initialProbabilityYes: "50",
-    liquidityMode: "LS" as "STATIC" | "LS",  // LS-LMSR enabled by default
+    outcomes: [
+      { name: "Opción 1", probability: "50" },
+      { name: "Opción 2", probability: "50" },
+    ],
+    liquidityMode: "LS" as "STATIC" | "LS",
     alpha: "0.10",
     bMin: "100",
+    imageUrl: "",
+    bannerUrl: "",
+    isFeatured: false,
+    rules: "",
+    criterio: "",
+    tags: "",
   });
+
+  const [editMetaMarket, setEditMetaMarket] = useState<any>(null);
+  const [editMeta, setEditMeta] = useState({ imageUrl: "", bannerUrl: "", isFeatured: false, rules: "", criterio: "", tags: "" });
+  const [savingMeta, setSavingMeta] = useState(false);
 
   useEffect(() => {
     if (!loading && (!user || user.role !== "ADMIN")) {
@@ -64,7 +117,7 @@ function AdminPage() {
 
   const fetchMarkets = () => {
     setLoadingMarkets(true);
-    fetch("/api/markets")
+    fetch("/api/markets?admin=1")
       .then((r) => r.json())
       .then(setMarkets)
       .catch(() => {})
@@ -207,14 +260,33 @@ function AdminPage() {
   };
 
   const handleCreate = async () => {
+    if (newMarket.marketType === "MULTIPLE") {
+      const sum = newMarket.outcomes.reduce((acc, curr) => acc + parseFloat(curr.probability || "0"), 0);
+      if (Math.abs(sum - 100) > 0.01) {
+        alert(`Las probabilidades deben sumar 100%. Suma actual: ${sum}%`);
+        return;
+      }
+    }
+
     setCreating(true);
     try {
       const isLS = newMarket.liquidityMode === "LS";
+      const outcomesPayload = newMarket.marketType === "MULTIPLE" 
+        ? newMarket.outcomes.map(o => ({
+            name: o.name,
+            initialProbability: parseFloat(o.probability) / 100
+          }))
+        : [
+            { name: "YES", initialProbability: parseFloat(newMarket.initialProbabilityYes) / 100 || 0.5 },
+            { name: "NO", initialProbability: 1 - (parseFloat(newMarket.initialProbabilityYes) / 100 || 0.5) }
+          ];
+
       const res = await fetch("/api/markets", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...newMarket,
+          outcomes: outcomesPayload,
           maxPool: newMarket.maxPool
             ? parseFloat(newMarket.maxPool)
             : undefined,
@@ -227,7 +299,12 @@ function AdminPage() {
           maxPriceImpact: newMarket.maxPriceImpact
             ? parseFloat(newMarket.maxPriceImpact)
             : undefined,
-          initialProbabilityYes: parseFloat(newMarket.initialProbabilityYes) / 100 || 0.5,
+          imageUrl: newMarket.imageUrl || undefined,
+          bannerUrl: newMarket.bannerUrl || undefined,
+          isFeatured: newMarket.isFeatured,
+          rules: newMarket.rules || undefined,
+          criterio: newMarket.criterio || undefined,
+          tags: newMarket.tags ? newMarket.tags.split(",").map((t: string) => t.trim()).filter(Boolean) : [],
         }),
       });
       if (res.ok) {
@@ -241,15 +318,50 @@ function AdminPage() {
           b: "100",
           maxBetAmount: "",
           maxPriceImpact: "",
+          marketType: "BINARY",
           initialProbabilityYes: "50",
+          outcomes: [
+            { name: "Opción 1", probability: "50" },
+            { name: "Opción 2", probability: "50" },
+          ],
           liquidityMode: "LS",
           alpha: "0.10",
           bMin: "100",
+          imageUrl: "",
+          bannerUrl: "",
+          isFeatured: false,
+          rules: "",
+          criterio: "",
+          tags: "",
         });
         fetchMarkets();
       }
     } finally {
       setCreating(false);
+    }
+  };
+
+  const handleSaveMeta = async () => {
+    if (!editMetaMarket) return;
+    setSavingMeta(true);
+    try {
+      await fetch(`/api/markets/${editMetaMarket.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "updateMeta",
+          imageUrl: editMeta.imageUrl || null,
+          bannerUrl: editMeta.bannerUrl || null,
+          isFeatured: editMeta.isFeatured,
+          rules: editMeta.rules || null,
+          criterio: editMeta.criterio || null,
+          tags: editMeta.tags ? editMeta.tags.split(",").map((t: string) => t.trim()).filter(Boolean) : [],
+        }),
+      });
+      setEditMetaMarket(null);
+      fetchMarkets();
+    } finally {
+      setSavingMeta(false);
     }
   };
 
@@ -288,13 +400,13 @@ function AdminPage() {
     fetchMarkets();
   };
 
-  const handleResolve = async (outcome: "YES" | "NO" | "VOID") => {
+  const handleResolve = async (winningOutcomeId: string) => {
     setResolving(true);
     try {
       await fetch(`/api/markets/${showResolveModal.id}/resolve`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ outcome }),
+        body: JSON.stringify({ winningOutcomeId }),
       });
       setShowResolveModal(null);
       fetchMarkets();
@@ -594,36 +706,47 @@ function AdminPage() {
                             Resolver
                           </button>
                         )}
+                        <button
+                          onClick={() => {
+                            setEditMetaMarket(market);
+                            setEditMeta({
+                              imageUrl: market.imageUrl ?? "",
+                              bannerUrl: market.bannerUrl ?? "",
+                              isFeatured: market.isFeatured ?? false,
+                              rules: market.rules ?? "",
+                              criterio: market.criterio ?? "",
+                              tags: (market.tags ?? []).join(", "),
+                            });
+                          }}
+                          className="px-3 py-1 bg-white/5 text-gray-300 text-[9px] font-bold rounded-lg uppercase tracking-wider hover:bg-white/10 border border-white/10"
+                        >
+                          ✎ Media
+                        </button>
                       </div>
                     </div>
-                    <div className="grid grid-cols-3 gap-2 bg-win-bg p-4 rounded-xl border border-white/5">
-                      <div>
-                        <div className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">
-                          YES Pool
-                        </div>
-                        <div className="text-sm font-extrabold text-primary">
-                          $ {Number(market.yesPool || 0).toFixed(0)}
-                        </div>
+                    <div className="bg-win-bg p-4 rounded-xl border border-white/5">
+                      {/* Outcome probability bars — probability already in 0-100 from MarketService.getAll() */}
+                      <div className="space-y-1.5 mb-3">
+                        {(market.outcomes || []).slice(0, 4).map((o: any, i: number) => {
+                          const pct = Number(o.probability ?? 0)
+                          return (
+                          <div key={o.id} className="flex items-center gap-2">
+                            <span className="text-[9px] font-bold text-gray-400 w-16 truncate">{o.name}</span>
+                            <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden">
+                              <div
+                                className="h-full rounded-full bg-primary"
+                                style={{ width: `${pct.toFixed(0)}%`, opacity: 1 - i * 0.15 }}
+                              />
+                            </div>
+                            <span className="text-[9px] font-bold text-white w-8 text-right">
+                              {pct.toFixed(0)}%
+                            </span>
+                          </div>
+                        )})}
                       </div>
-                      <div>
-                        <div className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">
-                          NO Pool
-                        </div>
-                        <div className="text-sm font-extrabold text-win-error">
-                          $ {Number(market.noPool || 0).toFixed(0)}
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">
-                          Total
-                        </div>
-                        <div className="text-sm font-extrabold text-white">
-                          ${" "}
-                          {(
-                            Number(market.yesPool || 0) +
-                            Number(market.noPool || 0)
-                          ).toFixed(0)}
-                        </div>
+                      <div className="flex justify-between items-center pt-2 border-t border-white/5">
+                        <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Vol. Total</span>
+                        <span className="text-sm font-extrabold text-white">$ {Number(market.totalPool || 0).toFixed(0)}</span>
                       </div>
                     </div>
 
@@ -783,11 +906,9 @@ function AdminPage() {
                               {p.market.playerName || "Mercado"}
                             </td>
                             <td className="p-4">
-                              <span
-                                className={`px-2 py-0.5 text-[9px] font-bold rounded-full uppercase tracking-wider ${p.side === "YES" ? "bg-primary/10 text-primary" : "bg-win-error/10 text-win-error"}`}
-                              >
-                                {p.side} @{" "}
-                                {parseFloat(p.initialProbability).toFixed(0)}%
+                              <span className="px-2 py-0.5 text-[9px] font-bold rounded-full uppercase tracking-wider bg-white/10 text-white">
+                                {p.outcome?.name || p.side} @{" "}
+                                {(parseFloat(p.initialProbability) <= 1 ? parseFloat(p.initialProbability) * 100 : parseFloat(p.initialProbability)).toFixed(0)}%
                               </span>
                             </td>
                             <td className="p-4 text-sm font-extrabold text-white">
@@ -918,6 +1039,99 @@ function AdminPage() {
         </div>
       </div>
 
+      {/* Edit Market Meta Modal */}
+      <Modal
+        isOpen={!!editMetaMarket}
+        onClose={() => setEditMetaMarket(null)}
+        title={`Media & Configuración · ${editMetaMarket?.playerName || editMetaMarket?.question?.slice(0, 40)}`}
+        size="xl"
+      >
+        <div className="space-y-4 p-1">
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">URL Imagen de tarjeta</label>
+            <input
+              type="url"
+              className="w-full bg-win-bg border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600"
+              placeholder="https://..."
+              value={editMeta.imageUrl}
+              onChange={(e) => setEditMeta(m => ({ ...m, imageUrl: e.target.value }))}
+            />
+            {editMeta.imageUrl && (
+              <img src={editMeta.imageUrl} alt="preview" className="mt-2 h-20 w-full object-cover rounded-lg border border-white/5" />
+            )}
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">URL Banner (hero)</label>
+            <input
+              type="url"
+              className="w-full bg-win-bg border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600"
+              placeholder="https://..."
+              value={editMeta.bannerUrl}
+              onChange={(e) => setEditMeta(m => ({ ...m, bannerUrl: e.target.value }))}
+            />
+            {editMeta.bannerUrl && (
+              <img src={editMeta.bannerUrl} alt="banner preview" className="mt-2 h-24 w-full object-cover rounded-lg border border-white/5" />
+            )}
+          </div>
+          <div className="flex items-center gap-3 bg-white/3 rounded-lg px-3 py-2.5 border border-white/5">
+            <input
+              type="checkbox"
+              id="isFeatured"
+              checked={editMeta.isFeatured}
+              onChange={(e) => setEditMeta(m => ({ ...m, isFeatured: e.target.checked }))}
+              className="w-4 h-4 accent-primary"
+            />
+            <label htmlFor="isFeatured" className="text-[12px] font-semibold text-white cursor-pointer">
+              Mostrar en slider principal (Featured)
+            </label>
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">Reglas del mercado</label>
+            <textarea
+              rows={3}
+              className="w-full bg-win-bg border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 resize-none"
+              placeholder="Escribe las reglas del mercado..."
+              value={editMeta.rules}
+              onChange={(e) => setEditMeta(m => ({ ...m, rules: e.target.value }))}
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">Criterio de resolución</label>
+            <textarea
+              rows={2}
+              className="w-full bg-win-bg border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 resize-none"
+              placeholder="¿Bajo qué criterio se resuelve este mercado?"
+              value={editMeta.criterio}
+              onChange={(e) => setEditMeta(m => ({ ...m, criterio: e.target.value }))}
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">Etiquetas (separadas por coma)</label>
+            <input
+              type="text"
+              className="w-full bg-win-bg border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600"
+              placeholder="transferencia, LaLiga, Argentina..."
+              value={editMeta.tags}
+              onChange={(e) => setEditMeta(m => ({ ...m, tags: e.target.value }))}
+            />
+            {editMeta.tags && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {editMeta.tags.split(",").map((t) => t.trim()).filter(Boolean).map((tag) => (
+                  <span key={tag} className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/20">{tag}</span>
+                ))}
+              </div>
+            )}
+          </div>
+          <button
+            onClick={handleSaveMeta}
+            disabled={savingMeta}
+            className="w-full py-2.5 rounded-lg bg-primary text-win-bg text-[11px] font-bold uppercase tracking-wider disabled:opacity-50"
+          >
+            {savingMeta ? "Guardando..." : "Guardar cambios"}
+          </button>
+        </div>
+      </Modal>
+
       {/* Drill-down Modals (Dark Mode Update) */}
       <Modal
         isOpen={!!selectedUserStats}
@@ -1021,6 +1235,37 @@ function AdminPage() {
         ) : (
           selectedMarketStats && (
             <div className="space-y-8 pt-4">
+              {/* ── Title row with actions ─────────────────────────── */}
+              <div className="flex items-start justify-between gap-4 px-1">
+                <div className="flex-1 min-w-0">
+                  <p className="text-[11px] font-semibold text-white leading-snug line-clamp-2">{selectedMarketStats.question}</p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={() => setEditingMarket({
+                      id: selectedMarketStats.id,
+                      question: selectedMarketStats.question,
+                      description: selectedMarketStats.description || "",
+                      resolutionDate: selectedMarketStats.resolutionDate
+                        ? new Date(selectedMarketStats.resolutionDate).toISOString().slice(0, 16)
+                        : "",
+                      sport: selectedMarketStats.sport || "futbol",
+                    })}
+                    className="px-3 py-1.5 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl text-[10px] font-bold text-white uppercase tracking-wider transition-all flex items-center gap-1.5"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                    Editar
+                  </button>
+                  <button
+                    onClick={() => handleDeleteMarket(selectedMarketStats.id)}
+                    className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-xl text-[10px] font-bold text-red-400 uppercase tracking-wider transition-all flex items-center gap-1.5"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                    Eliminar
+                  </button>
+                </div>
+              </div>
+
               {/* Header de Info Base */}
               <div className="flex items-center gap-4 px-1">
                 <div className="bg-win-bg px-4 py-2 rounded-xl border border-white/5">
@@ -1092,31 +1337,17 @@ function AdminPage() {
                         {selectedMarketStats.b || 100}
                       </span>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="p-4 bg-primary/5 rounded-xl border border-primary/10">
-                        <div className="text-[9px] font-bold text-primary uppercase tracking-wider mb-1">
-                          Si Gana SÍ
+                    <div className="grid grid-cols-2 gap-2">
+                      {(selectedMarketStats.outcomes || []).slice(0, 4).map((o: any, i: number) => (
+                        <div key={o.id} className="p-3 bg-primary/5 rounded-xl border border-primary/10">
+                          <div className="text-[9px] font-bold text-primary uppercase tracking-wider mb-1 truncate">
+                            Si Gana {o.name}
+                          </div>
+                          <div className="text-base font-extrabold text-white">
+                            x {Number(selectedMarketStats.simulation?.byOutcome?.[o.name]?.payoutPerDollar ?? 0).toFixed(2)}
+                          </div>
                         </div>
-                        <div className="text-lg font-extrabold text-white">
-                          x{" "}
-                          {Number(
-                            selectedMarketStats.simulation?.ifYesWins
-                              ?.payoutPerDollar ?? 0,
-                          ).toFixed(2)}
-                        </div>
-                      </div>
-                      <div className="p-4 bg-win-error/5 rounded-xl border border-win-error/10">
-                        <div className="text-[9px] font-bold text-win-error uppercase tracking-wider mb-1">
-                          Si Gana NO
-                        </div>
-                        <div className="text-lg font-extrabold text-white">
-                          x{" "}
-                          {Number(
-                            selectedMarketStats.simulation?.ifNoWins
-                              ?.payoutPerDollar ?? 0,
-                          ).toFixed(2)}
-                        </div>
-                      </div>
+                      ))}
                     </div>
                   </div>
                 </div>
@@ -1125,23 +1356,15 @@ function AdminPage() {
                   <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.1em]">
                     Distribución del Pool
                   </h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-win-bg p-4 rounded-2xl border border-primary/10">
-                      <div className="text-[9px] font-bold text-primary uppercase tracking-wider mb-1">
-                        YES Pool
+                  <div className="grid grid-cols-2 gap-3">
+                    {(selectedMarketStats.outcomes || []).slice(0, 4).map((o: any, i: number) => (
+                      <div key={o.id} className="bg-win-bg p-4 rounded-2xl border border-primary/10">
+                        <div className="text-[9px] font-bold text-primary uppercase tracking-wider mb-1 truncate">{o.name}</div>
+                        {/* price is 0-1 from stats API */}
+                        <div className="text-lg font-extrabold text-primary">{(Number(o.price ?? 0) * 100).toFixed(1)}%</div>
+                        <div className="text-[9px] text-gray-500 mt-0.5">${Number(o.pool || 0).toFixed(0)} en pool</div>
                       </div>
-                      <div className="text-xl font-extrabold text-primary">
-                        $ {Number(selectedMarketStats.yesPool || 0).toFixed(0)}
-                      </div>
-                    </div>
-                    <div className="bg-win-bg p-4 rounded-2xl border border-win-error/10">
-                      <div className="text-[9px] font-bold text-win-error uppercase tracking-wider mb-1">
-                        NO Pool
-                      </div>
-                      <div className="text-xl font-extrabold text-win-error">
-                        $ {Number(selectedMarketStats.noPool || 0).toFixed(0)}
-                      </div>
-                    </div>
+                    ))}
                   </div>
                   <div className="bg-primary p-6 rounded-2xl text-win-bg shadow-xl shadow-primary/10">
                     <div className="text-[10px] font-bold uppercase tracking-wider mb-1 opacity-70">
@@ -1220,11 +1443,11 @@ function AdminPage() {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
-                          {["YES", "NO"].map((label) => (
-                            <tr key={label} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors h-16">
+                          {(selectedMarketStats.outcomes || [{ name: "YES" }, { name: "NO" }]).map((o: any) => (
+                            <tr key={o.id || o.name} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors h-16">
                               <td className="pl-6">
-                                <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full tracking-wider ${label === "YES" ? "bg-primary/10 text-primary" : "bg-win-error/10 text-win-error"}`}>
-                                  GANA {label}
+                                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full tracking-wider bg-primary/10 text-primary">
+                                  GANA {o.name}
                                 </span>
                               </td>
                               <td className="text-center text-xs font-bold text-white">
@@ -1408,7 +1631,7 @@ function AdminPage() {
                           Usuario
                         </th>
                         <th className="p-4 text-[9px] font-bold text-gray-400 uppercase tracking-wider">
-                          Lado
+                          Opción
                         </th>
                         <th className="p-4 text-[9px] font-bold text-gray-400 uppercase tracking-wider">
                           Monto
@@ -1441,10 +1664,8 @@ function AdminPage() {
                               @{p.username}
                             </td>
                             <td className="p-4">
-                              <span
-                                className={`px-2 py-0.5 text-[9px] font-bold rounded-full uppercase tracking-wider ${p.side === "YES" ? "bg-primary/10 text-primary" : "bg-win-error/10 text-win-error"}`}
-                              >
-                                {p.side}
+                              <span className="px-2 py-0.5 text-[9px] font-bold rounded-full uppercase tracking-wider bg-white/10 text-white">
+                                {p.outcome || p.side}
                               </span>
                             </td>
                             <td className="p-4 text-sm font-extrabold text-white">
@@ -1464,238 +1685,7 @@ function AdminPage() {
                 </div>
               </div>
 
-              {/* ── MERCADO SECUNDARIO ── */}
-              {selectedMarketStats.secondaryMarket && (
-                <div className="space-y-6 pt-2">
-                  <div className="flex items-center gap-3">
-                    <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.1em]">
-                      Mercado Secundario (P2P / Order Book)
-                    </h3>
-                    <div className="flex-1 h-[1px] bg-white/5" />
-                    <span className="text-[9px] font-bold text-blue-400 uppercase tracking-wider bg-blue-500/10 px-2 py-0.5 rounded-full">
-                      P2P
-                    </span>
-                  </div>
 
-                  {/* KPI summary */}
-                  {(() => {
-                    const sm = selectedMarketStats.secondaryMarket.summary;
-                    return (
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        <div className="bg-win-bg border border-white/5 rounded-2xl p-4">
-                          <div className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">
-                            Vol. P2P Ejecutado
-                          </div>
-                          <div className="text-xl font-extrabold text-white mt-1">
-                            ${sm.totalP2PVolumeExecuted.toFixed(2)}
-                          </div>
-                          <div className="text-[9px] text-gray-600 mt-0.5">
-                            {sm.p2pTradeCount} trades completados
-                          </div>
-                        </div>
-                        <div className="bg-primary/10 border border-primary/20 rounded-2xl p-4">
-                          <div className="text-[9px] font-bold text-primary uppercase tracking-wider">
-                            Ganancia WIN (FEE P2P)
-                          </div>
-                          <div className="text-xl font-extrabold text-primary mt-1">
-                            + ${sm.totalP2PFeeCollected.toFixed(2)}
-                          </div>
-                          <div className="text-[9px] text-primary/60 mt-0.5">
-                            2% sobre el Orderbook
-                          </div>
-                        </div>
-                        <div className="bg-win-bg border border-blue-500/10 rounded-2xl p-4">
-                          <div className="text-[9px] font-bold text-blue-400 uppercase tracking-wider">
-                            Órdenes Abiertas
-                          </div>
-                          <div className="text-xl font-extrabold text-white mt-1">
-                            {sm.openOrderCount}
-                          </div>
-                          <div className="text-[9px] text-gray-600 mt-0.5">
-                            {sm.totalOpenShares.toFixed(2)} sh en el libro
-                          </div>
-                        </div>
-                        <div className="bg-win-bg border border-blue-500/10 rounded-2xl p-4">
-                          <div className="text-[9px] font-bold text-blue-400 uppercase tracking-wider">
-                            Val. en el Libro
-                          </div>
-                          <div className="text-xl font-extrabold text-white mt-1">
-                            ${sm.totalOpenOrderValue.toFixed(2)}
-                          </div>
-                          <div className="text-[9px] text-gray-600 mt-0.5">
-                            si se ejecutan todas
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })()}
-
-                  {/* Open orders table */}
-                  <div className="space-y-2">
-                    <h4 className="text-[9px] font-bold text-blue-400 uppercase tracking-[0.1em]">
-                      📂 Órdenes Abiertas en el Libro
-                    </h4>
-                    <div className="bg-win-bg border border-white/5 rounded-2xl overflow-hidden">
-                      <table className="w-full text-left">
-                        <thead>
-                          <tr className="bg-win-card border-b border-white/5">
-                            {[
-                              "Usuario",
-                              "Lado",
-                              "Shares",
-                              "Fills",
-                              "Pendientes",
-                              "Precio/sh",
-                              "Val. Pend.",
-                              "Estado",
-                              "Fecha",
-                            ].map((h) => (
-                              <th
-                                key={h}
-                                className="p-3 text-[9px] font-bold text-gray-400 uppercase tracking-wider whitespace-nowrap"
-                              >
-                                {h}
-                              </th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-white/5">
-                          {selectedMarketStats.secondaryMarket.openOrders
-                            .length === 0 ? (
-                            <tr>
-                              <td
-                                colSpan={9}
-                                className="p-8 text-center text-[10px] font-bold text-white/20 uppercase"
-                              >
-                                No hay órdenes abiertas
-                              </td>
-                            </tr>
-                          ) : (
-                            selectedMarketStats.secondaryMarket.openOrders.map(
-                              (o: any) => (
-                                <tr
-                                  key={o.id}
-                                  className="hover:bg-white/5 transition-colors"
-                                >
-                                  <td className="p-3 text-xs font-bold text-white">
-                                    @{o.username}
-                                  </td>
-                                  <td className="p-3">
-                                    <span
-                                      className={`px-2 py-0.5 text-[9px] font-bold rounded-full uppercase ${o.side === "YES" ? "bg-primary/10 text-primary" : "bg-win-error/10 text-win-error"}`}
-                                    >
-                                      {o.side}
-                                    </span>
-                                  </td>
-                                  <td className="p-3 text-xs font-bold text-white">
-                                    {o.initialShares.toFixed(2)}
-                                  </td>
-                                  <td className="p-3 text-xs font-bold text-primary">
-                                    {o.filledShares.toFixed(2)}
-                                  </td>
-                                  <td className="p-3 text-xs font-bold text-blue-400">
-                                    {o.remainingShares.toFixed(2)}
-                                  </td>
-                                  <td className="p-3 text-xs font-bold text-white">
-                                    ${o.pricePerShare.toFixed(4)}
-                                  </td>
-                                  <td className="p-3 text-xs font-bold text-white">
-                                    $
-                                    {(
-                                      o.remainingShares * o.pricePerShare
-                                    ).toFixed(2)}
-                                  </td>
-                                  <td className="p-3">
-                                    <span
-                                      className={`px-2 py-0.5 text-[9px] font-bold rounded-full uppercase ${o.status === "PARTIAL" ? "bg-yellow-500/10 text-yellow-400" : "bg-blue-500/10 text-blue-400"}`}
-                                    >
-                                      {o.status}
-                                    </span>
-                                  </td>
-                                  <td className="p-3 text-[10px] font-bold text-gray-400">
-                                    {new Date(o.createdAt).toLocaleDateString()}
-                                  </td>
-                                </tr>
-                              ),
-                            )
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-
-                  {/* P2P Transctions table */}
-                  <div className="space-y-2">
-                    <h4 className="text-[9px] font-bold text-primary uppercase tracking-[0.1em]">
-                      ✅ Transacciones Mercado Secundario (P2P)
-                    </h4>
-                    <div className="bg-win-bg border border-white/5 rounded-2xl overflow-hidden">
-                      <table className="w-full text-left">
-                        <thead>
-                          <tr className="bg-win-card border-b border-white/5">
-                            {[
-                              "Comprador",
-                              "Vendedor (Recibe Neto)",
-                              "Monto Bruto",
-                              "Monto Neto",
-                              "Fee WIN (2%)",
-                              "Fecha",
-                            ].map((h) => (
-                              <th
-                                key={h}
-                                className="p-3 text-[9px] font-bold text-gray-400 uppercase tracking-wider whitespace-nowrap"
-                              >
-                                {h}
-                              </th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-white/5">
-                          {selectedMarketStats.secondaryMarket.obFills
-                            .length === 0 ? (
-                            <tr>
-                              <td
-                                colSpan={7}
-                                className="p-8 text-center text-[10px] font-bold text-white/20 uppercase"
-                              >
-                                No hay transacciones P2P ejecutadas aún
-                              </td>
-                            </tr>
-                          ) : (
-                            selectedMarketStats.secondaryMarket.obFills.map(
-                              (f: any, idx: number) => (
-                                <tr
-                                  key={f.id || idx}
-                                  className="hover:bg-white/5 transition-colors"
-                                >
-                                  <td className="p-3 text-xs font-bold text-primary">
-                                    @{f.buyer}
-                                  </td>
-                                  <td className="p-3 text-xs font-bold text-gray-400">
-                                    @{f.seller}
-                                  </td>
-                                  <td className="p-3 text-xs text-white">
-                                    ${f.grossAmount.toFixed(2)}
-                                  </td>
-                                  <td className="p-3 text-xs font-bold text-blue-300">
-                                    ${f.netAmount.toFixed(2)}
-                                  </td>
-                                  <td className="p-3 text-sm font-extrabold text-primary">
-                                    + ${f.fee.toFixed(2)}
-                                  </td>
-                                  <td className="p-3 text-[10px] font-bold text-gray-400 whitespace-nowrap">
-                                    {new Date(f.timestamp).toLocaleDateString()}
-                                  </td>
-                                </tr>
-                              ),
-                            )
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           )
         )}
@@ -1863,32 +1853,129 @@ function AdminPage() {
               </div>
             </div>
 
-            {/* Probabilidad inicial configurable (Option B advantage) */}
-            <div className="space-y-3">
-              <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400">
-                Probabilidad inicial YES (%)
-              </label>
-              <div className="flex items-center gap-4">
-                <input
-                  type="range"
-                  min="5"
-                  max="95"
-                  step="5"
-                  className="flex-1 accent-[#64c883]"
-                  value={newMarket.initialProbabilityYes}
-                  onChange={(e) =>
-                    setNewMarket({ ...newMarket, initialProbabilityYes: e.target.value })
-                  }
-                />
-                <span className="text-white font-bold w-20 text-right text-sm">
-                  {newMarket.initialProbabilityYes}% / {100 - parseInt(newMarket.initialProbabilityYes)}%
-                </span>
+            {/* Opciones de Probabilidad y Outcomes */}
+            <div className="space-y-4 pt-2 border-t border-white/5">
+              <div className="flex gap-2 p-1 bg-[#0d0d0d] rounded-2xl">
+                <button
+                  type="button"
+                  onClick={() => setNewMarket({ ...newMarket, marketType: "BINARY" })}
+                  className={`flex-1 py-3 rounded-xl text-[11px] font-extrabold uppercase tracking-wider transition-all ${
+                    newMarket.marketType === "BINARY"
+                      ? "bg-white/10 text-white shadow"
+                      : "text-gray-500 hover:text-white"
+                  }`}
+                >
+                  Binario (YES/NO)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setNewMarket({ ...newMarket, marketType: "MULTIPLE" })}
+                  className={`flex-1 py-3 rounded-xl text-[11px] font-extrabold uppercase tracking-wider transition-all ${
+                    newMarket.marketType === "MULTIPLE"
+                      ? "bg-white/10 text-white shadow"
+                      : "text-gray-500 hover:text-white"
+                  }`}
+                >
+                  Múltiple (N Outcomes)
+                </button>
               </div>
-              <div className="flex justify-between text-[9px] text-gray-500 uppercase tracking-wider">
-                <span>Poco probable</span>
-                <span>50/50</span>
-                <span>Probable</span>
-              </div>
+
+              {newMarket.marketType === "BINARY" ? (
+                <div className="space-y-3">
+                  <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400">
+                    Probabilidad inicial YES (%)
+                  </label>
+                  <div className="flex items-center gap-4">
+                    <input
+                      type="range"
+                      min="5"
+                      max="95"
+                      step="5"
+                      className="flex-1 accent-[#64c883]"
+                      value={newMarket.initialProbabilityYes}
+                      onChange={(e) =>
+                        setNewMarket({ ...newMarket, initialProbabilityYes: e.target.value })
+                      }
+                    />
+                    <span className="text-white font-bold w-20 text-right text-sm">
+                      {newMarket.initialProbabilityYes}% / {100 - parseInt(newMarket.initialProbabilityYes)}%
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-[9px] text-gray-500 uppercase tracking-wider">
+                    <span>Poco probable</span>
+                    <span>50/50</span>
+                    <span>Probable</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400">
+                    Opciones del Mercado (Múltiple)
+                  </label>
+                  {newMarket.outcomes.map((outcome, idx) => (
+                    <div key={idx} className="flex gap-2 items-center">
+                      <input
+                        className="flex-1 h-12 bg-win-bg border border-white/5 rounded-xl px-4 text-white font-bold outline-none focus:border-primary transition-all text-xs"
+                        value={outcome.name}
+                        onChange={(e) => {
+                          const newOutcomes = [...newMarket.outcomes];
+                          newOutcomes[idx].name = e.target.value;
+                          setNewMarket({ ...newMarket, outcomes: newOutcomes });
+                        }}
+                        placeholder={`Nombre Opción ${idx + 1}`}
+                      />
+                      <div className="relative w-24">
+                        <input
+                          type="number"
+                          className="w-full h-12 bg-win-bg border border-white/5 rounded-xl pl-4 pr-6 text-white font-bold outline-none focus:border-primary transition-all text-xs"
+                          value={outcome.probability}
+                          onChange={(e) => {
+                            const newOutcomes = [...newMarket.outcomes];
+                            newOutcomes[idx].probability = e.target.value;
+                            setNewMarket({ ...newMarket, outcomes: newOutcomes });
+                          }}
+                          placeholder="%"
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs font-bold">%</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newOutcomes = newMarket.outcomes.filter((_, i) => i !== idx);
+                          setNewMarket({ ...newMarket, outcomes: newOutcomes });
+                        }}
+                        className="h-12 w-12 bg-win-error/10 text-win-error rounded-xl font-bold flex items-center justify-center hover:bg-win-error/20"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                  <div className="flex gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNewMarket({
+                          ...newMarket,
+                          outcomes: [...newMarket.outcomes, { name: "", probability: "10" }]
+                        });
+                      }}
+                      className="flex-1 py-3 border border-dashed border-white/20 rounded-xl text-[10px] font-bold text-gray-400 uppercase tracking-wider hover:border-white/50 hover:text-white transition-all"
+                    >
+                      + Agregar Opción
+                    </button>
+                    <div className="py-3 px-4 bg-win-bg border border-white/5 rounded-xl text-[10px] font-bold text-gray-400 flex items-center gap-2">
+                      Suma total: 
+                      <span className={`text-sm ${
+                        Math.abs(newMarket.outcomes.reduce((a, c) => a + parseFloat(c.probability || "0"), 0) - 100) < 0.01 
+                          ? "text-primary" 
+                          : "text-win-error"
+                      }`}>
+                        {newMarket.outcomes.reduce((a, c) => a + parseFloat(c.probability || "0"), 0)}%
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
           <button
@@ -1911,8 +1998,7 @@ function AdminPage() {
             <div className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-xl">
               <p className="text-xs font-bold text-orange-400 mb-1">¿Qué ocurre al pausar?</p>
               <p className="text-[11px] text-gray-400">
-                Los usuarios <span className="text-white font-bold">no podrán comprar posiciones nuevas</span> en el mercado primario (LMSR).
-                El <span className="text-white font-bold">mercado secundario (P2P) seguirá activo</span> — las posiciones existentes se pueden comprar y vender normalmente.
+                Los usuarios <span className="text-white font-bold">no podrán comprar posiciones nuevas</span> en el mercado.
               </p>
             </div>
 
@@ -1971,51 +2057,121 @@ function AdminPage() {
               <p className="text-lg font-bold text-white mb-4">
                 {showResolveModal.question}
               </p>
-              <div className="flex justify-center gap-6 text-[10px] font-bold uppercase tracking-wider text-gray-400">
-                <span>
-                  SÍ: $ {Number(showResolveModal.yesPool || 0).toFixed(0)}
-                </span>
-                <span>
-                  NO: $ {Number(showResolveModal.noPool || 0).toFixed(0)}
-                </span>
+              <div className="flex justify-center gap-6 text-[10px] font-bold uppercase tracking-wider text-gray-400 flex-wrap">
+                {showResolveModal.outcomes?.map((o: any) => (
+                  <span key={o.id}>
+                    {o.name}: {Number((o.qOutstanding || 0)).toFixed(0)} sh
+                  </span>
+                ))}
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-4">
-              <button
-                onClick={() => handleResolve("YES")}
-                disabled={resolving}
-                className="h-16 bg-primary text-win-bg text-[10px] font-bold uppercase tracking-wider rounded-2xl transition-all hover:scale-[1.05] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {resolving ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-win-bg border-t-transparent" />
-                ) : (
-                  "SÍ Gana"
-                )}
-              </button>
-              <button
-                onClick={() => handleResolve("NO")}
-                disabled={resolving}
-                className="h-16 bg-win-error text-win-bg text-[10px] font-bold uppercase tracking-wider rounded-2xl transition-all hover:scale-[1.05] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {resolving ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-win-bg border-t-transparent" />
-                ) : (
-                  "NO Gana"
-                )}
-              </button>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {showResolveModal.outcomes?.map((o: any) => (
+                <button
+                  key={o.id}
+                  onClick={() => handleResolve(o.id)}
+                  disabled={resolving}
+                  className="h-16 bg-primary text-win-bg text-[10px] font-bold uppercase tracking-wider rounded-2xl transition-all hover:scale-[1.05] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {resolving ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-win-bg border-t-transparent" />
+                  ) : (
+                    `${o.name} GANA`
+                  )}
+                </button>
+              ))}
               <button
                 onClick={() => handleResolve("VOID")}
                 disabled={resolving}
-                className="h-16 bg-white/5 text-gray-400 text-[10px] font-bold uppercase tracking-wider rounded-2xl transition-all hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="h-16 bg-white/5 text-gray-400 text-[10px] font-bold uppercase tracking-wider rounded-2xl transition-all hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 col-span-full md:col-span-1"
               >
                 {resolving ? (
                   <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-400 border-t-transparent" />
                 ) : (
-                  "Anular"
+                  "Anular (VOID)"
                 )}
               </button>
             </div>
           </div>
+        )}
+      </Modal>
+
+      {/* ── Edit Market Modal ─────────────────────────── */}
+      <Modal
+        isOpen={!!editingMarket}
+        onClose={() => setEditingMarket(null)}
+        title="Editar Mercado"
+        size="2xl"
+      >
+        {editingMarket && (
+          <form onSubmit={handleUpdateMarket} className="space-y-5 pt-4">
+            <div>
+              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Pregunta</label>
+              <textarea
+                value={editingMarket.question}
+                onChange={e => setEditingMarket((m: any) => ({ ...m, question: e.target.value }))}
+                rows={3}
+                required
+                className="w-full bg-win-bg border border-white/10 rounded-xl px-3.5 py-2.5 text-[13px] text-white placeholder-gray-600 focus:outline-none focus:border-primary/50 resize-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Descripción</label>
+              <textarea
+                value={editingMarket.description}
+                onChange={e => setEditingMarket((m: any) => ({ ...m, description: e.target.value }))}
+                rows={4}
+                className="w-full bg-win-bg border border-white/10 rounded-xl px-3.5 py-2.5 text-[13px] text-white placeholder-gray-600 focus:outline-none focus:border-primary/50 resize-none"
+                placeholder="Descripción opcional..."
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Fecha de Resolución</label>
+                <input
+                  type="datetime-local"
+                  value={editingMarket.resolutionDate}
+                  onChange={e => setEditingMarket((m: any) => ({ ...m, resolutionDate: e.target.value }))}
+                  required
+                  className="w-full bg-win-bg border border-white/10 rounded-xl px-3.5 py-2.5 text-[13px] text-white focus:outline-none focus:border-primary/50"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Deporte / Categoría</label>
+                <select
+                  value={editingMarket.sport}
+                  onChange={e => setEditingMarket((m: any) => ({ ...m, sport: e.target.value }))}
+                  className="w-full bg-win-bg border border-white/10 rounded-xl px-3.5 py-2.5 text-[13px] text-white focus:outline-none focus:border-primary/50"
+                >
+                  <option value="futbol">Fútbol</option>
+                  <option value="baloncesto">Baloncesto</option>
+                  <option value="beisbol">Béisbol</option>
+                  <option value="tenis">Tenis</option>
+                  <option value="formula1">Fórmula 1</option>
+                  <option value="criquet">Criquet</option>
+                  <option value="otros">Otros</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setEditingMarket(null)}
+                className="px-5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[11px] font-bold text-gray-300 uppercase tracking-wider transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                className="px-5 py-2.5 bg-primary/20 hover:bg-primary/30 border border-primary/30 rounded-xl text-[11px] font-bold text-primary uppercase tracking-wider transition-all"
+              >
+                Guardar Cambios
+              </button>
+            </div>
+          </form>
         )}
       </Modal>
     </Shell>

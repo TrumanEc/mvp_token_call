@@ -12,9 +12,10 @@ export class OrderBookService {
   static async createLimitBuy(data: {
     marketId: string;
     userId: string;
-    side: "YES" | "NO";
-    amount: number; // Monto en $ (USD) a gastar total ("budget")
-    pricePerShare: number; // Precio límite máximo a pagar por share (ej: 0.40)
+    outcomeId: string;
+    side: string;
+    amount: number;
+    pricePerShare: number;
   }) {
     return prisma.$transaction(async (tx) => {
       const user = await tx.user.findUnique({ where: { id: data.userId } });
@@ -38,23 +39,18 @@ export class OrderBookService {
         throw new Error("Balance insuficiente para colocar la orden");
       }
 
-      // El número esperado de shares es el budget dividido por el precio límite
       const expectedShares = data.amount / data.pricePerShare;
 
-      // 1. Deducir balance (bloquear fondos)
       await BalanceService.deduct(
-        tx,
-        user.id,
-        totalToLock,
-        "LIMIT_ORDER_PLACED",
+        tx, user.id, totalToLock, "LIMIT_ORDER_PLACED",
         `Limit Buy placed for ${expectedShares.toFixed(2)} ${data.side} @ $${data.pricePerShare}`,
         data.marketId,
       );
 
-      // 2. Crear registro en el OrderBook
       const order = await tx.order.create({
         data: {
           marketId: data.marketId,
+          outcomeId: data.outcomeId,
           userId: data.userId,
           side: data.side,
           type: OrderType.BUY,
@@ -119,10 +115,10 @@ export class OrderBookService {
           },
         });
 
-        // Crear nueva "For Sale"
         const newPos = await tx.position.create({
           data: {
             marketId: position.marketId,
+            outcomeId: position.outcomeId,
             originalOwnerId: position.originalOwnerId,
             currentOwnerId: position.currentOwnerId,
             side: position.side,
@@ -143,10 +139,10 @@ export class OrderBookService {
         });
       }
 
-      // Crear la orden en el OB
       const order = await tx.order.create({
         data: {
           marketId: data.marketId,
+          outcomeId: position.outcomeId,
           userId: data.userId,
           side: position.side,
           type: OrderType.SELL,

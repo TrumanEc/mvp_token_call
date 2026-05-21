@@ -2,14 +2,17 @@ import { prisma } from "@/lib/prisma";
 import { Decimal } from "@prisma/client/runtime/library";
 import { BalanceService } from "./balance";
 
-export type Outcome = "YES" | "NO";
-
 export class SettlementService {
-  static async resolve(marketId: string, outcome: Outcome | "VOID") {
+  /**
+   * Resolve a market. `winningOutcomeId` is the ID of the winning MarketOutcome,
+   * or "VOID" to refund all participants.
+   */
+  static async resolve(marketId: string, winningOutcomeId: string | "VOID") {
     return prisma.$transaction(async (tx) => {
       const market = await tx.market.findUnique({
         where: { id: marketId },
         include: {
+          outcomes: { orderBy: { displayOrder: "asc" } },
           positions: true,
           listings: { where: { status: "ACTIVE" } },
         },
@@ -32,25 +35,25 @@ export class SettlementService {
         });
       }
 
+      // Cancel open orders
+      await tx.order.updateMany({
+        where: { marketId, status: { in: ["OPEN", "PARTIAL"] } },
+        data: { status: "CANCELLED" },
+      });
+
       const activePositions = market.positions.filter(p => p.status === "ACTIVE");
 
       // Handle VOID
-      if (outcome === "VOID") {
+      if (winningOutcomeId === "VOID") {
         for (const position of activePositions) {
           await BalanceService.credit(
-            tx,
-            position.currentOwnerId,
+            tx, position.currentOwnerId,
             new Decimal(position.totalCost),
-            "BET_REFUNDED",
-            "Refund for voided market",
-            marketId,
+            "BET_REFUNDED", "Refund for voided market", marketId,
           );
           await tx.position.update({
             where: { id: position.id },
-            data: {
-              status: "REFUNDED",
-              payout: new Decimal(position.totalCost),
-            },
+            data: { status: "REFUNDED", payout: new Decimal(position.totalCost) },
           });
         }
         await tx.market.update({
@@ -60,31 +63,25 @@ export class SettlementService {
         return { type: "VOID" as const, refunded: activePositions.length };
       }
 
-      // Option B: Proportional Payout
-      // Winners share the full user pool (yesPool + noPool) proportionally by shares.
-      // Seed cost always returns to WIN — only user money is distributed.
+      // Validate winning outcome belongs to this market
+      const winningOutcome = market.outcomes.find(o => o.id === winningOutcomeId);
+      if (!winningOutcome) throw new Error("Invalid winning outcome ID");
+
+      // Proportional Payout (Option B)
       let winnersCount = 0;
       let losersCount = 0;
       let totalPaidOut = new Decimal(0);
 
-      const winningPositions = activePositions.filter(p => p.side === outcome);
-      const losingPositions = activePositions.filter(p => p.side !== outcome);
+      const winningPositions = activePositions.filter(p => p.outcomeId === winningOutcomeId);
+      const losingPositions = activePositions.filter(p => p.outcomeId !== winningOutcomeId);
 
-      // Total user pool (net amounts contributed by traders, excluding seed)
-      const totalPool = new Decimal(market.yesPool).plus(market.noPool);
-
-      // Total winning shares across all winning positions
-      const totalWinningShares = winningPositions.reduce(
-        (sum, p) => sum + p.shares,
-        0,
-      );
-
-      // Payout per winning share = totalPool / totalWinningShares
+      const totalPool = market.totalPool;
+      const totalWinningShares = winningPositions.reduce((sum, p) => sum + p.shares, 0);
       const payoutPerShare = totalWinningShares > 0
-        ? totalPool.dividedBy(totalWinningShares)
+        ? new Decimal(totalPool).dividedBy(totalWinningShares)
         : new Decimal(0);
 
-      // 1. Batch Update Losers
+      // Batch update losers
       if (losingPositions.length > 0) {
         await tx.position.updateMany({
           where: { id: { in: losingPositions.map(p => p.id) } },
@@ -93,58 +90,57 @@ export class SettlementService {
         losersCount = losingPositions.length;
       }
 
-      // 2. Process Winners — each winner receives shares × payoutPerShare
+      // Process winners
       for (const position of winningPositions) {
         const payout = payoutPerShare.times(position.shares);
-
         await BalanceService.credit(
-          tx,
-          position.currentOwnerId,
-          payout,
+          tx, position.currentOwnerId, payout,
           "PAYOUT_RECEIVED",
-          "Winnings from market resolution (proportional payout)",
+          `Winnings: ${winningOutcome.name} wins (proportional payout)`,
           marketId,
         );
-
         await tx.position.update({
           where: { id: position.id },
           data: { status: "WON", payout },
         });
-
         totalPaidOut = totalPaidOut.plus(payout);
         winnersCount++;
       }
 
       await tx.market.update({
         where: { id: marketId },
-        data: { status: "RESOLVED", outcome, resolvedAt: new Date() },
+        data: {
+          status: "RESOLVED",
+          winningOutcomeId,
+          resolvedAt: new Date(),
+        },
       });
 
       return {
         type: "RESOLVED" as const,
-        outcome,
+        outcome: winningOutcome.name,
+        winningOutcomeId,
         winnersCount,
         losersCount,
         totalPaidOut: totalPaidOut.toNumber(),
         payoutPerShare: payoutPerShare.toNumber(),
         totalPool: totalPool.toNumber(),
-        // WIN revenue = accumulated fees (seed always recovered separately)
         platformFee: 0,
         payoutMultiplier: payoutPerShare.toNumber(),
       };
-    }, {
-      timeout: 60000,
-    });
+    }, { timeout: 60000 });
   }
 
   static async getReport(marketId: string) {
     const market = await prisma.market.findUnique({
       where: { id: marketId },
       include: {
+        outcomes: { orderBy: { displayOrder: "asc" } },
         positions: {
           include: {
             currentOwner: { select: { id: true, username: true } },
             originalOwner: { select: { id: true, username: true } },
+            outcome: { select: { id: true, name: true } },
             transfers: true,
           },
         },
@@ -153,34 +149,24 @@ export class SettlementService {
 
     if (!market) throw new Error("Market not found");
 
-    const winners = market.positions.filter((p) => p.status === "WON");
-    const losers = market.positions.filter((p) => p.status === "LOST");
-    const refunded = market.positions.filter((p) => p.status === "REFUNDED");
+    const winners = market.positions.filter(p => p.status === "WON");
+    const losers = market.positions.filter(p => p.status === "LOST");
+    const refunded = market.positions.filter(p => p.status === "REFUNDED");
 
-    const totalWinnings = winners.reduce(
-      (sum, p) => sum.plus(p.payout || 0),
-      new Decimal(0),
-    );
-    const totalLosses = losers.reduce(
-      (sum, p) => sum.plus(p.amount),
-      new Decimal(0),
-    );
-    const totalPool = new Decimal(market.yesPool).plus(market.noPool);
+    const totalWinnings = winners.reduce((sum, p) => sum.plus(p.payout || 0), new Decimal(0));
+    const totalLosses = losers.reduce((sum, p) => sum.plus(p.amount), new Decimal(0));
+    const totalPool = market.totalPool;
 
-    const allTransfers = market.positions.flatMap((p) => p.transfers);
-    const secondaryVolume = allTransfers.reduce(
-      (sum, t) => sum.plus(t.price),
-      new Decimal(0),
-    );
-    // P2P fee: 2% on secondary volume
+    const allTransfers = market.positions.flatMap(p => p.transfers);
+    const secondaryVolume = allTransfers.reduce((sum, t) => sum.plus(t.price), new Decimal(0));
     const secondaryFees = secondaryVolume.times(0.02);
 
-    // Option B: WIN revenue = accumulated fees only (seed always returned to WIN)
-    // Primary market fees are embedded in the LMSR spread (platformFee rate × volume)
     const totalWinningShares = winners.reduce((sum, p) => sum + Number(p.shares || 0), 0);
     const payoutPerShare = totalWinningShares > 0
-      ? totalPool.dividedBy(totalWinningShares)
+      ? new Decimal(totalPool).dividedBy(totalWinningShares)
       : new Decimal(0);
+
+    const winningOutcome = market.outcomes.find(o => o.id === market.winningOutcomeId);
 
     return {
       market: {
@@ -188,14 +174,23 @@ export class SettlementService {
         question: market.question,
         playerName: market.playerName,
         status: market.status,
-        outcome: market.outcome,
+        winningOutcome: winningOutcome?.name ?? null,
+        winningOutcomeId: market.winningOutcomeId,
         resolvedAt: market.resolvedAt,
         seedCost: market.seedCost,
+        numOutcomes: market.outcomes.length,
       },
+      outcomes: market.outcomes.map(o => ({
+        id: o.id,
+        name: o.name,
+        pool: o.pool.toNumber(),
+        qOutstanding: o.qOutstanding,
+      })),
       pools: {
-        yes: market.yesPool.toNumber(),
-        no: market.noPool.toNumber(),
         total: totalPool.toNumber(),
+        byOutcome: Object.fromEntries(
+          market.outcomes.map(o => [o.name, o.pool.toNumber()]),
+        ),
       },
       results: {
         winners: winners.length,
@@ -206,8 +201,6 @@ export class SettlementService {
         payoutPerShare: payoutPerShare.toNumber(),
       },
       fees: {
-        // Under Option B, primary market revenue = fees collected during trading (implicit in pool)
-        // Secondary market fees are explicit
         primaryMarket: 0,
         secondaryMarket: secondaryFees.toNumber(),
         total: secondaryFees.toNumber(),
@@ -215,21 +208,21 @@ export class SettlementService {
       liquidity: {
         b: market.b,
         initialSeed: market.seedCost,
-        seedRecovered: true, // Option B always recovers seed (never distributed to users)
+        seedRecovered: true,
         netInvestments: totalPool.toNumber(),
         totalPayouts: totalWinnings.toNumber(),
-        // Under Option B, WIN net P&L = totalPool - totalWinnings (should be ~0 since all pool goes to winners)
-        // Real WIN profit = fees accumulated during trading
-        netProfitLoss: totalPool.minus(totalWinnings).toNumber(),
+        netProfitLoss: new Decimal(totalPool).minus(totalWinnings).toNumber(),
       },
       secondaryMarket: {
         transfers: allTransfers.length,
         volume: secondaryVolume.toNumber(),
       },
-      positions: market.positions.map((p) => ({
+      positions: market.positions.map(p => ({
         id: p.id,
         originalOwner: p.originalOwner.username,
         currentOwner: p.currentOwner.username,
+        outcome: p.outcome.name,
+        outcomeId: p.outcomeId,
         side: p.side,
         amount: p.amount.toNumber(),
         status: p.status,
@@ -244,19 +237,12 @@ export class SettlementService {
     const market = await prisma.market.findUnique({
       where: { id: marketId },
       include: {
-        positions: {
-          select: {
-            amount: true,
-            payout: true,
-            status: true,
-          },
-        },
+        positions: { select: { amount: true, payout: true, status: true } },
       },
     });
 
     if (!market) throw new Error("Market not found");
 
-    const totalPool = new Decimal(market.yesPool).plus(market.noPool);
     const totalPayouts = market.positions.reduce(
       (sum, p) => sum.plus(p.payout || 0),
       new Decimal(0),
@@ -265,9 +251,9 @@ export class SettlementService {
     return {
       b: market.b,
       initialSeed: market.seedCost,
-      netInvestments: totalPool.toNumber(),
+      netInvestments: market.totalPool.toNumber(),
       totalPayouts: totalPayouts.toNumber(),
-      netProfitLoss: totalPool
+      netProfitLoss: new Decimal(market.totalPool)
         .minus(totalPayouts)
         .minus(market.seedCost)
         .toNumber(),

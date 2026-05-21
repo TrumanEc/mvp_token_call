@@ -6,9 +6,12 @@ import { UserProvider, useUser } from "@/contexts/UserContext";
 import { Shell } from "@/components/layout/Shell";
 import { PriceChart } from "@/components/markets/PriceChart";
 import { PredictionCard } from "@/components/markets/PredictionCard";
-import { OrderbookDisplay } from "@/components/markets/OrderbookDisplay";
-import { SellPositionForm } from "@/components/markets/SellPositionForm";
+import { MarketRules } from "@/components/markets/MarketRules";
+import { MarketActivity } from "@/components/markets/MarketActivity";
+import { MarketDiscussion } from "@/components/markets/MarketDiscussion";
 import { getMarketVisual } from "@/lib/market-visual";
+
+type BottomTab = "actividad" | "mi-actividad" | "discusion";
 
 function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -16,17 +19,8 @@ function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { user, loading, refreshBalance } = useUser();
   const [market, setMarket] = useState<any>(null);
   const [loadingMarket, setLoadingMarket] = useState(true);
-  const [sellingPositionId, setSellingPositionId] = useState<string | null>(
-    null,
-  );
-  const [prefillOrder, setPrefillOrder] = useState<{
-    side: "YES" | "NO";
-    price: number;
-    shares: number;
-  } | null>(null);
-  const [activeTab, setActiveTab] = useState<
-    "trade" | "orderbook" | "activity"
-  >("trade");
+  const [mobileTab, setMobileTab] = useState<"trade" | "info">("trade");
+  const [bottomTab, setBottomTab] = useState<BottomTab>("actividad");
 
   const fetchMarket = () => {
     fetch(`/api/markets/${id}`)
@@ -37,14 +31,10 @@ function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
   };
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.push("/");
-    }
+    if (!loading && !user) router.push("/");
   }, [user, loading, router]);
 
-  useEffect(() => {
-    fetchMarket();
-  }, [id]);
+  useEffect(() => { fetchMarket() }, [id]);
 
   const handleTransactionSuccess = () => {
     fetchMarket();
@@ -62,398 +52,227 @@ function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
   if (!market || market.error) {
     return (
       <Shell>
-        <div className="text-center py-12 text-gray-500">
-          Mercado no encontrado
-        </div>
+        <div className="text-center py-12 text-gray-500">Mercado no encontrado</div>
       </Shell>
     );
   }
 
-  const totalVolume = market.yesPool + market.noPool;
+  const totalVolume = market.totalPool ?? 0;
   const visual = getMarketVisual(market.id, market.question);
+  const outcomes = market.outcomes ?? [];
+  const isBinary = outcomes.length === 2 && outcomes[0]?.name === 'YES';
+  const topOutcome = outcomes.length > 0
+    ? outcomes.reduce((a: any, b: any) => a.probability > b.probability ? a : b)
+    : null;
+  const topProb = topOutcome?.probability ?? market.odds.yesOdds;
+
+  // User has shares if they own any active position
+  const userHasShares = market.positions.some(
+    (p: any) => p.currentOwner.id === user.id && p.shares > 0
+  );
+
+  const myPositions = market.positions.filter(
+    (p: any) => p.currentOwner.id === user.id && p.shares > 0
+  );
 
   return (
     <Shell>
-      <div className="max-w-[1200px] mx-auto pt-0 px-0">
-        {/* Hero banner */}
-        <div
-          className="relative rounded-3xl overflow-hidden mb-10 h-48 flex items-end"
-          style={{ background: visual.gradient }}
-        >
-          {/* Decorative blobs */}
-          <div
-            className="absolute -top-10 -right-10 w-64 h-64 rounded-full opacity-20 blur-3xl"
-            style={{ background: visual.to }}
-          />
-          <div
-            className="absolute -bottom-8 -left-8 w-48 h-48 rounded-full opacity-15 blur-2xl"
-            style={{ background: visual.to }}
-          />
+      <div className="max-w-[1200px] mx-auto">
 
-          {/* Emoji centered */}
-          <span
-            className="absolute top-1/2 right-10 -translate-y-1/2 text-[80px] opacity-30 select-none drop-shadow-2xl"
-            aria-hidden
+        {/* ── Header compacto: icono + título + fechas ───────────────────── */}
+        <div className="mb-8">
+          <button
+            onClick={() => router.back()}
+            className="text-gray-500 hover:text-white text-[10px] font-bold uppercase tracking-wider mb-4 flex items-center gap-1.5 transition-colors"
           >
-            {visual.emoji}
-          </span>
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+            Volver
+          </button>
 
-          {/* Content overlay */}
-          <div className="relative z-10 p-8 w-full">
-            <button
-              onClick={() => router.back()}
-              className="text-white/60 hover:text-white text-[10px] font-bold uppercase tracking-wider mb-3 block transition-colors"
-            >
-              ← Volver
-            </button>
-            <h1 className="text-2xl md:text-3xl font-extrabold text-white leading-tight lg:max-w-2xl drop-shadow">
-              {market.question}
-            </h1>
+          <div className="flex items-start gap-4">
+            {/* Market icon */}
+            <div className="flex-shrink-0 w-14 h-14 rounded-2xl overflow-hidden border border-white/8">
+              {market.imageUrl ? (
+                <img src={market.imageUrl} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-3xl" style={{ background: visual.gradient }}>
+                  {visual.emoji}
+                </div>
+              )}
+            </div>
+
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl font-extrabold text-white leading-snug mb-2">
+                {market.question}
+              </h1>
+              {/* Fechas */}
+              <div className="flex items-center gap-4 text-[11px] font-semibold text-gray-500">
+                <span className="flex items-center gap-1.5">
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <span className="text-gray-600">Abre</span>
+                  <span className="text-gray-400">
+                    {new Date(market.createdAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </span>
+                </span>
+                <span className="text-gray-700">·</span>
+                <span className="flex items-center gap-1.5">
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="text-gray-600">Cierra</span>
+                  <span className="text-gray-400">
+                    {new Date(market.resolutionDate).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </span>
+                </span>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-12 items-start">
-          {/* Left Column: Chart and Odds */}
-          <div className="space-y-16">
-            {/* Probability Large Display */}
-            <div className="flex items-baseline gap-4">
-              <span className="text-[64px] font-extrabold text-white leading-none tracking-tighter">
-                {market.odds.yesOdds.toFixed(0)}%
-              </span>
-              <span className="text-sm font-bold text-gray-400 uppercase tracking-[0.1em]">
-                Chance
-              </span>
-            </div>
-
-            {/* Price Chart */}
-            <div className="relative pb-8">
-              <PriceChart data={market.history} height={350} showNo={false} />
-              {/* Bottom Volume Info */}
-              <div className="absolute bottom-[-4px] left-0 flex items-center gap-6">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-gray-400 capitalize">
-                    Vol.:
-                  </span>
-                  <span className="text-xl font-extrabold text-white leading-none">
-                    $ {totalVolume.toLocaleString()}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-gray-400 capitalize">
-                    Liquidez:
-                  </span>
-                  <span className="text-sm font-bold text-gray-300 leading-none">
-                    $ {(market.seedCost || 0).toFixed(2)}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Mobile Tabs */}
-            <div className="flex border-b border-white/10 lg:hidden mt-0 mb-4">
-              <button
-                onClick={() => setActiveTab("trade")}
-                className={`py-3 px-4 text-[10px] font-bold uppercase tracking-wider flex-1 text-center border-b-2 transition-colors ${activeTab === "trade" ? "border-primary text-primary" : "border-transparent text-gray-400 hover:text-white"}`}
-              >
-                Operar
-              </button>
-              <button
-                onClick={() => setActiveTab("orderbook")}
-                className={`py-3 px-4 text-[10px] font-bold uppercase tracking-wider flex-1 text-center border-b-2 transition-colors ${activeTab === "orderbook" ? "border-primary text-primary" : "border-transparent text-gray-400 hover:text-white"}`}
-              >
-                Orderbook
-              </button>
-              <button
-                onClick={() => setActiveTab("activity")}
-                className={`py-3 px-4 text-[10px] font-bold uppercase tracking-wider flex-1 text-center border-b-2 transition-colors ${activeTab === "activity" ? "border-primary text-primary" : "border-transparent text-gray-400 hover:text-white"}`}
-              >
-                Actividad
-              </button>
-            </div>
-
-            {/* Active Positions - other users only (own positions shown in right column) */}
-            {market.positions.filter((p: any) => p.currentOwner.id !== user.id)
-              .length > 0 && (
-              <div
-                className={`space-y-6 lg:pt-8 lg:block ${activeTab === "activity" ? "block pt-4" : "hidden"}`}
-              >
-                <h2 className="text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400">
-                  Posiciones Activas (
-                  {
-                    market.positions.filter(
-                      (p: any) => p.currentOwner.id !== user.id,
-                    ).length
-                  }
-                  )
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {market.positions
-                    .filter((p: any) => p.currentOwner.id !== user.id)
-                    .map((pos: any) => (
-                      <div
-                        key={pos.id}
-                        className={`bg-win-bg border border-white/5 rounded-2xl p-4 flex flex-col gap-4 group transition-all ${pos.shares === 0 ? "opacity-50 grayscale" : "hover:border-white/10"}`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-4">
-                            <div
-                              className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs ${
-                                pos.side === "YES"
-                                  ? "bg-primary/10 text-primary"
-                                  : "bg-win-error/10 text-win-error"
-                              }`}
-                            >
-                              {pos.side}
-                            </div>
-                            <div>
-                              <div className="text-sm font-bold text-white group-hover:text-primary transition-colors flex items-center gap-2">
-                                {pos.currentOwner.username
-                                  ? `@${pos.currentOwner.username}`
-                                  : pos.currentOwner.email?.split("@")[0] ||
-                                    "Usuario"}
-                                {pos.shares === 0 && (
-                                  <span className="text-[8px] bg-gray-500/20 text-gray-400 px-1.5 py-0.5 rounded uppercase tracking-wider">
-                                    Vendida
-                                  </span>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-2 mt-0.5">
-                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                                  {new Date(pos.createdAt).toLocaleDateString()}
-                                </span>
-                                {pos.isForSale && (
-                                  <span className="bg-blue-500/20 text-blue-400 text-[8px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
-                                    En Venta
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                          <div className="text-right flex flex-col items-end">
-                            <div
-                              className={`text-base font-bold flex items-baseline justify-end gap-1 ${pos.shares === 0 ? "text-gray-500 line-through" : "text-white"}`}
-                            >
-                              <span>
-                                {pos.shares > 0
-                                  ? pos.shares.toFixed(2)
-                                  : "0.00"}
-                              </span>
-                              <span className="text-[10px] text-gray-400 font-normal uppercase ml-1">
-                                {pos.shares === 0 ? "(Sold)" : "sh"}
-                              </span>
-                            </div>
-                            <div className="text-[11px] font-bold text-primary mt-0.5">
-                              $
-                              {pos.amount
-                                ? pos.amount.toLocaleString(undefined, {
-                                    minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2,
-                                  })
-                                : "0.00"}{" "}
-                              <span className="text-gray-500 font-normal text-[9px] ml-0.5">
-                                inv. original
-                              </span>
-                            </div>
-                            <div className="text-[9px] font-bold text-gray-400 uppercase mt-1">
-                              Avg. original $
-                              {(pos.shares > 0 && pos.amount > 0
-                                ? pos.amount / pos.shares
-                                : pos.purchasePrice || 0
-                              ).toFixed(2)}{" "}
-                              c/u
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              </div>
-            )}
-
-            {/* Orderbook Depth Display */}
-            <div
-              className={`lg:pt-8 space-y-6 lg:border-t border-white/5 lg:block ${activeTab === "orderbook" ? "block pt-4 border-t-0" : "hidden"}`}
+        {/* ── Mobile tab switcher ────────────────────────────────────────── */}
+        <div className="flex border-b border-white/10 lg:hidden mb-6">
+          {(["trade", "info"] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setMobileTab(t)}
+              className={`py-2.5 px-4 text-[10px] font-bold uppercase tracking-wider flex-1 text-center border-b-2 transition-colors ${
+                mobileTab === t ? "border-primary text-primary" : "border-transparent text-gray-400"
+              }`}
             >
-              <h2 className="text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400">
-                Profundidad del Mercado (Orderbook Limit)
-              </h2>
-              <OrderbookDisplay
-                orders={market.orders || []}
-                onOrderClick={(side, price, shares) => {
-                  setPrefillOrder({ side, price, shares });
-                  setActiveTab("trade");
-                }}
-              />
+              {t === "trade" ? "Operar" : "Info"}
+            </button>
+          ))}
+        </div>
+
+        {/* ── Main two-column grid ───────────────────────────────────────── */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-10 items-start">
+
+          {/* Left column: chart + rules */}
+          <div className={`space-y-8 ${mobileTab === "info" ? "block" : "block lg:block"} ${mobileTab === "trade" ? "hidden lg:block" : ""}`}>
+
+            {/* Probability + chart */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-baseline gap-3">
+                  <span className="text-[56px] font-extrabold text-white leading-none tracking-tighter">
+                    {topProb.toFixed(0)}%
+                  </span>
+                  <span className="text-sm font-bold text-gray-400 uppercase tracking-[0.1em]">
+                    {isBinary ? 'Chance YES' : topOutcome?.name ?? ''}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Vol.</span>
+                  <span className="text-sm font-extrabold text-white leading-none">
+                    ${totalVolume.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+
+              {/* Multi-outcome probability bars */}
+              {!isBinary && outcomes.length > 2 && (
+                <div className="space-y-2 mb-5">
+                  {outcomes.map((o: any, i: number) => {
+                    const colors = ['#64c883', '#f87171', '#60a5fa', '#fbbf24', '#a78bfa', '#f472b6', '#34d399'];
+                    const color = colors[i % colors.length];
+                    return (
+                      <div key={o.id} className="flex items-center gap-3">
+                        <span className="text-[11px] text-gray-400 w-[100px] truncate font-medium">{o.name}</span>
+                        <div className="flex-1 h-2 bg-white/5 rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all duration-700"
+                            style={{ width: `${o.probability}%`, background: color }}
+                          />
+                        </div>
+                        <span className="text-[12px] font-bold text-gray-200 w-[40px] text-right">{o.probability.toFixed(0)}%</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              <PriceChart data={market.history} height={300} outcomes={outcomes} />
             </div>
+
+            {/* Market Rules */}
+            <MarketRules market={market} />
           </div>
 
-          {/* Right Column: Prediction Interaction + My Positions */}
-          <div
-            className={`sticky top-24 space-y-6 lg:block ${activeTab === "trade" ? "block" : "hidden"}`}
-          >
+          {/* Right column: prediction card + my positions */}
+          <div className={`sticky top-24 space-y-5 ${mobileTab === "trade" ? "block" : "hidden lg:block"}`}>
             <Suspense fallback={null}>
               <PredictionCard
                 market={market}
                 userId={user.id}
                 userBalance={user.balance}
                 onSuccess={handleTransactionSuccess}
-                prefillOrder={prefillOrder}
+                prefillOrder={null}
               />
             </Suspense>
-            <div className="space-y-4 pt-2 ">
-              <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-wider text-gray-400 border-t border-white/5 pt-4">
-                <span>Resolución</span>
-                <span className="text-gray-300">
-                  {new Date(market.resolutionDate).toLocaleDateString()}
-                </span>
+
+            {/* Quick market meta */}
+            <div className="bg-win-card rounded-2xl border border-white/5 p-4 space-y-0">
+              <div className="flex justify-between items-center py-2 border-b border-white/5 text-[10px] font-bold uppercase tracking-wider">
+                <span className="text-gray-500">Resolución</span>
+                <span className="text-gray-300">{new Date(market.resolutionDate).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
               </div>
-              <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-wider text-gray-400">
-                <span>Plataforma</span>
+              <div className="flex justify-between items-center py-2 text-[10px] font-bold uppercase tracking-wider">
+                <span className="text-gray-500">Plataforma</span>
                 <span className="text-gray-300">WIN</span>
               </div>
             </div>
-            {/* My positions in this market */}
-            <div className="border-t border-white/5" />
 
-            {market.positions.filter((p: any) => p.currentOwner.id === user.id)
-              .length > 0 && (
-              <div className="space-y-3">
-                <h2 className="text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400">
-                  Mis Posiciones
-                </h2>
-                <div className="space-y-3">
-                  {market.positions
-                    .filter((p: any) => p.currentOwner.id === user.id)
-                    .map((pos: any) => (
-                      <div
-                        key={pos.id}
-                        className={`bg-win-bg border rounded-2xl p-4 flex flex-col gap-3 transition-all ${
-                          pos.shares === 0
-                            ? "opacity-40 grayscale border-white/5"
-                            : "border-white/10 hover:border-white/20"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div
-                              className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-[10px] ${
-                                pos.side === "YES"
-                                  ? "bg-primary/15 text-primary"
-                                  : "bg-win-error/15 text-win-error"
-                              }`}
-                            >
-                              {pos.side}
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                                  {new Date(pos.createdAt).toLocaleDateString()}
-                                </span>
-                                {pos.shares === 0 && (
-                                  <span className="text-[8px] bg-gray-500/20 text-gray-400 px-1.5 py-0.5 rounded uppercase tracking-wider">
-                                    Vendida
-                                  </span>
-                                )}
-                                {pos.isForSale && pos.shares > 0 && (
-                                  <span className="bg-blue-500/20 text-blue-400 text-[8px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
-                                    En Venta
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div
-                              className={`text-sm font-bold ${pos.shares === 0 ? "text-gray-500 line-through" : "text-white"}`}
-                            >
-                              {pos.shares > 0 ? pos.shares.toFixed(2) : "0.00"}
-                              <span className="text-[10px] text-gray-500 ml-1 font-normal">
-                                {pos.shares === 0 ? "(Sold)" : "sh"}
-                              </span>
-                            </div>
-                            <div className="text-[11px] text-primary font-bold">
-                              $
-                              {pos.amount
-                                ? pos.amount.toLocaleString(undefined, {
-                                    minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2,
-                                  })
-                                : "0.00"}
-                              <span className="text-gray-500 font-normal text-[9px] ml-1">
-                                inv.
-                              </span>
-                            </div>
-                          </div>
-                        </div>
+          </div>
+        </div>
 
-                        {/* Stats row */}
-                        {pos.shares > 0 && (
-                          <div className="grid grid-cols-3 gap-2 pt-2 border-t border-white/5">
-                            <div className="text-center">
-                              <div className="text-[9px] text-gray-500 uppercase tracking-wider">
-                                Precio comp.
-                              </div>
-                              <div className="text-xs font-bold text-white mt-0.5">
-                                $
-                                {(pos.shares > 0 && pos.amount > 0
-                                  ? pos.amount / pos.shares
-                                  : pos.purchasePrice || 0
-                                ).toFixed(4)}
-                              </div>
-                            </div>
-                            <div className="text-center">
-                              <div className="text-[9px] text-gray-500 uppercase tracking-wider">
-                                Valor Mkt.
-                              </div>
-                              <div className="text-xs font-bold text-white mt-0.5">
-                                ${(pos.fairValue || 0).toFixed(2)}
-                              </div>
-                            </div>
-                            <div className="text-center">
-                              <div className="text-[9px] text-gray-500 uppercase tracking-wider">
-                                Si gana {pos.side}
-                              </div>
-                              <div
-                                className={`text-xs font-bold mt-0.5 ${pos.shares > 0 ? "text-primary" : "text-gray-500"}`}
-                              >
-                                ${pos.shares.toFixed(2)}
-                              </div>
-                            </div>
-                          </div>
-                        )}
+        {/* ── Bottom tabs: Actividad + Discusión ────────────────────────── */}
+        <div className="mt-10">
+          {/* Tab bar */}
+          <div className="flex border-b border-white/10 mb-6">
+            {([
+              { key: "actividad",    label: "Actividad" },
+              { key: "mi-actividad", label: "Mi actividad" },
+              { key: "discusion",    label: "Discusión" },
+            ] as { key: BottomTab; label: string }[]).map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => setBottomTab(key)}
+                className={`py-3 px-5 text-[11px] font-bold uppercase tracking-wider border-b-2 transition-colors ${
+                  bottomTab === key
+                    ? "border-primary text-primary"
+                    : "border-transparent text-gray-500 hover:text-gray-300"
+                }`}
+              >
+                {label}
+                {key === "discusion" && userHasShares && (
+                  <span className="ml-2 inline-flex items-center justify-center w-1.5 h-1.5 rounded-full bg-primary" />
+                )}
+              </button>
+            ))}
+          </div>
 
-                        {!pos.isForSale && pos.shares > 0 && (
-                          <div>
-                            {sellingPositionId === pos.id ? (
-                              <SellPositionForm
-                                marketId={market.id}
-                                userId={user.id}
-                                positionId={pos.id}
-                                maxShares={pos.shares}
-                                side={pos.side}
-                                onSuccess={() => {
-                                  setSellingPositionId(null);
-                                  handleTransactionSuccess();
-                                }}
-                                onCancel={() => setSellingPositionId(null)}
-                              />
-                            ) : (
-                              <button
-                                onClick={() => setSellingPositionId(pos.id)}
-                                className="w-full py-1.5 border border-orange-500/40 rounded-lg text-[9px] font-bold uppercase text-orange-400 hover:text-white hover:bg-orange-500/20 hover:border-orange-500/60 transition-all"
-                              >
-                                Vender Shares (Limit)
-                              </button>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                </div>
-              </div>
+          {/* Tab content */}
+          <div className="max-w-2xl">
+            {bottomTab === "actividad" && (
+              <MarketActivity marketId={id} />
+            )}
+            {bottomTab === "mi-actividad" && (
+              <MarketActivity marketId={id} userId={user.id} />
+            )}
+            {bottomTab === "discusion" && (
+              <MarketDiscussion
+                marketId={id}
+                userId={user.id}
+                canComment={userHasShares}
+              />
             )}
           </div>
         </div>
+
       </div>
     </Shell>
   );

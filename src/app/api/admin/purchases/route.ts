@@ -20,6 +20,11 @@ export async function GET(request: NextRequest) {
             email: true,
           },
         },
+        outcome: {
+          select: {
+            name: true,
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
     })

@@ -15,9 +15,11 @@ export async function GET(
     const market = await prisma.market.findUnique({
       where: { id },
       include: {
+        outcomes: { orderBy: { displayOrder: "asc" } },
         positions: {
           include: {
             currentOwner: { select: { id: true, username: true } },
+            outcome: { select: { id: true, name: true } },
           },
           orderBy: { createdAt: "desc" },
         },
@@ -31,36 +33,24 @@ export async function GET(
       return NextResponse.json({ error: "Market not found" }, { status: 404 });
     }
 
-    // Fetch all orders for this market (secondary market)
-    const allOrders = await prisma.order.findMany({
-      where: { marketId: id },
-      include: {
-        user: { select: { id: true, username: true } },
-      },
-      orderBy: { createdAt: "desc" },
-    });
-
-    // Fetch router audit logs (tracks actual fills: LMSR + OB executions)
-    const routerLogs = await prisma.marketRouterAuditLog.findMany({
-      where: { marketId: id },
-      include: {
-        user: { select: { id: true, username: true } },
-      },
-      orderBy: { timestamp: "desc" },
-    });
-
     const lmsrService = new LmsrService();
-    const prices = lmsrService.getPrice(market.qYes, market.qNo, market.b);
+    const qVector = LmsrService.buildQVector(market.outcomes);
+    const lmsrParams = { b: market.b, alpha: market.alpha, bMin: market.bMin };
+    const pricesArray = lmsrService.getPricesLSN(qVector, lmsrParams);
+
+    // Build outcome prices map
+    const outcomePrices: Record<string, number> = {};
+    market.outcomes.forEach((outcome, idx) => {
+      outcomePrices[outcome.name] = pricesArray[idx];
+    });
 
     // Stats Logic
     const priceHistory = market.lmsrSnapshots.map((s) => {
-      const p = s.pYesAfter > 1 ? s.pYesAfter / 100 : s.pYesAfter;
+      const pAfter = s.pAfter as Record<string, number>;
       return {
         timestamp: s.createdAt,
-        price: p, // Chart expects 0-1
-        yesOdds: p * 100,
-        noOdds: (1 - p) * 100,
-        totalPool: s.cost,
+        prices: pAfter, // all outcome prices
+        volume: s.cost,
       };
     });
 
@@ -69,6 +59,8 @@ export async function GET(
       return {
         id: p.id,
         username: p.currentOwner.username,
+        outcome: p.outcome.name,
+        outcomeId: p.outcomeId,
         side: p.side,
         amount: p.amount,
         initialProbability: prob <= 1 ? prob * 100 : prob,
@@ -76,92 +68,20 @@ export async function GET(
       };
     });
 
-    // Secondary market: open/partial orders
-    const openOrders = allOrders
-      .filter((o) => o.status === "OPEN" || o.status === "PARTIAL")
-      .map((o) => ({
-        id: o.id,
-        username: o.user.username,
-        side: o.side,
-        type: o.type,
-        status: o.status,
-        pricePerShare: o.pricePerShare,
-        initialShares: o.initialShares,
-        remainingShares: o.remainingShares,
-        filledShares: o.initialShares - o.remainingShares,
-        totalListed: o.initialShares * o.pricePerShare,
-        totalFilled: (o.initialShares - o.remainingShares) * o.pricePerShare,
-        createdAt: o.createdAt,
-      }));
-
-    // Secondary market: filled orders (P2P Transfers)
-    // Buscamos todas las transferencias de posiciones del mercado actual asociadas a una orden (listingId != null)
-    const p2pTransfers = await prisma.positionTransfer.findMany({
-      where: {
-        position: { marketId: id },
-        listingId: { not: null }
-      },
-      include: {
-        toUser: { select: { username: true } },
-        fromUser: { select: { username: true } },
-      },
-      orderBy: { transferredAt: "desc" }
+    // Simulation: payout per dollar invested at current odds per outcome
+    const simulation: Record<string, { payoutPerDollar: number }> = {};
+    market.outcomes.forEach((outcome, idx) => {
+      const price = pricesArray[idx];
+      simulation[outcome.name] = {
+        payoutPerDollar: price > 0 ? 1 / price : 0,
+      };
     });
-
-    const obFills = [];
-    let totalP2PVolumeExecuted = 0;
-    let totalP2PFeeCollected = 0;
-
-    for (const t of p2pTransfers) {
-      // El seller recibe el precio neto (98%). El comprador pagó el 100%.
-      // Gross = Net / 0.98
-      const netAmount = Number(t.price);
-      const grossAmount = netAmount / 0.98;
-      const fee = grossAmount - netAmount;
-
-      totalP2PVolumeExecuted += netAmount;
-      totalP2PFeeCollected += fee;
-
-      obFills.push({
-        id: t.id,
-        buyer: t.toUser?.username || "Unknown",
-        seller: t.fromUser?.username || "Unknown",
-        netAmount,
-        grossAmount,
-        fee,
-        timestamp: t.transferredAt,
-        listingId: t.listingId
-      });
-    }
-
-    const totalOpenOrderValue = openOrders.reduce((acc, o) => acc + o.totalListed, 0);
-    const totalOpenShares = openOrders.reduce((acc, o) => acc + o.remainingShares, 0);
-
-    const secondaryMarket = {
-      openOrders,
-      obFills,
-      summary: {
-        totalP2PVolumeExecuted,
-        totalP2PFeeCollected,
-        p2pTradeCount: obFills.length,
-        openOrderCount: openOrders.length,
-        totalOpenOrderValue,
-        totalOpenShares,
-      },
-    };
-
-    // Simulation
-    // Payout per dollar invested NOW at current odds:
-    // If I buy YES at 0.60, payout is $1. So multiplier is 1 / 0.60 = 1.66x
-    const payoutYes = prices.pYes > 0 ? 1 / prices.pYes : 0;
-    const payoutNo = prices.pNo > 0 ? 1 / prices.pNo : 0;
 
     // Commission Calculation
     const platformFeeRate = market.platformFee
       ? Number(market.platformFee)
       : 0.1;
     const platformCommission = market.positions.reduce((acc, p) => {
-      // Calculate fee based on the currently set platform fee rate
       const fee = p.amount.toNumber() * platformFeeRate;
       return acc + fee;
     }, 0);
@@ -181,46 +101,43 @@ export async function GET(
       id: market.id,
       question: market.question,
       status: market.status,
-      outcome: market.outcome,
+      winningOutcomeId: market.winningOutcomeId,
 
       // Liquidity Balance (safe fallback if it fails)
       liquidity: await SettlementService.getLiquidityStats(id).catch(() => ({
         b: market.b,
         initialSeed: market.seedCost,
-        netInvestments: market.yesPool.toNumber() + market.noPool.toNumber(),
+        netInvestments: market.totalPool.toNumber(),
         totalPayouts: 0,
         netProfitLoss: 0,
       })),
 
-      // Pools (Legacy + LMSR)
-      yesPool: market.yesPool,
-      noPool: market.noPool,
-      totalPool: market.yesPool.toNumber() + market.noPool.toNumber(), // Legacy total
+      // Pools
+      totalPool: market.totalPool.toNumber(),
+      outcomes: market.outcomes.map((o, idx) => ({
+        id: o.id,
+        name: o.name,
+        pool: Number(o.pool),
+        qOutstanding: o.qOutstanding,
+        price: pricesArray[idx],
+      })),
 
       // LMSR Specifics
       b: market.b,
-      qYes: market.qYes,
-      qNo: market.qNo,
+      alpha: market.alpha,
+      bMin: market.bMin,
       seedCost: market.seedCost,
-      currentPrices: prices,
+      currentPrices: outcomePrices,
       platformFee: market.platformFee,
 
       // Lists
       purchases,
       priceHistory,
 
-      // Secondary Market
-      secondaryMarket,
-
       // Simulation / Results
       simulation: {
         platformCommission,
-        ifYesWins: {
-          payoutPerDollar: payoutYes,
-        },
-        ifNoWins: {
-          payoutPerDollar: payoutNo,
-        },
+        byOutcome: simulation,
       },
       resolutionReport,
     };
