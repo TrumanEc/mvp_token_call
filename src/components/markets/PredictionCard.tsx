@@ -498,11 +498,12 @@ function SellForm({ market, userId, onSuccess }: { market: any; userId: string; 
   }, [selectedOutcomeId, market.id, totalSideShares, selectedPos]);
 
   const valueNum = parseFloat(value) || 0;
+  // The input represents the GROSS sale value (before fee). The user enters how much
+  // they "sell"; the fee is then visibly deducted to reach "Recibirás" (net).
   // Real max from backend (slippage-aware). Fallback to frontend approximation while loading.
-  const maxValue = maxQuote?.netAmount ?? (totalSideShares * currentSharePrice * 0.985);
+  const maxValue = maxQuote?.grossAmount ?? (totalSideShares * currentSharePrice);
   const exceedsMax = valueNum > 0 && valueNum > maxValue + 0.005; // tiny epsilon
-  // Map value → shares using the real max as anchor. Linear approximation around the max
-  // is very accurate (LMSR slippage is mostly linear over a single user's position).
+  // Map gross value → shares. Linear approximation around the max is very accurate.
   const sharesNum = valueNum > 0
     ? (valueNum >= maxValue - 0.005
         ? totalSideShares
@@ -651,7 +652,7 @@ function SellForm({ market, userId, onSuccess }: { market: any; userId: string; 
       {/* Input */}
       <div>
         <div className="flex justify-between text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5 px-0.5">
-          <span>Monto a recibir (aprox.)</span>
+          <span>Valor de venta (bruto)</span>
           <button onClick={() => setValue(maxValue.toFixed(2))}
             className="text-orange-400 hover:text-orange-300 transition-colors">
             MAX ${maxValue.toFixed(2)}
@@ -676,7 +677,7 @@ function SellForm({ market, userId, onSuccess }: { market: any; userId: string; 
       {exceedsMax && (
         <div className="px-3 py-2.5 bg-win-error/10 border border-win-error/20 rounded-xl">
           <p className="text-[11px] text-win-error font-bold">⚠ Supera el máximo disponible</p>
-          <p className="text-[10px] text-gray-400 mt-0.5">Máximo que puedes recibir: ${maxValue.toFixed(2)}</p>
+          <p className="text-[10px] text-gray-400 mt-0.5">Máximo de venta: ${maxValue.toFixed(2)}</p>
           <button onClick={() => setValue(maxValue.toFixed(2))}
             className="mt-1.5 text-[10px] font-bold text-orange-400 underline">
             Ajustar al máximo
@@ -690,6 +691,7 @@ function SellForm({ market, userId, onSuccess }: { market: any; userId: string; 
           <div className="px-4 py-1">
             <Row label="Participaciones" value={quoteLoading ? "…" : `${(sellQuote?.shares ?? sharesNum).toFixed(2)}`} />
             <Row label="Precio promedio" value={quoteLoading ? "…" : `$${(sellQuote?.avgPricePerShare ?? 0).toFixed(4)}`} />
+            <Row label="Monto bruto" value={quoteLoading ? "…" : `$${(sellQuote?.grossAmount ?? 0).toFixed(2)}`} />
             <Row label="Fee plataforma" value={quoteLoading ? "…" : `-$${(sellQuote?.feeAmount ?? 0).toFixed(2)}`}
               valueClass="text-gray-400"
               labelTip={`Comisión WIN del ${((sellQuote?.feeRate ?? 0.015) * 100).toFixed(1)}% sobre el monto bruto.`} />
