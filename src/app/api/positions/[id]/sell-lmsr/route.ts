@@ -50,12 +50,9 @@ export async function POST(
       const outcomeIdx = sortedOutcomes.findIndex(o => o.id === position.outcomeId);
       const outcomeRecord = sortedOutcomes[outcomeIdx];
 
-      const availableOnCurve = outcomeRecord.qOutstanding;
-      if (availableOnCurve <= 0) {
-        throw new Error("No hay liquidez en la curva LMSR para vender este outcome");
-      }
-
-      const sharesToBurn = Math.min(effectiveShares, availableOnCurve);
+      // qOutstanding can be negative under LS-LMSR with non-uniform priors. The real cap
+      // is the user's owned shares (already enforced by `effectiveShares`).
+      const sharesToBurn = effectiveShares;
 
       const lmsr = new LmsrService();
       const liquidityParams = { b: market.b, alpha: market.alpha, bMin: market.bMin };

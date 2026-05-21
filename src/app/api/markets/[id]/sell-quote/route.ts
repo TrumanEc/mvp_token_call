@@ -59,21 +59,24 @@ export async function GET(
     const liquidityParams = { b: market.b, alpha: market.alpha, bMin: market.bMin };
     const feeRate = market.platformFee ? Number(market.platformFee) : 0.015;
 
+    // Under LS-LMSR with non-uniform initial probabilities, qOutstanding can be
+    // negative (it represents the offset from the symmetric reference, not raw mintage).
+    // The actual "burnable" amount on the curve is bounded by what users own, not by qOutstanding.
+    // We only sanity-check that the resulting q doesn't go to negative-infinity territory.
     const availableOnCurve = outcomeRecord.qOutstanding;
-    if (availableOnCurve <= 0) {
+    const effectiveShares = shares;
+    const grossAmount = lmsr.getRevenueFromSellLSN(qVector, liquidityParams, outcomeIdx, effectiveShares);
+    if (grossAmount <= 0) {
       return NextResponse.json({
         outcomeId: resolvedOutcomeId,
         outcomeName: outcomeRecord.name,
         shares: 0, grossAmount: 0, feeAmount: 0, netAmount: 0,
         avgPricePerShare: 0, feeRate,
         newProbabilities: {},
-        liquidityAvailable: 0, capped: true,
-        capReason: "No hay liquidez en la curva LMSR para este outcome",
+        liquidityAvailable: availableOnCurve, capped: true,
+        capReason: "La venta no genera ingresos al precio actual",
       });
     }
-
-    const effectiveShares = Math.min(shares, availableOnCurve);
-    const grossAmount = lmsr.getRevenueFromSellLSN(qVector, liquidityParams, outcomeIdx, effectiveShares);
     const feeAmount = grossAmount * feeRate;
     const netAmount = grossAmount - feeAmount;
     const avgPricePerShare = effectiveShares > 0 ? grossAmount / effectiveShares : 0;
