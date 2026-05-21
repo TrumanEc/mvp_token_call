@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { getMarketVisual } from '@/lib/market-visual'
 
@@ -106,6 +107,8 @@ function OutcomeCollage({ outcomes, imageUrl, visual }: {
 export function MarketCard({ market }: MarketCardProps) {
   const outcomes = market.outcomes ?? []
   const isBinary = outcomes.length === 2 && outcomes[0]?.name === 'YES'
+  const isTwoOption = outcomes.length === 2 && !isBinary
+  const isMultiOutcome = outcomes.length > 2
   const topOutcome = outcomes.length > 0
     ? outcomes.reduce((a, b) => a.probability > b.probability ? a : b)
     : null
@@ -114,6 +117,9 @@ export function MarketCard({ market }: MarketCardProps) {
   const visual = getMarketVisual(market.id, market.question)
   const sport = market.sport ?? 'futbol'
   const days = daysLeft(market.resolutionDate)
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [selectedOutcomeId, setSelectedOutcomeId] = useState<string>(topOutcome?.id ?? '')
+  const selectedOutcome = outcomes.find(o => o.id === selectedOutcomeId) ?? topOutcome
 
   // Probability bar color reflects winning outcome (green YES, red NO)
   const barColor = isBinary
@@ -190,7 +196,7 @@ export function MarketCard({ market }: MarketCardProps) {
           </div>
         </div>
 
-        {/* Bottom: top outcome pill */}
+        {/* Bottom: outcome pills (binary or 2-option) or functional dropdown (3+) */}
         <div className="mt-3">
           {isBinary ? (
             <div className="flex gap-2">
@@ -205,12 +211,94 @@ export function MarketCard({ market }: MarketCardProps) {
                 </span>
               </div>
             </div>
-          ) : topOutcome ? (
-            <div className="flex items-center justify-between bg-white/4 border border-white/8 rounded-xl px-3 py-2">
-              <span className="text-[12px] font-semibold text-white">{topOutcome.name}</span>
-              <svg className="w-4 h-4 text-white/30" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-              </svg>
+          ) : isTwoOption ? (
+            <div className="flex gap-2">
+              {outcomes.map((o, i) => {
+                const color = OUTCOME_COLORS[i % OUTCOME_COLORS.length]
+                return (
+                  <div
+                    key={o.id}
+                    className="flex-1 rounded-xl py-2 px-2 flex items-center justify-center border"
+                    style={{
+                      background: `${color}1a`, // ~10% opacity
+                      borderColor: `${color}33`, // ~20% opacity
+                    }}
+                  >
+                    <span
+                      className="text-[12px] font-bold truncate"
+                      style={{ color }}
+                    >
+                      {o.name} — {o.probability.toFixed(0)}%
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          ) : isMultiOutcome ? (
+            <div className="relative">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  setDropdownOpen(v => !v)
+                }}
+                className="w-full flex items-center justify-between bg-white/4 border border-white/8 rounded-xl px-3 py-2 hover:bg-white/8 transition-colors"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <span
+                    className="w-2 h-2 rounded-full flex-shrink-0"
+                    style={{ background: OUTCOME_COLORS[outcomes.indexOf(selectedOutcome!) % OUTCOME_COLORS.length] }}
+                  />
+                  <span className="text-[12px] font-semibold text-white truncate">{selectedOutcome?.name}</span>
+                  <span className="text-[12px] font-bold text-white/60 flex-shrink-0">
+                    {selectedOutcome?.probability.toFixed(0)}%
+                  </span>
+                </div>
+                <svg
+                  className={`w-4 h-4 text-white/40 flex-shrink-0 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`}
+                  fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {dropdownOpen && (
+                <div
+                  className="absolute z-10 left-0 right-0 mt-1 bg-win-card border border-white/12 rounded-xl shadow-2xl overflow-hidden"
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation() }}
+                >
+                  {outcomes.map((o, i) => {
+                    const color = OUTCOME_COLORS[i % OUTCOME_COLORS.length]
+                    const isSelected = o.id === selectedOutcomeId
+                    return (
+                      <button
+                        key={o.id}
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          setSelectedOutcomeId(o.id)
+                          setDropdownOpen(false)
+                        }}
+                        className={`w-full flex items-center justify-between px-3 py-2 hover:bg-white/8 transition-colors ${
+                          isSelected ? 'bg-white/5' : ''
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span
+                            className="w-2 h-2 rounded-full flex-shrink-0"
+                            style={{ background: color }}
+                          />
+                          <span className="text-[12px] font-semibold text-white truncate">{o.name}</span>
+                        </div>
+                        <span className="text-[12px] font-bold text-white/70 flex-shrink-0">
+                          {o.probability.toFixed(0)}%
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           ) : null}
         </div>
