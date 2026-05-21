@@ -20,6 +20,8 @@ model User {
   createdAt         DateTime               @default(now())
   updatedAt         DateTime               @updatedAt
   accounts          Account[]
+  lmsrSnapshots     LmsrSnapshot[]
+  comments          MarketComment[]
   routerLogs        MarketRouterAuditLog[] @relation("UserRouterLogs")
   purchases         MarketplaceListing[]   @relation("BuyerListings")
   sellListings      MarketplaceListing[]   @relation("SellerListings")
@@ -35,36 +37,42 @@ model User {
 }
 
 model Market {
-  id             String                 @id @default(cuid())
-  playerName     String?
-  question       String
-  description    String?
-  status         String                 @default("DRAFT")
-  outcome        String?
-  b              Float                  @default(100.0)
-  alpha          Float?                 // LS-LMSR slope α (b = max(bMin, α·Q)). Null = legacy b fijo.
-  bMin           Float?                 // LS-LMSR floor b_min (avoids singularity when Q=0)
-  qYes           Float                  @default(0)
-  qNo            Float                  @default(0)
-  seedCost       Float                  @default(0)
-  yesPool        Decimal                @default(0)
-  noPool         Decimal                @default(0)
-  maxPool        Decimal?
-  platformFee    Decimal                @default(0.015)
-  resolutionDate DateTime
-  resolvedAt     DateTime?
-  createdAt      DateTime               @default(now())
-  updatedAt      DateTime               @updatedAt
-  maxBetAmount              Float?
-  maxPriceImpact            Float?
-  primaryMarketPaused       Boolean   @default(false)
-  primaryPauseScheduledAt   DateTime?
-  lmsrSnapshots             LmsrSnapshot[]
-  history        MarketHistory[]
-  routerLogs     MarketRouterAuditLog[]
-  listings       MarketplaceListing[]
-  orders         Order[]
-  positions      Position[]
+  id                      String                 @id @default(cuid())
+  playerName              String?
+  question                String
+  description             String?
+  status                  String                 @default("DRAFT")
+  winningOutcomeId        String?
+  b                       Float                  @default(100.0)
+  alpha                   Float?
+  bMin                    Float?
+  seedCost                Float                  @default(0)
+  totalPool               Decimal                @default(0)
+  maxPool                 Decimal?
+  platformFee             Decimal                @default(0.015)
+  resolutionDate          DateTime
+  resolvedAt              DateTime?
+  createdAt               DateTime               @default(now())
+  updatedAt               DateTime               @updatedAt
+  sport                   String?                @default("futbol")
+  maxBetAmount            Float?
+  maxPriceImpact          Float?
+  primaryMarketPaused     Boolean                @default(false)
+  primaryPauseScheduledAt DateTime?
+  bannerUrl               String?
+  criterio                String?
+  imageUrl                String?
+  isFeatured              Boolean                @default(false)
+  rules                   String?
+  tags                    String[]
+  lmsrSnapshots           LmsrSnapshot[]
+  comments                MarketComment[]
+  history                 MarketHistory[]
+  outcomes                MarketOutcome[]
+  routerLogs              MarketRouterAuditLog[]
+  listings                MarketplaceListing[]
+  orders                  Order[]
+  positions               Position[]
 
   @@index([status])
   @@index([resolutionDate])
@@ -73,6 +81,7 @@ model Market {
 model Position {
   id                 String              @id @default(cuid())
   marketId           String
+  outcomeId          String
   originalOwnerId    String
   currentOwnerId     String
   side               String
@@ -93,12 +102,14 @@ model Position {
   currentOwner       User                @relation("CurrentOwner", fields: [currentOwnerId], references: [id])
   market             Market              @relation(fields: [marketId], references: [id], onDelete: Cascade)
   originalOwner      User                @relation("OriginalOwner", fields: [originalOwnerId], references: [id])
+  outcome            MarketOutcome       @relation(fields: [outcomeId], references: [id])
   transfers          PositionTransfer[]
 
   @@index([marketId])
   @@index([currentOwnerId])
   @@index([status])
   @@index([isForSale])
+  @@index([outcomeId])
 }
 
 model MarketplaceListing {
@@ -128,8 +139,9 @@ model MarketplaceListing {
 }
 
 model Order {
-  id                       String    @id @default(cuid())
+  id                       String        @id @default(cuid())
   marketId                 String
+  outcomeId                String
   userId                   String
   side                     String
   type                     OrderType
@@ -140,22 +152,25 @@ model Order {
   totalLocked              Decimal?
   simulatedPriceAtCreation Float?
   executionLog             Json?
-  status                   String    @default("OPEN")
-  createdAt                DateTime  @default(now())
-  updatedAt                DateTime  @updatedAt
-  market                   Market    @relation(fields: [marketId], references: [id])
-  position                 Position? @relation(fields: [positionId], references: [id])
-  user                     User      @relation("UserOrders", fields: [userId], references: [id])
+  status                   String        @default("OPEN")
+  createdAt                DateTime      @default(now())
+  updatedAt                DateTime      @updatedAt
+  market                   Market        @relation(fields: [marketId], references: [id])
+  outcome                  MarketOutcome @relation(fields: [outcomeId], references: [id])
+  position                 Position?     @relation(fields: [positionId], references: [id])
+  user                     User          @relation("UserOrders", fields: [userId], references: [id])
 
   @@index([marketId, status])
   @@index([userId])
   @@index([status])
+  @@index([outcomeId])
 }
 
 model MarketRouterAuditLog {
   id                    String   @id @default(cuid())
   marketId              String
   userId                String
+  outcomeId             String
   requestAmount         Decimal
   side                  String
   executionType         String
@@ -176,19 +191,19 @@ model MarketRouterAuditLog {
 model LmsrSnapshot {
   id          String   @id @default(cuid())
   marketId    String
-  qYesBefore  Float
-  qNoBefore   Float
-  pYesBefore  Float
+  outcomeId   String?
+  qBefore     Json
+  pBefore     Json
   side        String
   deltaShares Float
   cost        Float
-  qYesAfter   Float
-  qNoAfter    Float
-  pYesAfter   Float
+  qAfter      Json
+  pAfter      Json
   triggerType String
   userId      String?
   createdAt   DateTime @default(now())
   market      Market   @relation(fields: [marketId], references: [id], onDelete: Cascade)
+  user        User?    @relation(fields: [userId], references: [id])
 
   @@index([marketId])
   @@index([createdAt])
@@ -231,8 +246,7 @@ model Transaction {
 model MarketHistory {
   id        String   @id @default(cuid())
   marketId  String
-  yesOdds   Decimal
-  noOdds    Decimal
+  odds      Json
   totalPool Decimal
   createdAt DateTime @default(now())
   market    Market   @relation(fields: [marketId], references: [id], onDelete: Cascade)
@@ -279,6 +293,33 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+model MarketComment {
+  id        String   @id @default(cuid())
+  marketId  String
+  userId    String
+  content   String
+  createdAt DateTime @default(now())
+  market    Market   @relation(fields: [marketId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([marketId, createdAt])
+}
+
+model MarketOutcome {
+  id           String     @id @default(cuid())
+  marketId     String
+  name         String
+  qOutstanding Float      @default(0)
+  pool         Decimal    @default(0)
+  displayOrder Int        @default(0)
+  market       Market     @relation(fields: [marketId], references: [id], onDelete: Cascade)
+  orders       Order[]
+  positions    Position[]
+
+  @@unique([marketId, name])
+  @@index([marketId])
 }
 
 enum OrderType {
