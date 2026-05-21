@@ -25,7 +25,11 @@ export default function LoginPage() {
 
       <div className="relative z-10 w-full max-w-md p-8 bg-white/5 border border-white/10 rounded-3xl backdrop-blur-xl shadow-2xl">
         <div className="text-center mb-10">
-          <h1 className="text-4xl font-bold text-white mb-2 tracking-tight">WIN Investments</h1>
+          <img
+            src="/win-logo.svg"
+            alt="WIN Investments"
+            className="h-20 w-auto mx-auto mb-4"
+          />
           <p className="text-zinc-400">Prediction Market Platform</p>
         </div>
 

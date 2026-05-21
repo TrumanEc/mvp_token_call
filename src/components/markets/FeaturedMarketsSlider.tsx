@@ -55,12 +55,8 @@ export function FeaturedMarketsSlider({ markets }: { markets: FeaturedMarket[] }
 
   const getVolume = (m: FeaturedMarket) => m.totalPool ?? 0
 
-  // isFeatured markets first; fallback to top 3 by volume
-  const featured = markets.filter((m) => m.isFeatured)
-  const top3 = (featured.length > 0
-    ? featured
-    : [...markets].sort((a, b) => getVolume(b) - getVolume(a))
-  ).slice(0, 3)
+  // Show only markets explicitly marked as featured
+  const top3 = markets.filter((m) => m.isFeatured)
 
   const next = useCallback(() => setActive((a) => (a + 1) % top3.length), [top3.length])
   const prev = () => setActive((a) => (a - 1 + top3.length) % top3.length)
@@ -73,7 +69,8 @@ export function FeaturedMarketsSlider({ markets }: { markets: FeaturedMarket[] }
 
   if (top3.length === 0) return null
 
-  const market = top3[active]
+  const safeActive = active % top3.length
+  const market = top3[safeActive]
   const visual = getMarketVisual(market.id, market.question)
   const totalPool = market.totalPool ?? 0
   const outcomes = market.outcomes ?? []
@@ -176,14 +173,14 @@ export function FeaturedMarketsSlider({ markets }: { markets: FeaturedMarket[] }
                       className="w-12 h-12 rounded-xl object-cover flex-shrink-0 mt-1 border border-white/20 shadow-lg"
                     />
                   )}
-                  <h2 className="text-[36px] font-extrabold text-white leading-tight group-hover:text-primary transition-colors drop-shadow-sm">
+                  <h2 className="font-extrabold text-white leading-tight group-hover:text-primary transition-colors drop-shadow-sm" style={{ fontSize: '32px' }}>
                     {market.question}
                   </h2>
                 </div>
               </div>
 
               {/* Arc gauge */}
-              <div className="flex-shrink-0 flex flex-col items-center pt-2">
+              {/* <div className="flex-shrink-0 flex flex-col items-center pt-2">
                 <svg width={arcR * 2} height={arcR + arcSW / 2} className="overflow-visible block drop-shadow-lg">
                   <circle
                     stroke="rgba(255,255,255,0.12)"
@@ -223,19 +220,19 @@ export function FeaturedMarketsSlider({ markets }: { markets: FeaturedMarket[] }
                     {isBinary ? 'Chance YES' : topOutcome?.name ?? 'Top'}
                   </div>
                 </div>
-              </div>
+              </div> */}
             </div>
 
             {/* Bottom: slim probability bar */}
             <div className="flex items-center">
-              <div className="w-1/4 max-w-[120px]">
+              <div className="w-1/3 max-w-[300px]">
                 {isBinary ? (
                   <>
                     <div className="flex justify-between text-[9px] font-bold uppercase tracking-widest text-white/35 mb-1">
                       <span>YES {yesOdds.toFixed(0)}%</span>
                       <span>NO {noOdds.toFixed(0)}%</span>
                     </div>
-                    <div className="h-0.5 bg-white/10 rounded-full overflow-hidden">
+                    <div className="h-2 bg-white/10 rounded-full overflow-hidden">
                       <div
                         className="h-full bg-gradient-to-r from-emerald-400 to-primary rounded-full transition-all duration-700"
                         style={{ width: `${yesOdds}%` }}
@@ -280,11 +277,10 @@ export function FeaturedMarketsSlider({ markets }: { markets: FeaturedMarket[] }
             <button
               key={i}
               onClick={() => setActive(i)}
-              className={`transition-all duration-300 rounded-full ${
-                i === active
-                  ? 'w-6 h-2 bg-primary'
-                  : 'w-2 h-2 bg-white/20 hover:bg-white/40'
-              }`}
+              className={`transition-all duration-300 rounded-full ${i === safeActive
+                ? 'w-6 h-2 bg-primary'
+                : 'w-2 h-2 bg-white/20 hover:bg-white/40'
+                }`}
             />
           ))}
           <button

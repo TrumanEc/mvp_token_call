@@ -16,8 +16,13 @@ export default async function Home() {
       <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-emerald-600/10 rounded-full blur-[150px] pointer-events-none animate-pulse"></div>
 
       <div className="relative z-10 max-w-3xl">
-        <h1 className="text-6xl md:text-8xl font-black mb-6 tracking-tighter bg-gradient-to-b from-white to-white/40 bg-clip-text text-transparent">
-          WIN SPORTS MARKET
+        <img
+          src="/win-logo.svg"
+          alt="WIN Sports Market"
+          className="h-32 md:h-40 w-auto mx-auto mb-6"
+        />
+        <h1 className="text-4xl md:text-5xl font-black mb-6 tracking-tighter bg-gradient-to-b from-white to-white/40 bg-clip-text text-transparent">
+          SPORTS MARKET
         </h1>
         
         <p className="text-xl md:text-2xl text-zinc-400 mb-10 font-medium max-w-2xl mx-auto leading-relaxed">

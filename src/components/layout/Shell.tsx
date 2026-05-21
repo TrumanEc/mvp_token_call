@@ -36,9 +36,11 @@ export function Shell({ children }: ShellProps) {
                 href="/markets"
                 className="flex-shrink-0 flex items-center mr-8"
               >
-                <span className="text-xl font-extrabold text-primary tracking-tighter">
-                  WIN
-                </span>
+                <img
+                  src="/win-logo.svg"
+                  alt="WIN"
+                  className="h-8 w-auto"
+                />
                 <span className="text-[10px] font-bold text-gray-400 ml-2 uppercase tracking-wider hidden md:block">
                   Market
                 </span>

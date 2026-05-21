@@ -229,57 +229,33 @@ export function PriceChart({ data: rawData, height = 300, outcomes }: PriceChart
           <clipPath id="clip-full">
             <rect x={PAD_L} y={PAD_T} width={cW} height={totalH} />
           </clipPath>
-          <clipPath id="clip-no">
-            <rect x={PAD_L} y={noTop}  width={cW} height={panelH} />
-          </clipPath>
-          <clipPath id="clip-yes">
-            <rect x={PAD_L} y={yesTop} width={cW} height={panelH} />
-          </clipPath>
         </defs>
+
+        {/* Shared background grid */}
+        {[0, 0.25, 0.5, 0.75, 1].map(v => (
+          <g key={`grid-${v}`}>
+            <line x1={PAD_L} y1={getYMulti(v)} x2={extX} y2={getYMulti(v)} stroke="white" strokeOpacity="0.05" strokeWidth="1" />
+            <text x={extX + 6} y={getYMulti(v) + 4} fontSize="9" fill="rgba(255,255,255,0.22)" className="font-mono">
+              {`${(v * 100).toFixed(0)}%`}
+            </text>
+          </g>
+        ))}
 
         {!isMulti && (
           <>
-            {/* NO panel */}
-            <text x={PAD_L + 6} y={noTop + 14} fontSize="10" fontWeight="bold" fill="rgba(248,113,113,0.6)">NO</text>
-            {[0, 0.5, 1].map(v => (
-              <g key={`no-grid-${v}`}>
-                <line x1={PAD_L} y1={getYNo(v)} x2={extX} y2={getYNo(v)} stroke="white" strokeOpacity="0.05" strokeWidth="1" />
-                <text x={extX + 6} y={getYNo(v) + 4} fontSize="9" fill="rgba(255,255,255,0.22)" className="font-mono">
-                  {`${(v * 100).toFixed(0)}%`}
-                </text>
-              </g>
-            ))}
-            <g clipPath="url(#clip-no)">
-              <path d={buildSmooth(points.map((p: any, i) => ({ x: getX(i), y: getYNo(p.noP) })), extX)} fill="none" stroke="#f87171" strokeWidth="2.5" />
+            <g clipPath="url(#clip-full)">
+              <path d={buildSmooth(points.map((p: any, i) => ({ x: getX(i), y: getYMulti(p.noP) })), extX)} fill="none" stroke="#f87171" strokeWidth="2.5" />
+              <path d={buildSmooth(points.map((p: any, i) => ({ x: getX(i), y: getYMulti(p.yesP) })), extX)} fill="none" stroke="#64c883" strokeWidth="2.5" />
             </g>
             {!hover && (
               <>
-                <circle cx={extX} cy={getYNo(last.noP)} r="4.5" fill="#f87171" />
-                <text x={extX + 8} y={getYNo(last.noP) - 4} fontSize="9" fontWeight="bold" fill="#f87171">No</text>
-                <text x={extX + 8} y={getYNo(last.noP) + 10} fontSize="13" fontWeight="bold" fill="#f87171">{(last.noP * 100).toFixed(0)}%</text>
-              </>
-            )}
+                <circle cx={extX} cy={getYMulti(last.noP)} r="4.5" fill="#f87171" />
+                <text x={extX + 8} y={getYMulti(last.noP) - 4} fontSize="9" fontWeight="bold" fill="#f87171">No</text>
+                <text x={extX + 8} y={getYMulti(last.noP) + 10} fontSize="13" fontWeight="bold" fill="#f87171">{(last.noP * 100).toFixed(0)}%</text>
 
-            <line x1={PAD_L} y1={yesBot + GAP / 2} x2={extX} y2={yesBot + GAP / 2} stroke="white" strokeOpacity="0.08" strokeWidth="1" />
-
-            {/* YES panel */}
-            <text x={PAD_L + 6} y={yesTop + 14} fontSize="10" fontWeight="bold" fill="rgba(100,200,131,0.6)">YES</text>
-            {[0, 0.5, 1].map(v => (
-              <g key={`yes-grid-${v}`}>
-                <line x1={PAD_L} y1={getYYes(v)} x2={extX} y2={getYYes(v)} stroke="white" strokeOpacity="0.05" strokeWidth="1" />
-                <text x={extX + 6} y={getYYes(v) + 4} fontSize="9" fill="rgba(255,255,255,0.22)" className="font-mono">
-                  {`${(v * 100).toFixed(0)}%`}
-                </text>
-              </g>
-            ))}
-            <g clipPath="url(#clip-yes)">
-              <path d={buildSmooth(points.map((p: any, i) => ({ x: getX(i), y: getYYes(p.yesP) })), extX)} fill="none" stroke="#64c883" strokeWidth="2.5" />
-            </g>
-            {!hover && (
-              <>
-                <circle cx={extX} cy={getYYes(last.yesP)} r="4.5" fill="#64c883" />
-                <text x={extX + 8} y={getYYes(last.yesP) - 4} fontSize="9" fontWeight="bold" fill="#64c883">Yes</text>
-                <text x={extX + 8} y={getYYes(last.yesP) + 10} fontSize="13" fontWeight="bold" fill="#64c883">{(last.yesP * 100).toFixed(0)}%</text>
+                <circle cx={extX} cy={getYMulti(last.yesP)} r="4.5" fill="#64c883" />
+                <text x={extX + 8} y={getYMulti(last.yesP) - 4} fontSize="9" fontWeight="bold" fill="#64c883">Yes</text>
+                <text x={extX + 8} y={getYMulti(last.yesP) + 10} fontSize="13" fontWeight="bold" fill="#64c883">{(last.yesP * 100).toFixed(0)}%</text>
               </>
             )}
           </>
@@ -287,14 +263,6 @@ export function PriceChart({ data: rawData, height = 300, outcomes }: PriceChart
 
         {isMulti && outcomes && (
           <>
-            {[0, 0.25, 0.5, 0.75, 1].map(v => (
-              <g key={`multi-grid-${v}`}>
-                <line x1={PAD_L} y1={getYMulti(v)} x2={extX} y2={getYMulti(v)} stroke="white" strokeOpacity="0.05" strokeWidth="1" />
-                <text x={extX + 6} y={getYMulti(v) + 4} fontSize="9" fill="rgba(255,255,255,0.22)" className="font-mono">
-                  {`${(v * 100).toFixed(0)}%`}
-                </text>
-              </g>
-            ))}
             <g clipPath="url(#clip-full)">
               {outcomes.map((o, idx) => {
                 const color = COLORS[idx % COLORS.length];
@@ -328,8 +296,8 @@ export function PriceChart({ data: rawData, height = 300, outcomes }: PriceChart
               
               {!isMulti && (
                 <>
-                  <circle cx={hx} cy={getYNo(hover.noP)} r="5" fill="#f87171" stroke="#0d1117" strokeWidth="2.5" />
-                  <circle cx={hx} cy={getYYes(hover.yesP)} r="5" fill="#64c883" stroke="#0d1117" strokeWidth="2.5" />
+                  <circle cx={hx} cy={getYMulti(hover.noP)} r="5" fill="#f87171" stroke="#0d1117" strokeWidth="2.5" />
+                  <circle cx={hx} cy={getYMulti(hover.yesP)} r="5" fill="#64c883" stroke="#0d1117" strokeWidth="2.5" />
                 </>
               )}
               {isMulti && outcomes && outcomes.map((o, idx) => (
