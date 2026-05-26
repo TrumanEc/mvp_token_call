@@ -91,8 +91,8 @@ function AdminPage() {
     marketType: "BINARY" as "BINARY" | "MULTIPLE",
     initialProbabilityYes: "50",
     outcomes: [
-      { name: "Opción 1", probability: "50" },
-      { name: "Opción 2", probability: "50" },
+      { name: "Opción 1", probability: "50", color: "#64c883" },
+      { name: "Opción 2", probability: "50", color: "#f87171" },
     ],
     liquidityMode: "LS" as "STATIC" | "LS",
     alpha: "0.10",
@@ -274,11 +274,12 @@ function AdminPage() {
       const outcomesPayload = newMarket.marketType === "MULTIPLE" 
         ? newMarket.outcomes.map(o => ({
             name: o.name,
+            color: o.color,
             initialProbability: parseFloat(o.probability) / 100
           }))
         : [
-            { name: "YES", initialProbability: parseFloat(newMarket.initialProbabilityYes) / 100 || 0.5 },
-            { name: "NO", initialProbability: 1 - (parseFloat(newMarket.initialProbabilityYes) / 100 || 0.5) }
+            { name: "YES", color: "#64c883", initialProbability: parseFloat(newMarket.initialProbabilityYes) / 100 || 0.5 },
+            { name: "NO", color: "#f87171", initialProbability: 1 - (parseFloat(newMarket.initialProbabilityYes) / 100 || 0.5) }
           ];
 
       const res = await fetch("/api/markets", {
@@ -321,8 +322,8 @@ function AdminPage() {
           marketType: "BINARY",
           initialProbabilityYes: "50",
           outcomes: [
-            { name: "Opción 1", probability: "50" },
-            { name: "Opción 2", probability: "50" },
+            { name: "Opción 1", probability: "50", color: "#64c883" },
+            { name: "Opción 2", probability: "50", color: "#f87171" },
           ],
           liquidityMode: "LS",
           alpha: "0.10",
@@ -1938,6 +1939,18 @@ function AdminPage() {
                         />
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs font-bold">%</span>
                       </div>
+                      <div className="relative w-12 h-12 rounded-xl overflow-hidden border border-white/5 shrink-0">
+                        <input
+                          type="color"
+                          className="absolute -inset-2 w-16 h-16 cursor-pointer"
+                          value={outcome.color || "#60a5fa"}
+                          onChange={(e) => {
+                            const newOutcomes = [...newMarket.outcomes];
+                            newOutcomes[idx].color = e.target.value;
+                            setNewMarket({ ...newMarket, outcomes: newOutcomes });
+                          }}
+                        />
+                      </div>
                       <button
                         type="button"
                         onClick={() => {
@@ -1956,7 +1969,7 @@ function AdminPage() {
                       onClick={() => {
                         setNewMarket({
                           ...newMarket,
-                          outcomes: [...newMarket.outcomes, { name: "", probability: "10" }]
+                          outcomes: [...newMarket.outcomes, { name: "", probability: "10", color: "#60a5fa" }]
                         });
                       }}
                       className="flex-1 py-3 border border-dashed border-white/20 rounded-xl text-[10px] font-bold text-gray-400 uppercase tracking-wider hover:border-white/50 hover:text-white transition-all"

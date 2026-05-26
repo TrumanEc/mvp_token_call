@@ -60,6 +60,7 @@ interface OutcomeData {
   probability: number;
   price: number;
   displayOrder?: number;
+  color?: string | null;
 }
 
 interface PredictionCardProps {
@@ -186,9 +187,9 @@ function BuyForm({ market, userId, userBalance, onSuccess }: PredictionCardProps
         </button>
 
         <div className="bg-win-bg rounded-2xl border border-white/8">
-          <div className="px-4 py-3 flex items-center gap-2" style={{ background: `${OUTCOME_COLORS[selectedIdx] ?? '#60a5fa'}15` }}>
+          <div className="px-4 py-3 flex items-center gap-2" style={{ background: `${selectedOutcome?.color ?? OUTCOME_COLORS[selectedIdx] ?? '#60a5fa'}15` }}>
             <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full"
-              style={{ background: `${OUTCOME_COLORS[selectedIdx] ?? '#60a5fa'}30`, color: OUTCOME_COLORS[selectedIdx] ?? '#60a5fa' }}>
+              style={{ background: `${selectedOutcome?.color ?? OUTCOME_COLORS[selectedIdx] ?? '#60a5fa'}30`, color: selectedOutcome?.color ?? OUTCOME_COLORS[selectedIdx] ?? '#60a5fa' }}>
               {sideLabel}
             </span>
             <span className="text-[11px] font-semibold text-white">{market.question}</span>
@@ -234,7 +235,7 @@ function BuyForm({ market, userId, userBalance, onSuccess }: PredictionCardProps
                 const newProb = quote.newProbabilities[o.id] ?? quote.newProbabilities[o.name];
                 const pct = newProb != null ? (newProb > 1 ? newProb : newProb * 100) : o.probability;
                 return (
-                  <span key={o.id} style={{ color: OUTCOME_COLORS[i % OUTCOME_COLORS.length] }}>
+                  <span key={o.id} style={{ color: o.color || OUTCOME_COLORS[i % OUTCOME_COLORS.length] }}>
                     {labelEs(o.name)} {pct.toFixed(0)}%
                   </span>
                 );
@@ -250,9 +251,9 @@ function BuyForm({ market, userId, userBalance, onSuccess }: PredictionCardProps
           disabled={loading}
           className="w-full py-4 rounded-2xl text-[13px] font-bold uppercase tracking-wider transition-all shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
           style={{
-            background: OUTCOME_COLORS[selectedIdx] ?? '#60a5fa',
+            background: selectedOutcome?.color ?? OUTCOME_COLORS[selectedIdx] ?? '#60a5fa',
             color: selectedIdx === 0 && isBinary ? '#0d1117' : '#fff',
-            boxShadow: `0 10px 25px ${OUTCOME_COLORS[selectedIdx] ?? '#60a5fa'}33`,
+            boxShadow: `0 10px 25px ${selectedOutcome?.color ?? OUTCOME_COLORS[selectedIdx] ?? '#60a5fa'}33`,
           }}
         >
           {loading ? "Procesando…" : `Confirmar ${sideLabel}`}
@@ -269,7 +270,7 @@ function BuyForm({ market, userId, userBalance, onSuccess }: PredictionCardProps
         <div className="grid grid-cols-2 gap-3">
           {outcomes.map((o, i) => {
             const active = selectedOutcomeId === o.id;
-            const color = OUTCOME_COLORS[i % OUTCOME_COLORS.length];
+            const color = o.color || OUTCOME_COLORS[i % OUTCOME_COLORS.length];
             return (
               <button
                 key={o.id}
@@ -292,7 +293,7 @@ function BuyForm({ market, userId, userBalance, onSuccess }: PredictionCardProps
           <div className="grid grid-cols-2 gap-2">
             {outcomes.map((o, i) => {
               const active = selectedOutcomeId === o.id;
-              const color = OUTCOME_COLORS[i % OUTCOME_COLORS.length];
+              const color = o.color || OUTCOME_COLORS[i % OUTCOME_COLORS.length];
               return (
                 <button
                   key={o.id}
@@ -392,9 +393,9 @@ function BuyForm({ market, userId, userBalance, onSuccess }: PredictionCardProps
         onClick={() => { setError(""); setStep("review"); }}
         className="w-full py-3.5 rounded-2xl text-[13px] font-bold uppercase tracking-wider transition-all shadow-lg disabled:opacity-30 disabled:cursor-not-allowed"
         style={{
-          background: OUTCOME_COLORS[selectedIdx] ?? '#60a5fa',
+          background: selectedOutcome?.color ?? OUTCOME_COLORS[selectedIdx] ?? '#60a5fa',
           color: selectedIdx === 0 && isBinary ? '#0d1117' : '#fff',
-          boxShadow: `0 10px 20px ${OUTCOME_COLORS[selectedIdx] ?? '#60a5fa'}22`,
+          boxShadow: `0 10px 20px ${selectedOutcome?.color ?? OUTCOME_COLORS[selectedIdx] ?? '#60a5fa'}22`,
         }}
       >
         Revisar Orden →
@@ -418,6 +419,7 @@ function SellForm({ market, userId, onSuccess }: { market: any; userId: string; 
     totalAmount: number;
     positions: any[];
     probability: number; // 0–100
+    color?: string | null;
   };
 
   const outcomeGroups: OutcomeGroup[] = outcomes.map((o: any) => {
@@ -431,6 +433,7 @@ function SellForm({ market, userId, onSuccess }: { market: any; userId: string; 
       totalAmount,
       positions: positionsForOutcome,
       probability: typeof o.probability === "number" ? o.probability : 50,
+      color: o.color,
     };
   });
 
@@ -572,6 +575,7 @@ function SellForm({ market, userId, onSuccess }: { market: any; userId: string; 
       : isBinaryNo
         ? "bg-win-error/20 text-win-error"
         : "bg-purple-500/20 text-purple-300";
+    const customColor = selectedGroup?.color;
     return (
       <div className="space-y-5">
         <button onClick={() => setStep("configure")}
@@ -579,8 +583,8 @@ function SellForm({ market, userId, onSuccess }: { market: any; userId: string; 
           ← Volver
         </button>
         <div className="bg-win-bg rounded-2xl border border-white/8">
-          <div className={`px-4 py-3 flex items-center gap-2 ${reviewColor}`}>
-            <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full ${reviewBadge}`}>
+          <div className={`px-4 py-3 flex items-center gap-2 ${customColor ? '' : reviewColor}`} style={customColor ? { background: `${customColor}15` } : {}}>
+            <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full ${customColor ? '' : reviewBadge}`} style={customColor ? { background: `${customColor}30`, color: customColor } : {}}>
               {isBinaryYes || isBinaryNo ? labelEs(reviewName) : reviewName}
             </span>
             <span className="text-[11px] font-semibold text-white">Venta al mercado</span>
@@ -616,7 +620,7 @@ function SellForm({ market, userId, onSuccess }: { market: any; userId: string; 
             const isBinaryYes = g.name === "YES";
             const isBinaryNo  = g.name === "NO";
             // Color per outcome: YES=green, NO=red, others=purple variants
-            const color = isBinaryYes ? "#64c883" : isBinaryNo ? "#f87171" : "#a78bfa";
+            const color = g.color || (isBinaryYes ? "#64c883" : isBinaryNo ? "#f87171" : "#a78bfa");
             const hasShares = g.shares > 0;
             const label = isBinaryYes || isBinaryNo ? labelEs(g.name as any) : g.name;
             return (

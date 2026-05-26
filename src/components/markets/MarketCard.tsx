@@ -34,6 +34,7 @@ interface OutcomeData {
   name: string
   probability: number
   pool?: number
+  color?: string | null
 }
 
 interface MarketCardProps {
@@ -83,7 +84,7 @@ function OutcomeCollage({ outcomes, imageUrl, visual }: {
   if (tiles.length === 1) {
     return (
       <div className="w-full h-full flex items-center justify-center text-white font-bold text-sm"
-        style={{ background: OUTCOME_COLORS[0] }}>
+        style={{ background: tiles[0].color || OUTCOME_COLORS[0] }}>
         {tiles[0].name.slice(0, 2).toUpperCase()}
       </div>
     )
@@ -95,7 +96,7 @@ function OutcomeCollage({ outcomes, imageUrl, visual }: {
         <div
           key={o.id}
           className="flex items-center justify-center text-white font-bold text-[10px] leading-none"
-          style={{ background: OUTCOME_COLORS[i % OUTCOME_COLORS.length] }}
+          style={{ background: o.color || OUTCOME_COLORS[i % OUTCOME_COLORS.length] }}
         >
           {o.name.slice(0, 3).toUpperCase()}
         </div>
@@ -124,7 +125,7 @@ export function MarketCard({ market }: MarketCardProps) {
   // Probability bar color reflects winning outcome (green YES, red NO)
   const barColor = isBinary
     ? (topOutcome?.name === 'YES' ? '#64c883' : '#f87171')
-    : (OUTCOME_COLORS[outcomes.indexOf(topOutcome!)] ?? '#60a5fa')
+    : (topOutcome?.color || OUTCOME_COLORS[outcomes.indexOf(topOutcome!)] || '#60a5fa')
 
   return (
     <Link href={`/markets/${market.id}`} className="block group">
@@ -214,7 +215,7 @@ export function MarketCard({ market }: MarketCardProps) {
           ) : isTwoOption ? (
             <div className="flex gap-2">
               {outcomes.map((o, i) => {
-                const color = OUTCOME_COLORS[i % OUTCOME_COLORS.length]
+                const color = o.color || OUTCOME_COLORS[i % OUTCOME_COLORS.length]
                 return (
                   <div
                     key={o.id}
@@ -248,7 +249,7 @@ export function MarketCard({ market }: MarketCardProps) {
                 <div className="flex items-center gap-2 min-w-0">
                   <span
                     className="w-2 h-2 rounded-full flex-shrink-0"
-                    style={{ background: OUTCOME_COLORS[outcomes.indexOf(selectedOutcome!) % OUTCOME_COLORS.length] }}
+                    style={{ background: selectedOutcome?.color || OUTCOME_COLORS[outcomes.indexOf(selectedOutcome!) % OUTCOME_COLORS.length] }}
                   />
                   <span className="text-[12px] font-semibold text-white truncate">{selectedOutcome?.name}</span>
                   <span className="text-[12px] font-bold text-white/60 flex-shrink-0">
@@ -268,7 +269,7 @@ export function MarketCard({ market }: MarketCardProps) {
                   onClick={(e) => { e.preventDefault(); e.stopPropagation() }}
                 >
                   {outcomes.map((o, i) => {
-                    const color = OUTCOME_COLORS[i % OUTCOME_COLORS.length]
+                    const color = o.color || OUTCOME_COLORS[i % OUTCOME_COLORS.length]
                     const isSelected = o.id === selectedOutcomeId
                     return (
                       <button

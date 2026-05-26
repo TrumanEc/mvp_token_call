@@ -181,7 +181,7 @@ function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
                 <div className="space-y-2 mb-5">
                   {outcomes.map((o: any, i: number) => {
                     const colors = ['#64c883', '#f87171', '#60a5fa', '#fbbf24', '#a78bfa', '#f472b6', '#34d399'];
-                    const color = colors[i % colors.length];
+                    const color = o.color || colors[i % colors.length];
                     return (
                       <div key={o.id} className="flex items-center gap-3">
                         <span className="text-[11px] text-gray-400 w-[100px] truncate font-medium">{o.name}</span>

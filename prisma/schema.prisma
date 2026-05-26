@@ -311,6 +311,7 @@ model MarketOutcome {
   id           String     @id @default(cuid())
   marketId     String
   name         String
+  color        String?
   qOutstanding Float      @default(0)
   pool         Decimal    @default(0)
   displayOrder Int        @default(0)

@@ -44,7 +44,7 @@ interface FeaturedMarket {
   imageUrl?: string | null
   bannerUrl?: string | null
   isFeatured?: boolean
-  outcomes?: { id: string; name: string; probability: number; pool?: number }[]
+  outcomes?: { id: string; name: string; probability: number; pool?: number; color?: string | null }[]
   resolutionDate: string
   odds: { yesOdds: number; noOdds: number }
 }
@@ -255,11 +255,12 @@ export function FeaturedMarketsSlider({ markets }: { markets: FeaturedMarket[] }
                     <div className="h-2 bg-white/10 rounded-full overflow-hidden flex">
                       {outcomes.map((o, i) => {
                         const colors = ['#64c883', '#f87171', '#60a5fa', '#fbbf24', '#a78bfa', '#f472b6', '#34d399']
+                        const bgColor = o.color || colors[i % colors.length]
                         return (
                           <div
                             key={o.id}
                             className="h-full transition-all duration-700"
-                            style={{ width: `${o.probability}%`, background: colors[i % colors.length] }}
+                            style={{ width: `${o.probability}%`, background: bgColor }}
                           />
                         )
                       })}

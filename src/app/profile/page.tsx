@@ -31,7 +31,7 @@ interface MarketPosition {
     imageUrl?: string | null;
     winningOutcomeId: string | null;
     winningOutcomeName: string | null;
-    outcomes: { id: string; name: string }[];
+    outcomes: { id: string; name: string; color?: string | null }[];
   };
   outcomesData: Record<string, OutcomeData>;
   fairValue: number;
@@ -181,7 +181,7 @@ function MarketPositionCard({ pos }: { pos: MarketPosition }) {
 
           {/* Rows */}
           {visibleRows.map(({ id, name, idx, od }) => {
-            const color     = OUTCOME_COLORS[idx % OUTCOME_COLORS.length];
+            const color     = pos.market.outcomes.find(o => o.id === id)?.color || OUTCOME_COLORS[idx % OUTCOME_COLORS.length];
             const isWinner  = isResolved && id === pos.market.winningOutcomeId;
             const isLoser   = isResolved && id !== pos.market.winningOutcomeId;
             return (
@@ -259,7 +259,7 @@ function MarketPositionCard({ pos }: { pos: MarketPosition }) {
           {pos.market.outcomes.map((outcome, i) => {
             const scenario = pos.scenarios[outcome.id];
             if (!scenario || scenario.payout <= 0) return null;
-            const color = OUTCOME_COLORS[i % OUTCOME_COLORS.length];
+            const color = outcome.color || OUTCOME_COLORS[i % OUTCOME_COLORS.length];
             return (
               <div
                 key={outcome.id}

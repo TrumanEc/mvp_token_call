@@ -46,6 +46,7 @@ export class MarketService {
         .map((o, i) => ({
           id: o.id,
           name: o.name,
+          color: o.color,
           probability: prices[i] * 100,
           pool: o.pool.toNumber(),
         }));
@@ -100,6 +101,7 @@ export class MarketService {
     const outcomesWithPrices = market.outcomes.map((o, i) => ({
       id: o.id,
       name: o.name,
+      color: o.color,
       displayOrder: o.displayOrder,
       qOutstanding: o.qOutstanding,
       pool: o.pool.toNumber(),
@@ -191,7 +193,7 @@ export class MarketService {
     bMin?: number;
     maxBetAmount?: number;
     maxPriceImpact?: number;
-    outcomes: { name: string; initialProbability?: number }[];
+    outcomes: { name: string; initialProbability?: number; color?: string }[];
     sport?: string;
     imageUrl?: string;
     bannerUrl?: string;
@@ -245,8 +247,9 @@ export class MarketService {
         bMin: useLS ? bMin : null,
         seedCost,
         outcomes: {
-          create: outcomeNames.map((name, i) => ({
-            name,
+          create: data.outcomes.map((o, i) => ({
+            name: o.name,
+            color: o.color || null,
             qOutstanding: qValues[i],
             displayOrder: i,
           })),

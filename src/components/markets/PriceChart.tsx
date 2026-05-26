@@ -13,7 +13,7 @@ interface PriceChartProps {
   data: ChartDataPoint[]
   height?: number
   showNo?: boolean
-  outcomes?: { id: string; name: string }[]
+  outcomes?: { id: string; name: string; color?: string | null }[]
 }
 
 type TimeRange = '1H' | '3H' | '24H' | '7D' | 'ALL'
@@ -265,7 +265,7 @@ export function PriceChart({ data: rawData, height = 300, outcomes }: PriceChart
           <>
             <g clipPath="url(#clip-full)">
               {outcomes.map((o, idx) => {
-                const color = COLORS[idx % COLORS.length];
+                const color = o.color || COLORS[idx % COLORS.length];
                 const pts = points.map((p: any, i) => ({ x: getX(i), y: getYMulti(p.probs[o.id]) }));
                 return (
                   <path key={o.id} d={buildSmooth(pts, extX)} fill="none" stroke={color} strokeWidth="2.5" />
@@ -273,7 +273,7 @@ export function PriceChart({ data: rawData, height = 300, outcomes }: PriceChart
               })}
             </g>
             {!hover && outcomes.map((o, idx) => {
-              const color = COLORS[idx % COLORS.length];
+              const color = o.color || COLORS[idx % COLORS.length];
               const pVal = last.probs[o.id];
               const y = getYMulti(pVal);
               return (
@@ -301,7 +301,7 @@ export function PriceChart({ data: rawData, height = 300, outcomes }: PriceChart
                 </>
               )}
               {isMulti && outcomes && outcomes.map((o, idx) => (
-                <circle key={o.id} cx={hx} cy={getYMulti(hover.probs[o.id])} r="4" fill={COLORS[idx % COLORS.length]} stroke="#0d1117" strokeWidth="2" />
+                <circle key={o.id} cx={hx} cy={getYMulti(hover.probs[o.id])} r="4" fill={o.color || COLORS[idx % COLORS.length]} stroke="#0d1117" strokeWidth="2" />
               ))}
 
               <rect x={tipX} y={tipY} width={TW} height={TH} rx="10" ry="10" fill="#161616" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
@@ -323,7 +323,7 @@ export function PriceChart({ data: rawData, height = 300, outcomes }: PriceChart
               )}
 
               {isMulti && outcomes && outcomes.map((o, idx) => {
-                const color = COLORS[idx % COLORS.length];
+                const color = o.color || COLORS[idx % COLORS.length];
                 const yPos = tipY + 37 + idx * 18;
                 return (
                   <g key={`tip-${o.id}`}>

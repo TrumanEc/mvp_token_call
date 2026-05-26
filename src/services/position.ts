@@ -161,6 +161,7 @@ export class PositionService {
               qOutstanding: o.qOutstanding,
               pool: o.pool.toNumber(),
               probability: (isResolved ? (o.id === p.market.winningOutcomeId ? 100 : 0) : prices[i] * 100),
+              color: (o as any).color,
             })),
           },
           _params: params,
