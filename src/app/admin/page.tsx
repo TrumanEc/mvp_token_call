@@ -1524,7 +1524,7 @@ function AdminPage() {
                         Reporte de Resolución
                       </h3>
                       <span className="px-3 py-1 bg-primary/10 text-primary text-[10px] font-bold rounded-lg uppercase tracking-wider">
-                        Resultado: {selectedMarketStats.outcome}
+                        Resultado: {selectedMarketStats.resolutionReport.market?.winningOutcome ?? "—"}
                       </span>
                     </div>
 
@@ -1552,7 +1552,7 @@ function AdminPage() {
                         <p className="text-2xl font-extrabold text-white">
                           ${" "}
                           {Number(
-                            selectedMarketStats.resolutionReport.payoutPerShare || 0,
+                            selectedMarketStats.resolutionReport.results?.payoutPerShare || 0,
                           ).toFixed(4)}
                         </p>
                         <p className="text-[9px] text-gray-500 mt-1">
@@ -1572,16 +1572,16 @@ function AdminPage() {
                       </div>
                       <div className="p-5 bg-primary/10 rounded-2xl border border-primary/20">
                         <p className="text-[9px] text-primary font-bold uppercase tracking-wider mb-2">
-                          Fees WIN (1.5%)
+                          Fees WIN ({Number((selectedMarketStats.platformFee ?? 0.015) * 100).toFixed(2)}%)
                         </p>
                         <p className="text-2xl font-extrabold text-white">
                           ${" "}
                           {Number(
-                            selectedMarketStats.resolutionReport.fees?.secondary || 0,
+                            selectedMarketStats.resolutionReport.fees?.total || 0,
                           ).toFixed(2)}
                         </p>
                         <p className="text-[9px] text-gray-400 mt-1">
-                          Cobradas en trading · Seed ✓ recuperado
+                          Compras: ${Number(selectedMarketStats.resolutionReport.fees?.primaryBuy || 0).toFixed(2)} · Sell-back: ${Number(selectedMarketStats.resolutionReport.fees?.primarySell || 0).toFixed(2)}
                         </p>
                       </div>
                     </div>

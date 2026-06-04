@@ -144,6 +144,29 @@ export class SettlementService {
 
     const winningOutcome = market.outcomes.find(o => o.id === market.winningOutcomeId);
 
+    // Fees totales cobrados durante el ciclo del mercado.
+    // Cada bet placed cobró platformFee sobre el monto gross.
+    // Cada sell-lmsr cobró platformFee sobre el revenue gross.
+    // `amount - totalCost` por posición captura el fee de la compra;
+    // los fees de venta los traemos de las PredictionTransaction POSITION_SOLD
+    // sumando descripción "(fee $X.XX)" — pero más simple/exacto:
+    // miramos `BET_PLACED` (gross negativo) + costos netos en posiciones.
+    const primaryBuyFees = market.positions.reduce(
+      (sum, p) => sum + Math.max(0, p.amount.toNumber() - (p.totalCost || 0)),
+      0,
+    );
+    // Sell-back fees: viven en la descripción de POSITION_SOLD transactions.
+    const sellTxs = await prisma.transaction.findMany({
+      where: { reference: marketId, type: "POSITION_SOLD" },
+      select: { description: true },
+    });
+    const SELL_FEE_RE = /\(fee\s+\$([\d.]+)\)/i;
+    const primarySellFees = sellTxs.reduce((sum, t) => {
+      const m = SELL_FEE_RE.exec(t.description);
+      return sum + (m ? parseFloat(m[1]) : 0);
+    }, 0);
+    const totalFees = primaryBuyFees + primarySellFees;
+
     return {
       market: {
         id: market.id,
@@ -177,8 +200,9 @@ export class SettlementService {
         payoutPerShare: payoutPerShare.toNumber(),
       },
       fees: {
-        primaryMarket: 0,
-        total: 0,
+        primaryBuy: primaryBuyFees,
+        primarySell: primarySellFees,
+        total: totalFees,
       },
       liquidity: {
         b: market.b,
