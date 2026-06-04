@@ -3,13 +3,25 @@ import { MarketService } from '@/services/market'
 
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const market = await MarketService.getById(id)
-  
-  if (!market) {
-    return NextResponse.json({ error: 'Market not found' }, { status: 404 })
+  try {
+    const market = await MarketService.getById(id)
+
+    if (!market) {
+      return NextResponse.json({ error: 'Market not found' }, { status: 404 })
+    }
+
+    return NextResponse.json(market)
+  } catch (error) {
+    console.error('Error fetching market:', error)
+    return NextResponse.json(
+      {
+        error: 'Internal Server Error',
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack?.split('\n').slice(0, 5) : undefined,
+      },
+      { status: 500 },
+    )
   }
-  
-  return NextResponse.json(market)
 }
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {

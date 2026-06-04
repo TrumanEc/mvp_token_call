@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { Decimal } from "@prisma/client/runtime/library";
-import { BalanceService } from "./balance";
+import { BalanceService } from "@apps/wallet-user-app/src/balance/balance.service";
 
 export class SettlementService {
   /**
@@ -14,7 +14,6 @@ export class SettlementService {
         include: {
           outcomes: { orderBy: { displayOrder: "asc" } },
           positions: true,
-          listings: { where: { status: "ACTIVE" } },
         },
       });
 
@@ -22,24 +21,6 @@ export class SettlementService {
       if (market.status !== "ACTIVE" && market.status !== "CLOSED") {
         throw new Error("Market cannot be resolved");
       }
-
-      // Cancel active listings
-      if (market.listings.length > 0) {
-        await tx.marketplaceListing.updateMany({
-          where: { marketId, status: "ACTIVE" },
-          data: { status: "CANCELLED", cancelledAt: new Date() },
-        });
-        await tx.position.updateMany({
-          where: { marketId, isForSale: true },
-          data: { isForSale: false },
-        });
-      }
-
-      // Cancel open orders
-      await tx.order.updateMany({
-        where: { marketId, status: { in: ["OPEN", "PARTIAL"] } },
-        data: { status: "CANCELLED" },
-      });
 
       const activePositions = market.positions.filter(p => p.status === "ACTIVE");
 
@@ -141,7 +122,6 @@ export class SettlementService {
             currentOwner: { select: { id: true, username: true } },
             originalOwner: { select: { id: true, username: true } },
             outcome: { select: { id: true, name: true } },
-            transfers: true,
           },
         },
       },
@@ -156,10 +136,6 @@ export class SettlementService {
     const totalWinnings = winners.reduce((sum, p) => sum.plus(p.payout || 0), new Decimal(0));
     const totalLosses = losers.reduce((sum, p) => sum.plus(p.amount), new Decimal(0));
     const totalPool = market.totalPool;
-
-    const allTransfers = market.positions.flatMap(p => p.transfers);
-    const secondaryVolume = allTransfers.reduce((sum, t) => sum.plus(t.price), new Decimal(0));
-    const secondaryFees = secondaryVolume.times(0.02);
 
     const totalWinningShares = winners.reduce((sum, p) => sum + Number(p.shares || 0), 0);
     const payoutPerShare = totalWinningShares > 0
@@ -202,8 +178,7 @@ export class SettlementService {
       },
       fees: {
         primaryMarket: 0,
-        secondaryMarket: secondaryFees.toNumber(),
-        total: secondaryFees.toNumber(),
+        total: 0,
       },
       liquidity: {
         b: market.b,
@@ -212,10 +187,6 @@ export class SettlementService {
         netInvestments: totalPool.toNumber(),
         totalPayouts: totalWinnings.toNumber(),
         netProfitLoss: new Decimal(totalPool).minus(totalWinnings).toNumber(),
-      },
-      secondaryMarket: {
-        transfers: allTransfers.length,
-        volume: secondaryVolume.toNumber(),
       },
       positions: market.positions.map(p => ({
         id: p.id,
@@ -227,8 +198,6 @@ export class SettlementService {
         amount: p.amount.toNumber(),
         status: p.status,
         payout: p.payout?.toNumber() || 0,
-        wasTraded: p.transfers.length > 0,
-        transferCount: p.transfers.length,
       })),
     };
   }

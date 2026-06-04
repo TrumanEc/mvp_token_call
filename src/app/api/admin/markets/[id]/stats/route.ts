@@ -37,6 +37,8 @@ export async function GET(
     const qVector = LmsrService.buildQVector(market.outcomes);
     const lmsrParams = { b: market.b, alpha: market.alpha, bMin: market.bMin };
     const pricesArray = lmsrService.getPricesLSN(qVector, lmsrParams);
+    const effectiveB = lmsrService.getEffectiveBN(qVector, lmsrParams);
+    const Q = qVector.reduce((s, q) => s + q, 0);
 
     // Build outcome prices map
     const outcomePrices: Record<string, number> = {};
@@ -124,6 +126,8 @@ export async function GET(
 
       // LMSR Specifics
       b: market.b,
+      effectiveB,
+      Q,
       alpha: market.alpha,
       bMin: market.bMin,
       seedCost: market.seedCost,
@@ -146,7 +150,11 @@ export async function GET(
   } catch (error) {
     console.error("Error fetching admin market stats:", error);
     return NextResponse.json(
-      { error: "Internal Server Error" },
+      {
+        error: "Internal Server Error",
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack?.split("\n").slice(0, 5) : undefined,
+      },
       { status: 500 },
     );
   }

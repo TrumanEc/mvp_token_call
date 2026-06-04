@@ -27,7 +27,6 @@ export async function POST(
       if (!position) throw new Error("Posición no encontrada");
       if (position.currentOwnerId !== userId) throw new Error("No eres dueño de esta posición");
       if (position.status !== "ACTIVE") throw new Error("Posición no activa");
-      if (position.isForSale) throw new Error("Esta posición tiene una orden P2P activa. Cancélala primero.");
 
       const market = position.market;
       if (market.status !== "ACTIVE") throw new Error("El mercado no está activo");

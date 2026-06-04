@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { Decimal } from "@prisma/client/runtime/library";
-import { LmsrService } from "./lmsr.service";
+import { LmsrService } from "@apps/prediction-app/src/lmsr/lmsr.service";
 
 export type MarketStatus =
   | "DRAFT"
@@ -74,18 +74,9 @@ export class MarketService {
             outcome: { select: { id: true, name: true } },
           },
         },
-        listings: true,
         lmsrSnapshots: {
           orderBy: { createdAt: "desc" },
           take: 100,
-        },
-        orders: {
-          where: { status: { in: ["OPEN", "PARTIAL"] } },
-          orderBy: { pricePerShare: "asc" },
-          include: {
-            user: { select: { id: true, username: true } },
-            outcome: { select: { id: true, name: true } },
-          },
         },
       },
     });
@@ -116,7 +107,6 @@ export class MarketService {
       totalPool: market.totalPool.toNumber(),
       maxPool: market.maxPool?.toNumber() ?? null,
       outcomes: outcomesWithPrices,
-      orders: market.orders,
       odds: {
         yesOdds: outcomesWithPrices[0]?.probability ?? 50,
         noOdds: outcomesWithPrices[1]?.probability ?? 50,
@@ -172,14 +162,8 @@ export class MarketService {
   }
 
   static async deleteMarket(id: string) {
-    return prisma.$transaction(async (tx) => {
-      // Manual cascade delete for relations missing onDelete: Cascade
-      await tx.order.deleteMany({ where: { marketId: id } });
-      await tx.marketRouterAuditLog.deleteMany({ where: { marketId: id } });
-      
-      // The rest are handled by onDelete: Cascade in prisma schema
-      return tx.market.delete({ where: { id } });
-    });
+    // All remaining relations have onDelete: Cascade in the Prisma schema.
+    return prisma.market.delete({ where: { id } });
   }
 
   static async create(data: {
@@ -338,11 +322,6 @@ export class MarketService {
       if (daysSinceCreation < minDaysOpen) {
         throw new Error(`Market must be open at least ${minDaysOpen} days before seed recovery (currently ${daysSinceCreation.toFixed(1)} days)`);
       }
-
-      await tx.order.updateMany({
-        where: { marketId: id, status: { in: ["OPEN", "PARTIAL"] } },
-        data: { status: "CANCELLED" },
-      });
 
       await tx.market.update({
         where: { id },

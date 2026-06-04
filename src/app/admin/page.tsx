@@ -7,6 +7,35 @@ import { Modal } from "@/components/ui/Modal";
 import { PriceChart } from "@/components/markets/PriceChart";
 import { UserProvider, useUser } from "@/contexts/UserContext";
 import { LmsrCalculator } from "./lmsr-calculator";
+import { DateTimePicker } from "@/components/ui/DateTimePicker";
+
+// ─── Helpers de zona horaria Argentina (UTC-3, sin DST) ──────────────────
+const ARG_OFFSET = "-03:00";
+
+/**
+ * Toma el valor de un <input type="datetime-local"> ("YYYY-MM-DDTHH:mm") y lo
+ * convierte a un ISO string con offset Argentina. El backend recibe el instante
+ * UTC correcto independientemente del huso horario del navegador del admin.
+ */
+function argDatetimeLocalToIso(value: string): string | null {
+  if (!value) return null;
+  // value es "YYYY-MM-DDTHH:mm" (a veces incluye :ss). Le agregamos el offset.
+  const normalized = value.length === 16 ? `${value}:00` : value;
+  return `${normalized}${ARG_OFFSET}`;
+}
+
+/**
+ * Toma un ISO (UTC u otro huso) y lo formatea como "YYYY-MM-DDTHH:mm" en
+ * hora Argentina para popularse en un <input type="datetime-local">.
+ */
+function isoToArgDatetimeLocal(iso: string | Date | null | undefined): string {
+  if (!iso) return "";
+  const d = typeof iso === "string" ? new Date(iso) : iso;
+  if (isNaN(d.getTime())) return "";
+  // Sumar el offset de Argentina (-03:00) → equivale a restar 3h al UTC.
+  const argMs = d.getTime() - 3 * 60 * 60 * 1000;
+  return new Date(argMs).toISOString().slice(0, 16);
+}
 
 function AdminPage() {
   const router = useRouter();
@@ -64,7 +93,10 @@ function AdminPage() {
       const res = await fetch(`/api/admin/markets/${editingMarket.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editingMarket),
+        body: JSON.stringify({
+          ...editingMarket,
+          resolutionDate: argDatetimeLocalToIso(editingMarket.resolutionDate) ?? editingMarket.resolutionDate,
+        }),
       });
       if (!res.ok) {
         const d = await res.json();
@@ -85,7 +117,6 @@ function AdminPage() {
     description: "",
     resolutionDate: "",
     maxPool: "",
-    b: "100",
     maxBetAmount: "",
     maxPriceImpact: "",
     marketType: "BINARY" as "BINARY" | "MULTIPLE",
@@ -94,9 +125,8 @@ function AdminPage() {
       { name: "Opción 1", probability: "50", color: "#64c883" },
       { name: "Opción 2", probability: "50", color: "#f87171" },
     ],
-    liquidityMode: "LS" as "STATIC" | "LS",
-    alpha: "0.10",
-    bMin: "100",
+    alpha: "0.15",
+    bMin: "1000",
     imageUrl: "",
     bannerUrl: "",
     isFeatured: false,
@@ -202,7 +232,7 @@ function AdminPage() {
       const logsData = await logsRes.json();
 
       if (statsData.error) {
-        console.error("Error fetching market stats:", statsData.error);
+        console.error("Error fetching market stats:", statsData);
         return;
       }
 
@@ -270,8 +300,7 @@ function AdminPage() {
 
     setCreating(true);
     try {
-      const isLS = newMarket.liquidityMode === "LS";
-      const outcomesPayload = newMarket.marketType === "MULTIPLE" 
+      const outcomesPayload = newMarket.marketType === "MULTIPLE"
         ? newMarket.outcomes.map(o => ({
             name: o.name,
             color: o.color,
@@ -282,18 +311,22 @@ function AdminPage() {
             { name: "NO", color: "#f87171", initialProbability: 1 - (parseFloat(newMarket.initialProbabilityYes) / 100 || 0.5) }
           ];
 
+      const alpha = parseFloat(newMarket.alpha) || 0.15;
+      const bMin = parseFloat(newMarket.bMin) || 1000;
+
       const res = await fetch("/api/markets", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...newMarket,
+          resolutionDate: argDatetimeLocalToIso(newMarket.resolutionDate),
           outcomes: outcomesPayload,
           maxPool: newMarket.maxPool
             ? parseFloat(newMarket.maxPool)
             : undefined,
-          b: parseFloat(newMarket.b) || 100,
-          alpha: isLS ? (parseFloat(newMarket.alpha) || 0.10) : undefined,
-          bMin: isLS ? (parseFloat(newMarket.bMin) || 100) : undefined,
+          b: bMin,
+          alpha,
+          bMin,
           maxBetAmount: newMarket.maxBetAmount
             ? parseFloat(newMarket.maxBetAmount)
             : undefined,
@@ -316,7 +349,6 @@ function AdminPage() {
           description: "",
           resolutionDate: "",
           maxPool: "",
-          b: "100",
           maxBetAmount: "",
           maxPriceImpact: "",
           marketType: "BINARY",
@@ -325,9 +357,8 @@ function AdminPage() {
             { name: "Opción 1", probability: "50", color: "#64c883" },
             { name: "Opción 2", probability: "50", color: "#f87171" },
           ],
-          liquidityMode: "LS",
-          alpha: "0.10",
-          bMin: "100",
+          alpha: "0.15",
+          bMin: "1000",
           imageUrl: "",
           bannerUrl: "",
           isFeatured: false,
@@ -1247,9 +1278,7 @@ function AdminPage() {
                       id: selectedMarketStats.id,
                       question: selectedMarketStats.question,
                       description: selectedMarketStats.description || "",
-                      resolutionDate: selectedMarketStats.resolutionDate
-                        ? new Date(selectedMarketStats.resolutionDate).toISOString().slice(0, 16)
-                        : "",
+                      resolutionDate: isoToArgDatetimeLocal(selectedMarketStats.resolutionDate),
                       sport: selectedMarketStats.sport || "futbol",
                     })}
                     className="px-3 py-1.5 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl text-[10px] font-bold text-white uppercase tracking-wider transition-all flex items-center gap-1.5"
@@ -1279,10 +1308,13 @@ function AdminPage() {
                 </div>
                 <div className="bg-win-bg px-4 py-2 rounded-xl border border-white/5">
                   <div className="text-[9px] font-bold text-primary uppercase tracking-wider mb-0.5">
-                    Liquidez (b)
+                    Liquidez efectiva b(Q)
                   </div>
                   <div className="text-xs font-mono text-white">
-                    {selectedMarketStats.b || 100}
+                    {Number(selectedMarketStats.effectiveB ?? selectedMarketStats.bMin ?? selectedMarketStats.b ?? 0).toFixed(0)}
+                  </div>
+                  <div className="text-[8px] font-mono text-gray-500 mt-0.5">
+                    α={Number(selectedMarketStats.alpha ?? 0).toFixed(2)} · b_min={Number(selectedMarketStats.bMin ?? 0).toFixed(0)} · Q={Number(selectedMarketStats.Q ?? 0).toFixed(0)}
                   </div>
                 </div>
                 <div className="bg-win-bg px-4 py-2 rounded-xl border border-white/5">
@@ -1332,10 +1364,10 @@ function AdminPage() {
                     </div>
                     <div className="flex justify-between items-center px-4 py-2 bg-white/5 rounded-lg border border-white/5">
                       <span className="text-[9px] font-bold text-gray-500 uppercase">
-                        Liquidez (b)
+                        Liquidez efectiva b(Q)
                       </span>
                       <span className="text-xs font-mono text-gray-300">
-                        {selectedMarketStats.b || 100}
+                        {Number(selectedMarketStats.effectiveB ?? selectedMarketStats.bMin ?? selectedMarketStats.b ?? 0).toFixed(0)}
                       </span>
                     </div>
                     <div className="grid grid-cols-2 gap-2">
@@ -1715,109 +1747,59 @@ function AdminPage() {
             </div>
             <div>
               <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-1">
-                Fecha Resolución
+                Fecha y Hora de Resolución <span className="text-gray-500 normal-case">(Argentina · UTC-3)</span>
               </label>
-              <input
-                type="date"
-                className="w-full h-14 bg-win-bg border border-white/5 rounded-2xl px-4 text-white font-bold outline-none focus:border-primary transition-all"
+              <DateTimePicker
                 value={newMarket.resolutionDate}
-                onChange={(e) =>
-                  setNewMarket({
-                    ...newMarket,
-                    resolutionDate: e.target.value,
-                  })
-                }
+                onChange={(v) => setNewMarket({ ...newMarket, resolutionDate: v })}
+                placeholder="Seleccionar fecha y hora"
               />
             </div>
-            {/* Modo de liquidez: LS-LMSR (b dinámico) vs Static (b fijo) */}
+            {/* LS-LMSR: liquidez dinámica b(Q) = max(b_min, α·Q) */}
             <div className="space-y-2">
-              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-1">
-                Modelo de liquidez
+              <label className="text-[10px] font-bold text-purple-300 uppercase tracking-wider px-1">
+                ⚡ LS-LMSR — b(Q) = max(b_min, α·Q)
               </label>
-              <div className="flex gap-2 p-1 bg-[#0d0d0d] rounded-2xl">
-                <button
-                  type="button"
-                  onClick={() => setNewMarket({ ...newMarket, liquidityMode: "LS" })}
-                  className={`flex-1 py-3 rounded-xl text-[11px] font-extrabold uppercase tracking-wider transition-all ${
-                    newMarket.liquidityMode === "LS"
-                      ? "bg-purple-500 text-white shadow"
-                      : "text-gray-500 hover:text-white"
-                  }`}
-                >
-                  ⚡ LS-LMSR (b dinámico)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setNewMarket({ ...newMarket, liquidityMode: "STATIC" })}
-                  className={`flex-1 py-3 rounded-xl text-[11px] font-extrabold uppercase tracking-wider transition-all ${
-                    newMarket.liquidityMode === "STATIC"
-                      ? "bg-blue-500 text-white shadow"
-                      : "text-gray-500 hover:text-white"
-                  }`}
-                >
-                  🔒 Estático (b fijo)
-                </button>
-              </div>
               <p className="text-[9px] text-gray-500 px-1">
-                {newMarket.liquidityMode === "LS"
-                  ? `b(Q) = max(b_min, α·Q) — el mercado se auto-profundiza con el volumen. Seed ≈ $${(parseFloat(newMarket.bMin) * 0.693).toFixed(0)}.`
-                  : `b constante = ${newMarket.b}. Slippage uniforme. Seed = $${(parseFloat(newMarket.b) * 0.693).toFixed(0)}.`}
+                El mercado se auto-profundiza con el volumen. Seed ≈ ${(parseFloat(newMarket.bMin || "1000") * 0.693).toFixed(0)}.
               </p>
             </div>
 
-            {newMarket.liquidityMode === "LS" ? (
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-[10px] font-bold text-purple-300 uppercase tracking-wider px-1">
-                    α (slope)
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0.01"
-                    max="1"
-                    className="w-full h-14 bg-win-bg border border-purple-500/20 rounded-2xl px-4 text-white font-bold outline-none focus:border-purple-500 transition-all"
-                    value={newMarket.alpha}
-                    onChange={(e) => setNewMarket({ ...newMarket, alpha: e.target.value })}
-                    placeholder="0.10"
-                  />
-                  <p className="text-[9px] text-gray-500 px-1 mt-1">
-                    0.05 conservador · 0.10 recomendado · 0.15 agresivo
-                  </p>
-                </div>
-                <div>
-                  <label className="text-[10px] font-bold text-purple-300 uppercase tracking-wider px-1">
-                    b_min (piso)
-                  </label>
-                  <input
-                    type="number"
-                    className="w-full h-14 bg-win-bg border border-purple-500/20 rounded-2xl px-4 text-white font-bold outline-none focus:border-purple-500 transition-all"
-                    value={newMarket.bMin}
-                    onChange={(e) => setNewMarket({ ...newMarket, bMin: e.target.value })}
-                    placeholder="100"
-                  />
-                  <p className="text-[9px] text-gray-500 px-1 mt-1">
-                    Subsidio inicial = b_min · ln(2)
-                  </p>
-                </div>
-              </div>
-            ) : (
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-1">
-                  Liquidez (b)
+                <label className="text-[10px] font-bold text-purple-300 uppercase tracking-wider px-1">
+                  α (slope)
                 </label>
                 <input
                   type="number"
-                  className="w-full h-14 bg-win-bg border border-white/5 rounded-2xl px-4 text-white font-bold outline-none focus:border-primary transition-all"
-                  value={newMarket.b}
-                  onChange={(e) => setNewMarket({ ...newMarket, b: e.target.value })}
-                  placeholder="100"
+                  step="0.01"
+                  min="0.01"
+                  max="1"
+                  className="w-full h-14 bg-win-bg border border-purple-500/20 rounded-2xl px-4 text-white font-bold outline-none focus:border-purple-500 transition-all"
+                  value={newMarket.alpha}
+                  onChange={(e) => setNewMarket({ ...newMarket, alpha: e.target.value })}
+                  placeholder="0.15"
                 />
                 <p className="text-[9px] text-gray-500 px-1 mt-1">
-                  Mayor b = Menos volatilidad (constante todo el ciclo)
+                  0.05 conservador · 0.10 medio · 0.15 recomendado
                 </p>
               </div>
-            )}
+              <div>
+                <label className="text-[10px] font-bold text-purple-300 uppercase tracking-wider px-1">
+                  b_min (piso)
+                </label>
+                <input
+                  type="number"
+                  className="w-full h-14 bg-win-bg border border-purple-500/20 rounded-2xl px-4 text-white font-bold outline-none focus:border-purple-500 transition-all"
+                  value={newMarket.bMin}
+                  onChange={(e) => setNewMarket({ ...newMarket, bMin: e.target.value })}
+                  placeholder="1000"
+                />
+                <p className="text-[9px] text-gray-500 px-1 mt-1">
+                  Subsidio inicial = b_min · ln(N outcomes)
+                </p>
+              </div>
+            </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -2142,13 +2124,10 @@ function AdminPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Fecha de Resolución</label>
-                <input
-                  type="datetime-local"
+                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Fecha de Resolución <span className="text-gray-500 normal-case">(Argentina · UTC-3)</span></label>
+                <DateTimePicker
                   value={editingMarket.resolutionDate}
-                  onChange={e => setEditingMarket((m: any) => ({ ...m, resolutionDate: e.target.value }))}
-                  required
-                  className="w-full bg-win-bg border border-white/10 rounded-xl px-3.5 py-2.5 text-[13px] text-white focus:outline-none focus:border-primary/50"
+                  onChange={(v) => setEditingMarket((m: any) => ({ ...m, resolutionDate: v }))}
                 />
               </div>
               <div>

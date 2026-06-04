@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { Decimal } from "@prisma/client/runtime/library";
-import { LmsrService } from "./lmsr.service";
-import { RouterService } from "./router.service";
+import { LmsrService } from "@apps/prediction-app/src/lmsr/lmsr.service";
+import { BalanceService } from "@apps/wallet-user-app/src/balance/balance.service";
 
 export class PositionService {
   static async create(data: {
@@ -10,13 +10,115 @@ export class PositionService {
     outcomeId: string;
     amount: number;
   }) {
-    const result = await RouterService.executeMarketBuy({
-      marketId: data.marketId,
-      userId: data.userId,
-      outcomeId: data.outcomeId,
-      budget: data.amount,
+    if (data.amount <= 0) throw new Error("Monto debe ser positivo");
+    return prisma.$transaction(async (tx) => {
+      const market = await tx.market.findUnique({
+        where: { id: data.marketId },
+        include: { outcomes: { orderBy: { displayOrder: "asc" } } },
+      });
+      if (!market || market.status !== "ACTIVE") throw new Error("El mercado no está activo");
+
+      const isPrimaryPaused =
+        market.primaryMarketPaused ||
+        (market.primaryPauseScheduledAt &&
+          new Date(market.primaryPauseScheduledAt) <= new Date());
+      if (isPrimaryPaused) throw new Error("El mercado primario está pausado");
+
+      const sortedOutcomes = [...market.outcomes].sort((a, b) => a.displayOrder - b.displayOrder);
+      const outcomeIdx = sortedOutcomes.findIndex((o) => o.id === data.outcomeId);
+      if (outcomeIdx < 0) throw new Error("Outcome no encontrado en este mercado");
+      const outcomeRecord = sortedOutcomes[outcomeIdx];
+
+      const user = await tx.user.findUnique({ where: { id: data.userId } });
+      if (!user) throw new Error("Usuario no encontrado");
+      if (new Decimal(user.balance).lessThan(new Decimal(data.amount))) {
+        throw new Error("Balance insuficiente");
+      }
+
+      const platformFeeRate = market.platformFee ? Number(market.platformFee) : 0.015;
+      const grossAmount = data.amount;
+      const feeAmount = grossAmount * platformFeeRate;
+      const netInvestment = grossAmount - feeAmount;
+
+      const qVector = sortedOutcomes.map((o) => o.qOutstanding);
+      const params = { b: market.b, alpha: market.alpha, bMin: market.bMin };
+      const lmsr = new LmsrService();
+      const sharesCollected = lmsr.getSharesToBuyLSN(qVector, params, outcomeIdx, netInvestment);
+      if (sharesCollected <= 0) throw new Error("La compra no genera shares al precio actual");
+
+      const oldPrices = lmsr.getPricesLSN(qVector, params);
+      const newQVector = [...qVector];
+      newQVector[outcomeIdx] += sharesCollected;
+      const newPrices = lmsr.getPricesLSN(newQVector, params);
+
+      await tx.marketOutcome.update({
+        where: { id: data.outcomeId },
+        data: {
+          qOutstanding: outcomeRecord.qOutstanding + sharesCollected,
+          pool: { increment: new Decimal(netInvestment) },
+        },
+      });
+
+      await tx.market.update({
+        where: { id: data.marketId },
+        data: { totalPool: { increment: new Decimal(netInvestment) } },
+      });
+
+      await BalanceService.deduct(
+        tx,
+        data.userId,
+        new Decimal(grossAmount),
+        "BET_PLACED",
+        `Market Buy: ${sharesCollected.toFixed(2)} ${outcomeRecord.name} for $${grossAmount.toFixed(2)}`,
+        data.marketId,
+      );
+
+      const avgPrice = grossAmount / sharesCollected;
+      const initialProb = newPrices[outcomeIdx];
+      const position = await tx.position.create({
+        data: {
+          marketId: data.marketId,
+          outcomeId: data.outcomeId,
+          originalOwnerId: data.userId,
+          currentOwnerId: data.userId,
+          side: outcomeRecord.name,
+          amount: new Decimal(grossAmount),
+          shares: sharesCollected,
+          avgCostPerShare: avgPrice,
+          totalCost: netInvestment,
+          purchasePrice: new Decimal(avgPrice),
+          initialProbability: new Decimal(initialProb),
+        },
+      });
+
+      const pBefore: Record<string, number> = {};
+      const pAfter: Record<string, number> = {};
+      const qBefore: Record<string, number> = {};
+      const qAfter: Record<string, number> = {};
+      sortedOutcomes.forEach((o, i) => {
+        pBefore[o.id] = oldPrices[i];
+        pAfter[o.id] = newPrices[i];
+        qBefore[o.id] = qVector[i];
+        qAfter[o.id] = newQVector[i];
+      });
+      await tx.lmsrSnapshot.create({
+        data: {
+          marketId: data.marketId,
+          outcomeId: data.outcomeId,
+          qBefore,
+          pBefore,
+          qAfter,
+          pAfter,
+          side: outcomeRecord.name,
+          deltaShares: sharesCollected,
+          cost: netInvestment,
+          triggerType: "MARKET_BUY",
+          userId: data.userId,
+        },
+      });
+
+      return position;
     });
-    return result.position;
   }
 
   static async getUserPositions(userId: string, marketId?: string) {
@@ -28,7 +130,6 @@ export class PositionService {
       include: {
         market: { include: { outcomes: { orderBy: { displayOrder: "asc" } } } },
         outcome: true,
-        listing: true,
       },
       orderBy: { createdAt: "desc" },
     });
@@ -64,14 +165,6 @@ export class PositionService {
           maxPool: p.market.maxPool?.toNumber(),
           platformFee: p.market.platformFee?.toNumber(),
         },
-        listing: p.listing
-          ? {
-              ...p.listing,
-              askPrice: p.listing.askPrice.toNumber(),
-              suggestedPrice: p.listing.suggestedPrice.toNumber(),
-              platformFee: p.listing.platformFee.toNumber(),
-            }
-          : null,
       };
     });
   }
@@ -85,31 +178,9 @@ export class PositionService {
       include: {
         market: { include: { outcomes: { orderBy: { displayOrder: "asc" } } } },
         outcome: true,
-        listing: true,
       },
       orderBy: { createdAt: "desc" },
     });
-
-    const openSellOrders = await prisma.order.findMany({
-      where: {
-        userId,
-        type: "SELL",
-        status: { in: ["OPEN", "PARTIAL"] },
-        ...(marketId && { marketId }),
-      },
-    });
-
-    const obMap: Record<string, { shares: number; revenue: number; avgPrice: number }> = {};
-    for (const o of openSellOrders) {
-      const k = `${o.marketId}__${o.outcomeId}`;
-      if (!obMap[k]) obMap[k] = { shares: 0, revenue: 0, avgPrice: 0 };
-      obMap[k].shares += o.remainingShares;
-      obMap[k].revenue += o.remainingShares * o.pricePerShare;
-    }
-    for (const k of Object.keys(obMap)) {
-      const e = obMap[k];
-      e.avgPrice = e.shares > 0 ? e.revenue / e.shares : 0;
-    }
 
     const groups: Record<string, any> = {};
 
@@ -174,7 +245,6 @@ export class PositionService {
           totalFees: 0,
           payout: 0,
           status: p.status,
-          isForSale: false,
           createdAt: p.createdAt,
           history: [],
         };
@@ -208,7 +278,6 @@ export class PositionService {
       g.amount += p.amount.toNumber();
       g.totalFees += (p.amount.toNumber() - (p.totalCost || 0));
       if (p.payout) g.payout += p.payout.toNumber();
-      if (p.isForSale) g.isForSale = true;
     }
 
     return Object.values(groups).map((g: any) => {
@@ -230,20 +299,12 @@ export class PositionService {
         const pnl = fairValue - invested;
         const roi = invested > 0 ? (pnl / invested) * 100 : 0;
 
-        const obKey = `${g.marketId}__${outcomeId}`;
-        const ob = obMap[obKey] || { shares: 0, revenue: 0, avgPrice: 0 };
-
         outcomesResult[outcomeId] = {
           ...od,
           avgPrice,
           fairValue,
           pnl,
           roi,
-          openOrders: {
-            pendingShares: ob.shares,
-            expectedRevenue: ob.revenue,
-            avgListPrice: ob.avgPrice,
-          },
         };
 
         totalInvested += invested;
@@ -295,7 +356,6 @@ export class PositionService {
         market: { include: { outcomes: { orderBy: { displayOrder: "asc" } } } },
         outcome: true,
         currentOwner: true,
-        listing: true,
       },
     });
 
@@ -333,49 +393,4 @@ export class PositionService {
     };
   }
 
-  static async split(
-    tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
-    positionId: string,
-    userId: string,
-    splitAmount: number,
-  ) {
-    const position = await tx.position.findUnique({
-      where: { id: positionId },
-      include: { market: true },
-    });
-
-    if (!position) throw new Error("Position not found");
-    if (position.currentOwnerId !== userId) throw new Error("Not position owner");
-    if (position.isForSale) throw new Error("Position already listed");
-    if (position.market.status !== "ACTIVE") throw new Error("Market not active");
-
-    const splitDecimal = new Decimal(splitAmount);
-    if (splitDecimal.lessThanOrEqualTo(0)) throw new Error("Split amount must be positive");
-    if (splitDecimal.greaterThanOrEqualTo(position.amount)) throw new Error("Split amount must be less than position amount");
-
-    const shareRatio = splitDecimal.dividedBy(position.amount).toNumber();
-
-    await tx.position.update({
-      where: { id: positionId },
-      data: { amount: position.amount.minus(splitDecimal) },
-    });
-
-    const newPosition = await tx.position.create({
-      data: {
-        marketId: position.marketId,
-        outcomeId: position.outcomeId,
-        originalOwnerId: position.originalOwnerId,
-        currentOwnerId: position.currentOwnerId,
-        side: position.side,
-        amount: splitDecimal,
-        status: "ACTIVE",
-        shares: position.shares * shareRatio,
-        purchasePrice: position.purchasePrice,
-        isForSale: true,
-      },
-      include: { market: true },
-    });
-
-    return newPosition;
-  }
 }

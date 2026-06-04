@@ -46,14 +46,6 @@ export async function GET(
       return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
     }
 
-    const { RouterService } = await import("@/services/router.service");
-
-    const sim = await RouterService.simulateMarketBuy({
-      marketId: id,
-      outcomeId: resolvedOutcomeId,
-      budget: totalCostBudget,
-    });
-
     const lmsrService = new LmsrService();
     const sortedOutcomes = [...market.outcomes].sort((a, b) => a.displayOrder - b.displayOrder);
     const qVector = sortedOutcomes.map(o => o.qOutstanding);
@@ -61,7 +53,21 @@ export async function GET(
     const outcomeIdx = sortedOutcomes.findIndex(o => o.id === resolvedOutcomeId);
 
     const platformFeeRate = market.platformFee ? Number(market.platformFee) : 0.015;
-    const netInvestment = sim.spentGross - sim.fee;
+    const grossAmount = totalCostBudget;
+    const feeAmount = grossAmount * platformFeeRate;
+    const netInvestment = grossAmount - feeAmount;
+    const sharesCollected = lmsrService.getSharesToBuyLSN(qVector, params2, outcomeIdx, netInvestment);
+    const newQVector = [...qVector];
+    newQVector[outcomeIdx] += sharesCollected;
+    const newPrices = lmsrService.getPricesLSN(newQVector, params2);
+    const newProbabilities: Record<string, number> = {};
+    sortedOutcomes.forEach((o, i) => { newProbabilities[o.id] = newPrices[i]; });
+    const sim = {
+      sharesCollected,
+      spentGross: grossAmount,
+      fee: feeAmount,
+      newProbabilities,
+    };
     const avgPrice = sim.sharesCollected > 0 ? sim.spentGross / sim.sharesCollected : 0;
 
     // Estimated payout per share (proportional)
@@ -81,16 +87,10 @@ export async function GET(
       outcomeName: outcomeRecord.name,
       side: outcomeRecord.name,
       shares: sim.sharesCollected,
-      lmsrShares: sim.lmsrShares,
-      obShares: sim.obShares,
       totalCost: sim.spentGross,
       avgPrice,
       feeAmount: sim.fee,
-      lmsrFeeAmount: sim.lmsrFee,
-      obFeeAmount: sim.obFee,
       platformFeeRate,
-      lmsrFeeRate: platformFeeRate,
-      obFeeRate: 0.02,
       estimatedPayoutPerShare,
       newProbabilities: sim.newProbabilities,
       priceImpact: 0,
