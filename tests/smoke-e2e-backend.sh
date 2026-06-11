@@ -20,9 +20,9 @@
 
 set -euo pipefail
 
- API="${API:-http://localhost:3001}"
+API="${API:-http://localhost:3001}"
 USER_ID="${USER_ID:?Falta USER_ID — pasalo como variable: USER_ID=123 ./smoke-e2e-backend.sh}"
- ADMIN_TOKEN="${ADMIN_TOKEN:-local-bypass}"  # APP_ENV=local → cualquier token vale
+ADMIN_TOKEN="${ADMIN_TOKEN:-local-bypass}"  # APP_ENV=local → cualquier token vale
 USER_TOKEN="${USER_TOKEN:-local-bypass}" 
  
 
