@@ -1,0 +1,845 @@
+{
+  "generatedAt": "2026-06-11T18:33:57.101Z",
+  "source": "mvp_token_call",
+  "count": 32,
+  "fixtures": [
+    {
+      "name": "binary uniform Q=0",
+      "input": {
+        "name": "binary uniform Q=0",
+        "q": [
+          0,
+          0
+        ],
+        "params": {
+          "b": 1000,
+          "alpha": 0.15,
+          "bMin": 1000
+        },
+        "outcomeIdx": 0,
+        "shares": 100
+      },
+      "expected": {
+        "prices": [
+          0.5,
+          0.5
+        ],
+        "effectiveB": 1000,
+        "costToBuy": 51.2494795136256,
+        "revenueFromSell": 48.7505204863744
+      }
+    },
+    {
+      "name": "binary uniform Q=0 sell",
+      "input": {
+        "name": "binary uniform Q=0 sell",
+        "q": [
+          0,
+          0
+        ],
+        "params": {
+          "b": 1000,
+          "alpha": 0.15,
+          "bMin": 1000
+        },
+        "outcomeIdx": 1,
+        "shares": 50
+      },
+      "expected": {
+        "prices": [
+          0.5,
+          0.5
+        ],
+        "effectiveB": 1000,
+        "costToBuy": 25.312467453341128,
+        "revenueFromSell": 24.687532546658986
+      }
+    },
+    {
+      "name": "binary skewed YES",
+      "input": {
+        "name": "binary skewed YES",
+        "q": [
+          100,
+          -100
+        ],
+        "params": {
+          "b": 1000,
+          "alpha": 0.15,
+          "bMin": 1000
+        },
+        "outcomeIdx": 0,
+        "shares": 75
+      },
+      "expected": {
+        "prices": [
+          0.549833997312478,
+          0.4501660026875221
+        ],
+        "effectiveB": 1000,
+        "costToBuy": 41.9317983080083,
+        "revenueFromSell": 40.539834064422735
+      }
+    },
+    {
+      "name": "binary skewed NO",
+      "input": {
+        "name": "binary skewed NO",
+        "q": [
+          -100,
+          100
+        ],
+        "params": {
+          "b": 1000,
+          "alpha": 0.15,
+          "bMin": 1000
+        },
+        "outcomeIdx": 1,
+        "shares": 75
+      },
+      "expected": {
+        "prices": [
+          0.4501660026875221,
+          0.549833997312478
+        ],
+        "effectiveB": 1000,
+        "costToBuy": 41.9317983080083,
+        "revenueFromSell": 40.539834064422735
+      }
+    },
+    {
+      "name": "binary large Q triggering effectiveB > bMin",
+      "input": {
+        "name": "binary large Q triggering effectiveB > bMin",
+        "q": [
+          10000,
+          -100
+        ],
+        "params": {
+          "b": 1000,
+          "alpha": 0.15,
+          "bMin": 1000
+        },
+        "outcomeIdx": 0,
+        "shares": 500
+      },
+      "expected": {
+        "prices": [
+          0.9988889596599965,
+          0.001111040340003549
+        ],
+        "effectiveB": 1485,
+        "costToBuy": 500.0946333511274,
+        "revenueFromSell": 500.0945569215328
+      }
+    },
+    {
+      "name": "binary extreme skew",
+      "input": {
+        "name": "binary extreme skew",
+        "q": [
+          5000,
+          -5000
+        ],
+        "params": {
+          "b": 1000,
+          "alpha": 0.15,
+          "bMin": 1000
+        },
+        "outcomeIdx": 1,
+        "shares": 100
+      },
+      "expected": {
+        "prices": [
+          0.9999546021312976,
+          0.00004539786870243439
+        ],
+        "effectiveB": 1000,
+        "costToBuy": 0.004774524132699298,
+        "revenueFromSell": 0.004320187733355851
+      }
+    },
+    {
+      "name": "binary negative priors q",
+      "input": {
+        "name": "binary negative priors q",
+        "q": [
+          -200,
+          200
+        ],
+        "params": {
+          "b": 1000,
+          "alpha": 0.15,
+          "bMin": 1000
+        },
+        "outcomeIdx": 0,
+        "shares": 60
+      },
+      "expected": {
+        "prices": [
+          0.401312339887548,
+          0.598687660112452
+        ],
+        "effectiveB": 1000,
+        "costToBuy": 24.51285905487589,
+        "revenueFromSell": 23.64803492567512
+      }
+    },
+    {
+      "name": "3-outcome uniform",
+      "input": {
+        "name": "3-outcome uniform",
+        "q": [
+          0,
+          0,
+          0
+        ],
+        "params": {
+          "b": 1000,
+          "alpha": 0.15,
+          "bMin": 1000
+        },
+        "outcomeIdx": 1,
+        "shares": 50
+      },
+      "expected": {
+        "prices": [
+          0.3333333333333333,
+          0.3333333333333333,
+          0.3333333333333333
+        ],
+        "effectiveB": 1000,
+        "costToBuy": 16.945968044008396,
+        "revenueFromSell": 16.390451066198693
+      }
+    },
+    {
+      "name": "3-outcome skewed",
+      "input": {
+        "name": "3-outcome skewed",
+        "q": [
+          200,
+          -100,
+          -100
+        ],
+        "params": {
+          "b": 1000,
+          "alpha": 0.15,
+          "bMin": 1000
+        },
+        "outcomeIdx": 2,
+        "shares": 100
+      },
+      "expected": {
+        "prices": [
+          0.4029599111828766,
+          0.29852004440856167,
+          0.29852004440856167
+        ],
+        "effectiveB": 1000,
+        "costToBuy": 30.912862887932306,
+        "revenueFromSell": 28.819252115922154
+      }
+    },
+    {
+      "name": "3-outcome with negatives",
+      "input": {
+        "name": "3-outcome with negatives",
+        "q": [
+          -300,
+          200,
+          100
+        ],
+        "params": {
+          "b": 1000,
+          "alpha": 0.15,
+          "bMin": 1000
+        },
+        "outcomeIdx": 0,
+        "shares": 80
+      },
+      "expected": {
+        "prices": [
+          0.24151404371452387,
+          0.3981893410449361,
+          0.3602966152405401
+        ],
+        "effectiveB": 1000,
+        "costToBuy": 19.915362611221553,
+        "revenueFromSell": 18.743040577814554
+      }
+    },
+    {
+      "name": "4-outcome uniform",
+      "input": {
+        "name": "4-outcome uniform",
+        "q": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "params": {
+          "b": 1000,
+          "alpha": 0.15,
+          "bMin": 1000
+        },
+        "outcomeIdx": 2,
+        "shares": 40
+      },
+      "expected": {
+        "prices": [
+          0.25,
+          0.25,
+          0.25,
+          0.25
+        ],
+        "effectiveB": 1000,
+        "costToBuy": 10.15099739957418,
+        "revenueFromSell": 9.851002400440393
+      }
+    },
+    {
+      "name": "4-outcome favorito claro",
+      "input": {
+        "name": "4-outcome favorito claro",
+        "q": [
+          500,
+          -150,
+          -150,
+          -200
+        ],
+        "params": {
+          "b": 1000,
+          "alpha": 0.15,
+          "bMin": 1000
+        },
+        "outcomeIdx": 0,
+        "shares": 100
+      },
+      "expected": {
+        "prices": [
+          0.3935959022578804,
+          0.2054750785241681,
+          0.2054750785241681,
+          0.19545394069378347
+        ],
+        "effectiveB": 1000,
+        "costToBuy": 40.56100916216201,
+        "revenueFromSell": 38.17508641320683
+      }
+    },
+    {
+      "name": "4-outcome favorito + venta",
+      "input": {
+        "name": "4-outcome favorito + venta",
+        "q": [
+          800,
+          -200,
+          -300,
+          -300
+        ],
+        "params": {
+          "b": 1000,
+          "alpha": 0.15,
+          "bMin": 1000
+        },
+        "outcomeIdx": 0,
+        "shares": 150
+      },
+      "expected": {
+        "prices": [
+          0.4917335633074624,
+          0.1808986684747913,
+          0.16368388410887316,
+          0.16368388410887316
+        ],
+        "effectiveB": 1000,
+        "costToBuy": 76.57145492574091,
+        "revenueFromSell": 70.95325223483633
+      }
+    },
+    {
+      "name": "alpha=0.05 conservador",
+      "input": {
+        "name": "alpha=0.05 conservador",
+        "q": [
+          100,
+          -100
+        ],
+        "params": {
+          "b": 1000,
+          "alpha": 0.05,
+          "bMin": 1000
+        },
+        "outcomeIdx": 0,
+        "shares": 50
+      },
+      "expected": {
+        "prices": [
+          0.549833997312478,
+          0.4501660026875221
+        ],
+        "effectiveB": 1000,
+        "costToBuy": 27.800550497251947,
+        "revenueFromSell": 27.18182159205969
+      }
+    },
+    {
+      "name": "alpha=0.10 medio",
+      "input": {
+        "name": "alpha=0.10 medio",
+        "q": [
+          100,
+          -100
+        ],
+        "params": {
+          "b": 1000,
+          "alpha": 0.1,
+          "bMin": 1000
+        },
+        "outcomeIdx": 0,
+        "shares": 50
+      },
+      "expected": {
+        "prices": [
+          0.549833997312478,
+          0.4501660026875221
+        ],
+        "effectiveB": 1000,
+        "costToBuy": 27.800550497251947,
+        "revenueFromSell": 27.18182159205969
+      }
+    },
+    {
+      "name": "alpha=0.20 agresivo",
+      "input": {
+        "name": "alpha=0.20 agresivo",
+        "q": [
+          100,
+          -100
+        ],
+        "params": {
+          "b": 1000,
+          "alpha": 0.2,
+          "bMin": 1000
+        },
+        "outcomeIdx": 0,
+        "shares": 50
+      },
+      "expected": {
+        "prices": [
+          0.549833997312478,
+          0.4501660026875221
+        ],
+        "effectiveB": 1000,
+        "costToBuy": 27.800550497251947,
+        "revenueFromSell": 27.18182159205969
+      }
+    },
+    {
+      "name": "bMin pequeño 100",
+      "input": {
+        "name": "bMin pequeño 100",
+        "q": [
+          0,
+          0
+        ],
+        "params": {
+          "b": 100,
+          "alpha": 0.15,
+          "bMin": 100
+        },
+        "outcomeIdx": 0,
+        "shares": 50
+      },
+      "expected": {
+        "prices": [
+          0.5,
+          0.5
+        ],
+        "effectiveB": 100,
+        "costToBuy": 28.092980362016135,
+        "revenueFromSell": 21.907019637983865
+      }
+    },
+    {
+      "name": "bMin grande 5000",
+      "input": {
+        "name": "bMin grande 5000",
+        "q": [
+          0,
+          0
+        ],
+        "params": {
+          "b": 5000,
+          "alpha": 0.15,
+          "bMin": 5000
+        },
+        "outcomeIdx": 0,
+        "shares": 100
+      },
+      "expected": {
+        "prices": [
+          0.5,
+          0.5
+        ],
+        "effectiveB": 5000,
+        "costToBuy": 50.2499958334447,
+        "revenueFromSell": 49.7500041665553
+      }
+    },
+    {
+      "name": "buy con amount=100",
+      "input": {
+        "name": "buy con amount=100",
+        "q": [
+          0,
+          0
+        ],
+        "params": {
+          "b": 1000,
+          "alpha": 0.15,
+          "bMin": 1000
+        },
+        "outcomeIdx": 0,
+        "amount": 100
+      },
+      "expected": {
+        "prices": [
+          0.5,
+          0.5
+        ],
+        "effectiveB": 1000,
+        "sharesToBuy": 190.9029670059681
+      }
+    },
+    {
+      "name": "buy con amount=10",
+      "input": {
+        "name": "buy con amount=10",
+        "q": [
+          0,
+          0
+        ],
+        "params": {
+          "b": 1000,
+          "alpha": 0.15,
+          "bMin": 1000
+        },
+        "outcomeIdx": 0,
+        "amount": 10
+      },
+      "expected": {
+        "prices": [
+          0.5,
+          0.5
+        ],
+        "effectiveB": 1000,
+        "sharesToBuy": 19.90087330341339
+      }
+    },
+    {
+      "name": "buy con amount=1000",
+      "input": {
+        "name": "buy con amount=1000",
+        "q": [
+          0,
+          0
+        ],
+        "params": {
+          "b": 1000,
+          "alpha": 0.15,
+          "bMin": 1000
+        },
+        "outcomeIdx": 0,
+        "amount": 1000
+      },
+      "expected": {
+        "prices": [
+          0.5,
+          0.5
+        ],
+        "effectiveB": 1000,
+        "sharesToBuy": 1489.8800873197615
+      }
+    },
+    {
+      "name": "buy con amount en mercado profundo",
+      "input": {
+        "name": "buy con amount en mercado profundo",
+        "q": [
+          3000,
+          -2000
+        ],
+        "params": {
+          "b": 1000,
+          "alpha": 0.15,
+          "bMin": 1000
+        },
+        "outcomeIdx": 0,
+        "amount": 500
+      },
+      "expected": {
+        "prices": [
+          0.9933071490757153,
+          0.006692850924284856
+        ],
+        "effectiveB": 1000,
+        "sharesToBuy": 502.6475992053747
+      }
+    },
+    {
+      "name": "target price 0.60",
+      "input": {
+        "name": "target price 0.60",
+        "q": [
+          0,
+          0
+        ],
+        "params": {
+          "b": 1000,
+          "alpha": 0.15,
+          "bMin": 1000
+        },
+        "outcomeIdx": 0,
+        "targetPrice": 0.6
+      },
+      "expected": {
+        "prices": [
+          0.5,
+          0.5
+        ],
+        "effectiveB": 1000,
+        "costToReachTargetPrice": 223.1435513142094
+      }
+    },
+    {
+      "name": "target price 0.80",
+      "input": {
+        "name": "target price 0.80",
+        "q": [
+          0,
+          0
+        ],
+        "params": {
+          "b": 1000,
+          "alpha": 0.15,
+          "bMin": 1000
+        },
+        "outcomeIdx": 0,
+        "targetPrice": 0.8
+      },
+      "expected": {
+        "prices": [
+          0.5,
+          0.5
+        ],
+        "effectiveB": 1000,
+        "costToReachTargetPrice": 916.2907318741551
+      }
+    },
+    {
+      "name": "target price 0.55 desde skew",
+      "input": {
+        "name": "target price 0.55 desde skew",
+        "q": [
+          200,
+          -100
+        ],
+        "params": {
+          "b": 1000,
+          "alpha": 0.15,
+          "bMin": 1000
+        },
+        "outcomeIdx": 1,
+        "targetPrice": 0.55
+      },
+      "expected": {
+        "prices": [
+          0.574442516811659,
+          0.42555748318834097
+        ],
+        "effectiveB": 1000,
+        "costToReachTargetPrice": 244.1524517492444
+      }
+    },
+    {
+      "name": "max impact 5%",
+      "input": {
+        "name": "max impact 5%",
+        "q": [
+          0,
+          0
+        ],
+        "params": {
+          "b": 1000,
+          "alpha": 0.15,
+          "bMin": 1000
+        },
+        "outcomeIdx": 0,
+        "maxImpact": 5
+      },
+      "expected": {
+        "prices": [
+          0.5,
+          0.5
+        ],
+        "effectiveB": 1000,
+        "maxAmountForPriceImpact": 105.36051565782634
+      }
+    },
+    {
+      "name": "max impact 10%",
+      "input": {
+        "name": "max impact 10%",
+        "q": [
+          0,
+          0
+        ],
+        "params": {
+          "b": 1000,
+          "alpha": 0.15,
+          "bMin": 1000
+        },
+        "outcomeIdx": 0,
+        "maxImpact": 10
+      },
+      "expected": {
+        "prices": [
+          0.5,
+          0.5
+        ],
+        "effectiveB": 1000,
+        "maxAmountForPriceImpact": 223.1435513142094
+      }
+    },
+    {
+      "name": "max impact 20% en skew",
+      "input": {
+        "name": "max impact 20% en skew",
+        "q": [
+          500,
+          -500
+        ],
+        "params": {
+          "b": 1000,
+          "alpha": 0.15,
+          "bMin": 1000
+        },
+        "outcomeIdx": 0,
+        "maxImpact": 20
+      },
+      "expected": {
+        "prices": [
+          0.7310585786300049,
+          0.2689414213699951
+        ],
+        "effectiveB": 1000,
+        "maxAmountForPriceImpact": 1361.2364130943313
+      }
+    },
+    {
+      "name": "priors uniformes 2-outcome",
+      "input": {
+        "name": "priors uniformes 2-outcome",
+        "q": [],
+        "params": {
+          "b": 1000,
+          "alpha": 0.15,
+          "bMin": 1000
+        },
+        "outcomeIdx": -1,
+        "priors": [
+          0.5,
+          0.5
+        ]
+      },
+      "expected": {
+        "initialQValues": [
+          0,
+          0
+        ],
+        "seedCost": 693.1471805599452
+      }
+    },
+    {
+      "name": "priors no-uniformes 2-outcome",
+      "input": {
+        "name": "priors no-uniformes 2-outcome",
+        "q": [],
+        "params": {
+          "b": 1000,
+          "alpha": 0.15,
+          "bMin": 1000
+        },
+        "outcomeIdx": -1,
+        "priors": [
+          0.7,
+          0.3
+        ]
+      },
+      "expected": {
+        "initialQValues": [
+          0,
+          -847.2978603872035
+        ],
+        "seedCost": 693.1471805599452
+      }
+    },
+    {
+      "name": "priors 3-outcome",
+      "input": {
+        "name": "priors 3-outcome",
+        "q": [],
+        "params": {
+          "b": 1000,
+          "alpha": 0.15,
+          "bMin": 1000
+        },
+        "outcomeIdx": -1,
+        "priors": [
+          0.5,
+          0.3,
+          0.2
+        ]
+      },
+      "expected": {
+        "initialQValues": [
+          0,
+          -510.8256237659907,
+          -916.290731874155
+        ],
+        "seedCost": 1098.6122886681096
+      }
+    },
+    {
+      "name": "priors 4-outcome con favorito",
+      "input": {
+        "name": "priors 4-outcome con favorito",
+        "q": [],
+        "params": {
+          "b": 1000,
+          "alpha": 0.15,
+          "bMin": 1000
+        },
+        "outcomeIdx": -1,
+        "priors": [
+          0.55,
+          0.2,
+          0.15,
+          0.1
+        ]
+      },
+      "expected": {
+        "initialQValues": [
+          0,
+          -1011.6009116784799,
+          -1299.282984130261,
+          -1704.7480922384252
+        ],
+        "seedCost": 1386.2943611198905
+      }
+    }
+  ]
+}
